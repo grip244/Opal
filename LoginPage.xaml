@@ -1,0 +1,51 @@
+<Page
+    x:Class="Opal.LoginPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Opal"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Page.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Page.Resources>
+
+    <Grid x:Name="RootGrid">
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#0A0A1A" Offset="0" />
+                <GradientStop Color="#101025" Offset="1" />
+            </LinearGradientBrush>
+        </Grid.Background>
+
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="DeviceStates">
+                <VisualState x:Name="XboxState">
+                    <VisualState.Setters>
+                        <Setter Target="RootGrid.Padding" Value="48,40,48,48" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="380" Spacing="16">
+            <TextBlock Text="Opal" FontSize="42" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,12" Foreground="#4ECCA3"/>
+            <TextBlock Text="Connect to your Music" FontSize="16" HorizontalAlignment="Center" Margin="0,0,0,8" Opacity="0.8" Foreground="White" SelectionChanged="TextBlock_SelectionChanged"/>
+            <TextBox x:Name="ServerTextBox" Foreground="White" Header="Server URL" PlaceholderText="https://navidrome.example" FontSize="8" Height="47" KeyDown="OnLoginFieldKeyDown" TextChanged="ServerTextBox_TextChanged"/>
+            <TextBox x:Name="UsernameTextBox" Header="Username" Foreground="White" FontSize="8" Height="47" KeyDown="OnLoginFieldKeyDown"/>
+            <PasswordBox x:Name="PasswordBox" Header="Password" Foreground="White" FontSize="8" Height="47" KeyDown="OnLoginFieldKeyDown"/>
+            <CheckBox x:Name="RememberMeCheckBox" Content="Remember Me" IsChecked="True" FontSize="8" />
+            <Button x:Name="ConnectButton" Content="Connect" HorizontalAlignment="Stretch" Height="32" FontSize="12" Background="#4ECCA3" Foreground="White" Click="OnConnectClicked" />
+            
+            <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center" Margin="0,24,0,0">
+                <ProgressRing x:Name="ProgressRing" IsActive="False" Width="36" Height="36" />
+                <TextBlock x:Name="StatusText" FontSize="20" VerticalAlignment="Center" />
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Page>

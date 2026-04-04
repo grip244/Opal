@@ -1,0 +1,11 @@
+<Solution>
+  <Configurations>
+    <Platform Name="ARM64" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Opal.vcxproj" Id="77775dae-b3d0-42de-a2cd-94389b8887b7">
+    <BuildType Solution="Debug|x64" Project="Release" />
+    <Deploy />
+  </Project>
+</Solution>

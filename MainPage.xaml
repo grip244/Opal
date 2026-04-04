@@ -1,0 +1,126 @@
+<Page
+    x:Class="Opal.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Opal"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Page.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Page.Resources>
+    
+    <Grid x:Name="RootGrid">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="DeviceStates">
+                <VisualState x:Name="XboxState">
+                    <VisualState.Setters>
+                        <Setter Target="MainNavigationView.PaneDisplayMode" Value="LeftCompact" />
+                        <Setter Target="MainNavigationView.IsPaneToggleButtonVisible" Value="True" />
+                        <Setter Target="GlobalPlayerBar.Margin" Value="0" />
+                        <Setter Target="GlobalPlayerBar.Height" Value="112" />
+                        <Setter Target="GlobalPlayerBar.Padding" Value="0" />
+                        <Setter Target="MiniThumbnailBorder.Width" Value="112" />
+                        <Setter Target="MiniThumbnailBorder.Height" Value="112" />
+                        <Setter Target="MiniThumbnailBorder.CornerRadius" Value="0" />
+                        <Setter Target="GlobalPlayerBar.CornerRadius" Value="0" />
+                        <Setter Target="NowPlayingTitle.FontSize" Value="16" />
+                        <Setter Target="NowPlayingArtist.FontSize" Value="12" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <muxc:NavigationView x:Name="MainNavigationView"
+                           PaneDisplayMode="Left"
+                           OpenPaneLength="240"
+                           IsPaneToggleButtonVisible="True"
+                           IsBackButtonVisible="Collapsed"
+                           IsSettingsVisible="True"
+                           ItemInvoked="OnMenuItemInvoked">
+            <muxc:NavigationView.AutoSuggestBox>
+                <AutoSuggestBox x:Name="SearchBox" 
+                                PlaceholderText="Search music..." 
+                                QueryIcon="Find"
+                                QuerySubmitted="OnSearchEntered"/>
+            </muxc:NavigationView.AutoSuggestBox>
+            <muxc:NavigationView.MenuItems>
+                <muxc:NavigationViewItem Content="Library" Tag="Library" Icon="Home" />
+                <muxc:NavigationViewItem Content="Artists" Tag="Artists" Icon="Contact" />
+                <muxc:NavigationViewItem Content="Albums" Tag="Albums" Icon="AllApps" />
+            </muxc:NavigationView.MenuItems>
+            
+            <Frame x:Name="ContentFrame" Navigated="OnNavigated" Padding="0" />
+        </muxc:NavigationView>
+
+        <!-- Global Player Bar -->
+        <Border x:Name="GlobalPlayerBar" Grid.Row="1" Background="#E6000000" BorderBrush="#22FFFFFF" BorderThickness="0,1,0,0" CornerRadius="0" Height="112" Margin="0" Padding="0" Visibility="Collapsed">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="300" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Grid Grid.Column="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border x:Name="MiniThumbnailBorder" Background="#22FFFFFF" Width="112" Height="112" CornerRadius="0" PointerEntered="OnThumbnailPointerEntered" PointerExited="OnThumbnailPointerExited">
+                        <Grid>
+                            <Image x:Name="MiniThumbnail" Stretch="UniformToFill" IsHitTestVisible="False" />
+                            <Button x:Name="ExpandThumbnailButton" Content="&#xE70E;" FontFamily="Segoe MDL2 Assets" FontSize="20" Background="#99000000" Foreground="White" Width="112" Height="112" Visibility="Collapsed" BorderThickness="0" CornerRadius="0" IsHitTestVisible="True" Click="OnThumbnailClicked" />
+                        </Grid>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4" Margin="24,0,0,0">
+                        <TextBlock x:Name="NowPlayingTitle" Text="Not Playing" FontSize="18" FontWeight="Bold" TextTrimming="CharacterEllipsis" Foreground="White" />
+                        <TextBlock x:Name="NowPlayingArtist" Text="Disconnected" FontSize="13" Opacity="0.7" TextTrimming="CharacterEllipsis" Foreground="White" />
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel Grid.Column="1" Spacing="4" Margin="0,0,24,0" VerticalAlignment="Center">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="CurrentTimeText" Text="0:00" FontSize="14" Opacity="0.6" Margin="0,0,12,0" Foreground="White" />
+                        <Slider x:Name="ProgressSlider" Grid.Column="1" Minimum="0" Maximum="100" Value="0" ThumbToolTipValueConverter="{x:Null}" PointerCaptureLost="OnProgressSeek" />
+                        <TextBlock x:Name="TotalTimeText" Text="0:00" Grid.Column="2" FontSize="14" Opacity="0.6" Margin="12,0,0,0" Foreground="White" />
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="24">
+                        <Button x:Name="ShuffleButton" Click="OnShuffleClicked" Background="Transparent" Padding="12" ToolTipService.ToolTip="Reshuffle" UseSystemFocusVisuals="True">
+                            <SymbolIcon Symbol="Shuffle" Foreground="White" />
+                        </Button>
+                        <Button x:Name="PrevButton" Click="OnPreviousClicked" Background="Transparent" Padding="12" UseSystemFocusVisuals="True">
+                            <SymbolIcon Symbol="Previous" Foreground="White" />
+                        </Button>
+                        <Button x:Name="PlayPauseButton" Click="OnPlayPauseClicked" Width="56" Height="56" CornerRadius="28" Background="{ThemeResource SystemAccentColor}" Foreground="White" UseSystemFocusVisuals="True">
+                            <SymbolIcon x:Name="PlayPauseIcon" Symbol="Play" Scale="1.1,1.1,1" />
+                        </Button>
+                        <Button x:Name="NextButton" Click="OnNextClicked" Background="Transparent" Padding="12" UseSystemFocusVisuals="True">
+                            <SymbolIcon Symbol="Next" Foreground="White" />
+                        </Button>
+                        <Button x:Name="LyricsButton" Click="OnLyricsToggleClicked" Background="Transparent" Padding="12" ToolTipService.ToolTip="Lyrics Toggle" UseSystemFocusVisuals="True">
+                            <SymbolIcon Symbol="Comment" Foreground="White" />
+                        </Button>
+                        <Slider x:Name="VolumeSlider" Width="150" Minimum="0" Maximum="100" Value="100" ValueChanged="OnVolumeChanged" VerticalAlignment="Center" Margin="16,0,0,0" UseSystemFocusVisuals="True" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>

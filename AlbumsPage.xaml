@@ -1,0 +1,109 @@
+<Page
+    x:Class="Opal.AlbumsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Opal"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    NavigationCacheMode="Required"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    
+    <Page.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+            
+            <Style x:Key="AlbumItemStyle" TargetType="GridViewItem">
+                <Setter Property="Width" Value="140" />
+                <Setter Property="Margin" Value="8,0,8,20" />
+            </Style>
+            <Style x:Key="XboxAlbumItemStyle" TargetType="GridViewItem">
+                <Setter Property="Width" Value="120" />
+                <Setter Property="Margin" Value="6,0,6,12" />
+            </Style>
+        </ResourceDictionary>
+    </Page.Resources>
+
+    <Grid x:Name="RootGrid" Padding="24">
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#0A0A1A" Offset="0" />
+                <GradientStop Color="#101025" Offset="1" />
+            </LinearGradientBrush>
+        </Grid.Background>
+
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="DeviceStates">
+                <VisualState x:Name="XboxState">
+                    <VisualState.Setters>
+                        <Setter Target="RootGrid.Padding" Value="48,40,48,48" />
+                        <Setter Target="AlbumsGridView.Padding" Value="24,0,24,24" />
+                        <Setter Target="AlbumsGridView.ItemContainerStyle" Value="{StaticResource XboxAlbumItemStyle}" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="0,0,0,32">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="Albums" FontSize="26" FontWeight="Bold" VerticalAlignment="Center" Foreground="White" />
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="24">
+                    <TextBox x:Name="FilterBox" Width="180" PlaceholderText="Search..." 
+                             TextChanged="OnFilterOrSortChanged" 
+                             VerticalAlignment="Center" 
+                             Background="#22FFFFFF" BorderThickness="0" CornerRadius="12" />
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="Sort:" VerticalAlignment="Center" Foreground="#99FFFFFF" FontSize="13" />
+                        <ComboBox x:Name="SortByCombo" Width="130" Height="36" SelectionChanged="OnFilterOrSortChanged" 
+                                 Background="#22FFFFFF" BorderThickness="0" CornerRadius="8" Opacity="0.8">
+                            <ComboBoxItem Content="A-Z" IsSelected="True" />
+                            <ComboBoxItem Content="Oldest First" />
+                            <ComboBoxItem Content="Newest First" />
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="Filter:" VerticalAlignment="Center" Foreground="#99FFFFFF" FontSize="13" />
+                        <ComboBox x:Name="YearFilterCombo" Width="130" Height="36" SelectionChanged="OnFilterOrSortChanged" 
+                                 Background="#22FFFFFF" BorderThickness="0" CornerRadius="8" Opacity="0.8">
+                            <ComboBoxItem Content="All Years" IsSelected="True" />
+                            <ComboBoxItem Content="2020 - Now" />
+                            <ComboBoxItem Content="2010 - 2019" />
+                            <ComboBoxItem Content="2000 - 2009" />
+                            <ComboBoxItem Content="1990 - 1999" />
+                            <ComboBoxItem Content="1980 - 1989" />
+                            <ComboBoxItem Content="Before 1980" />
+                        </ComboBox>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+
+            <GridView x:Name="AlbumsGridView" Grid.Row="1" ItemClick="OnAlbumClicked" IsItemClickEnabled="True" ItemContainerStyle="{StaticResource AlbumItemStyle}">
+                <GridView.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Spacing="2">
+                            <Border CornerRadius="4" Background="#11FFFFFF" BorderThickness="0" Height="130" Width="130">
+                                <Image Source="{Binding CoverArt}" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="White" MaxLines="1" Margin="0,4,0,0" />
+                            <TextBlock Text="{Binding Artist}" FontSize="13" Opacity="0.7" TextTrimming="CharacterEllipsis" Foreground="#DDD" MaxLines="1"/>
+                            <TextBlock Text="{Binding Year}" FontSize="12" Opacity="0.4" Foreground="#BBB" />
+                        </StackPanel>
+                    </DataTemplate>
+                </GridView.ItemTemplate>
+            </GridView>
+        </Grid>
+    </Grid>
+</Page>
