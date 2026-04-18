@@ -2,7 +2,13 @@
 #include "LibraryPage.xaml.h"
 #include "LoginPage.xaml.h"
 #include "Services/PlaybackService.h"
+#include "ViewModels/PlaylistsViewModel.h"
+#include <Windows.UI.Xaml.Media.h>
 #include "Services/LyricsService.h"
+#include "Services/ImageCacheService.h"
+#include "Services/CastingService.h"
+#include "Services/DebugLogger.h"
+#include "ViewModels/GenreViewModel.h"
 #include <sstream>
 #include <string>
 
@@ -12,6 +18,7 @@ using namespace concurrency;
 using namespace Windows::Foundation;
 using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
+using namespace Windows::UI::Xaml::Media;
 using namespace Windows::UI::Xaml::Navigation;
 using namespace Windows::Media::Playback;
 using namespace Windows::UI::Xaml::Media::Imaging;
@@ -45,7 +52,7 @@ ScrollViewer^ FindScrollViewerChild(DependencyObject^ depObj)
 LibraryPage::LibraryPage()
 {
     _artists = ref new Platform::Collections::Vector<ArtistModel^>();
-    _albums = ref new Platform::Collections::Vector<AlbumModel^>();
+    _albums = ref new Platform::Collections::Vector<AlbumID3^>();
     _albumSongs = ref new Platform::Collections::Vector<Song^>();
     _albumDiscGroups = ref new Platform::Collections::Vector<DiscGroup^>();
     _upcomingQueue = ref new Platform::Collections::Vector<Song^>();
@@ -72,18 +79,31 @@ LibraryPage::LibraryPage()
         page->UpdateLyricsHighlight();
     });
     lyricTimer->Start();
+
+    FeaturedGenresGrid->ItemsSource = ViewModels::GenreViewModel::Instance->Genres;
+
+    CastingService::Instance->QueueSynced += ref new Windows::Foundation::EventHandler<Object^>([page](Object^ sender, Object^ args) {
+        page->Dispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([page]() {
+            page->UpdateUpcomingQueue();
+        }));
+    });
 }
 
 void LibraryPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e)
 {
-    auto artistId = dynamic_cast<Platform::String^>(e->Parameter);
-    if (artistId != nullptr && artistId->Length() > 0)
+    auto paramStr = dynamic_cast<Platform::String^>(e->Parameter);
+    if (paramStr != nullptr && paramStr->Length() > 6 && std::wstring(paramStr->Data()).substr(0, 6) == L"GENRE:")
     {
-        LoadArtistPage(artistId);
+        auto genre = ref new Platform::String(paramStr->Data() + 6);
+        LoadGenreAlbums(genre);
+    }
+    else if (paramStr != nullptr && paramStr->Length() > 0)
+    {
+        LoadArtistPage(paramStr);
     }
     else
     {
-        auto am = dynamic_cast<AlbumModel^>(e->Parameter);
+        auto am = dynamic_cast<AlbumID3^>(e->Parameter);
         if (am != nullptr)
         {
             LoadAlbumPage(am->Id);
@@ -134,8 +154,63 @@ void LibraryPage::LoadHomePage()
     ArtistGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
     AlbumGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
     FullPlayerGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
-
+    
+    ViewModels::GenreViewModel::Instance->LoadGenresAsync();
     LibraryVM->LoadAllCategories();
+}
+
+void LibraryPage::LoadGenreAlbums(Platform::String^ genre)
+{
+    BrowseGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+    HomeGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+    ArtistGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+    AlbumGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+    FullPlayerGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+
+    ArtistDetailName->Text = genre;
+    ArtistDetailType->Text = "GENRE";
+    ArtistImageEllipse->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+    ArtistDetailImageBrush->ImageSource = nullptr;
+
+    auto self = this;
+    create_task(NavidromeService::Instance->GetAlbumListByGenreAsync(genre, 50, 0)).then([self](Platform::String^ jsonStr) {
+        if (jsonStr != nullptr) {
+            self->Dispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([self, jsonStr]() {
+                try {
+                    JsonObject^ rootRaw = JsonObject::Parse(jsonStr);
+                    JsonObject^ root = rootRaw->GetNamedObject("subsonic-response", nullptr);
+                    if (root != nullptr) {
+                        JsonObject^ listObj = root->HasKey("albumList2") ? root->GetNamedObject("albumList2") : (root->HasKey("albumList") ? root->GetNamedObject("albumList") : nullptr);
+                        if (listObj != nullptr && listObj->HasKey("album")) {
+                            JsonArray^ albumsArray = listObj->GetNamedArray("album");
+                            self->_albums->Clear();
+                            for (unsigned int i = 0; i < albumsArray->Size; i++) {
+                                JsonObject^ albObj = albumsArray->GetObjectAt(i);
+                                auto am = ref new AlbumID3();
+                                am->Id = albObj->GetNamedString("id", "");
+                                am->Title = albObj->HasKey("title") ? albObj->GetNamedString("title") : albObj->GetNamedString("name", "Unknown Album");
+                                am->Artist = albObj->GetNamedString("artist", "");
+                                
+                                if (albObj->HasKey("year")) {
+                                    try { am->Year = albObj->GetNamedNumber("year").ToString(); } catch (...) {
+                                        try { am->Year = albObj->GetNamedValue("year")->Stringify(); } catch (...) { am->Year = ""; }
+                                    }
+                                }
+
+                                auto coverId = albObj->HasKey("coverArt") ? albObj->GetNamedString("coverArt") : albObj->GetNamedString("id", "");
+                                auto url = NavidromeService::Instance->GetCoverArtUrl(coverId, 500);
+                                if (url != nullptr && url->Length() > 0)
+                                    am->CoverArt = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(url));
+                                
+                                self->_albums->Append(am);
+                            }
+                            self->AlbumsGridView->ItemsSource = self->_albums;
+                        }
+                    }
+                } catch (...) {}
+            }));
+        }
+    });
 }
 
 void LibraryPage::LoadArtistPage(Platform::String^ artistId)
@@ -154,28 +229,69 @@ void LibraryPage::LoadArtistPage(Platform::String^ artistId)
                     if (root != nullptr && root->HasKey("artist")) {
                         JsonObject^ artistObj = root->GetNamedObject("artist");
                         self->ArtistDetailName->Text = artistObj->GetNamedString("name", "");
+                        self->ArtistDetailType->Text = "ARTIST";
+                        self->ArtistImageEllipse->Visibility = Windows::UI::Xaml::Visibility::Visible;
                         Platform::String^ coverUrlStr = NavidromeService::Instance->GetCoverArtUrl(artistObj->GetNamedString("id", ""), 500);
-                        try { self->ArtistDetailImageBrush->ImageSource = ref new BitmapImage(ref new Uri(coverUrlStr)); } catch (...) {}
+                        auto disp = App::MainDispatcher;
+                        if (disp != nullptr) {
+                            disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([self, coverUrlStr]() {
+                                try {
+                                    if (coverUrlStr != nullptr && coverUrlStr->Length() > 0)
+                                        self->ArtistDetailImageBrush->ImageSource = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(coverUrlStr));
+                                } catch (...) {}
+                            }));
+                        }
 
                         if (artistObj->HasKey("album")) {
                             JsonArray^ albumsArray = artistObj->GetNamedArray("album");
                             self->_albums->Clear();
                             for (unsigned int i = 0; i < albumsArray->Size; i++) {
                                 JsonObject^ albObj = albumsArray->GetObjectAt(i);
-                                auto am = ref new AlbumModel();
+                                auto am = ref new AlbumID3();
                                 am->Id = albObj->GetNamedString("id", "");
                                 am->Title = albObj->HasKey("title") ? albObj->GetNamedString("title") : albObj->GetNamedString("name", "Unknown Album");
+                                
+                                if (albObj->HasKey("explicitStatus")) {
+                                    auto val = albObj->GetNamedValue("explicitStatus");
+                                    if (val != nullptr && val->ValueType == JsonValueType::String) {
+                                        am->ExplicitStatus = val->GetString();
+                                    } else { am->ExplicitStatus = L""; }
+                                } else { am->ExplicitStatus = L""; }
+                                
+                                if (albObj->HasKey("version")) {
+                                    auto val = albObj->GetNamedValue("version");
+                                    if (val != nullptr && val->ValueType == JsonValueType::String) am->Version = val->GetString();
+                                }
+                                if (albObj->HasKey("sortName")) {
+                                    auto val = albObj->GetNamedValue("sortName");
+                                    if (val != nullptr && val->ValueType == JsonValueType::String) am->SortName = val->GetString();
+                                }
+
                                 if (albObj->HasKey("year")) {
-                                    try { am->Year = albObj->GetNamedNumber("year").ToString(); } catch (...) {
+                                    try { am->Year = albObj->GetNamedNumber("year").ToString(); } catch (Exception^ ex) {
                                         am->Year = albObj->GetNamedValue("year")->Stringify();
+                                        DebugLogger::Instance->LogException("LoadArtistPage (AlbumYear)", ex);
                                     }
                                 }
-                                Platform::String^ cover = albObj->GetNamedString("coverArt", "");
+                                Platform::String^ cover = albObj->HasKey("coverArt") ? albObj->GetNamedString("coverArt") : albObj->GetNamedString("id", "");
                                 Platform::String^ url = NavidromeService::Instance->GetCoverArtUrl(cover, 500);
-                                try { am->CoverArt = ref new BitmapImage(ref new Uri(url)); } catch (...) {}
-                                self->_albums->Append(am);
+                                auto disp = App::MainDispatcher;
+                                if (disp != nullptr) {
+                                    disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([self, am, url]() {
+                                        try {
+                                            if (url != nullptr && url->Length() > 0)
+                                                am->CoverArt = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(url));
+                                            self->_albums->Append(am);
+                                        } catch (...) {}
+                                    }));
+                                }
                             }
-                            self->AlbumsGridView->ItemsSource = self->_albums;
+                            auto disp = App::MainDispatcher;
+                            if (disp != nullptr) {
+                                disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([self]() {
+                                    self->AlbumsGridView->ItemsSource = self->_albums;
+                                }));
+                            }
                         }
                     }
                 } catch (...) {}
@@ -189,6 +305,8 @@ void LibraryPage::LoadAlbumPage(Platform::String^ albumId)
     HomeGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
     ArtistGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
     AlbumGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+    TracksListView->CanReorderItems = false;
+    TracksListView->CanDragItems = false;
 
     auto self = this;
     create_task(NavidromeService::Instance->GetAlbumAsync(albumId)).then([self](Platform::String^ jsonStr) {
@@ -199,10 +317,24 @@ void LibraryPage::LoadAlbumPage(Platform::String^ albumId)
                     JsonObject^ root = rootRaw->GetNamedObject("subsonic-response", nullptr);
                     if (root != nullptr && root->HasKey("album")) {
                         JsonObject^ albumObj = root->GetNamedObject("album");
-                        self->AlbumDetailTitle->Text = albumObj->HasKey("name") ? albumObj->GetNamedString("name") : albumObj->GetNamedString("title", "Unknown");
+                        Platform::String^ parsedTitle = albumObj->HasKey("name") ? albumObj->GetNamedString("name") : albumObj->GetNamedString("title", "Unknown");
+                        
+                        bool isExplicit = false;
+                        if (albumObj->HasKey("explicitStatus")) {
+                            auto val = albumObj->GetNamedValue("explicitStatus");
+                            if (val != nullptr && val->ValueType == JsonValueType::String) {
+                                isExplicit = (val->GetString() == L"explicit");
+                            }
+                        }
+                        
+                        self->AlbumDetailTitle->Text = parsedTitle;
+                        self->AlbumExplicitBadge->Visibility = isExplicit ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
                         self->AlbumDetailArtist->Text = albumObj->GetNamedString("artist", "");
-                        Platform::String^ coverUrlStr = NavidromeService::Instance->GetCoverArtUrl(albumObj->GetNamedString("coverArt", ""), 500);
-                        try { self->AlbumDetailImage->Source = ref new BitmapImage(ref new Uri(coverUrlStr)); } catch (...) {}
+                        Platform::String^ coverUrlStr = NavidromeService::Instance->GetCoverArtUrl(albumObj->HasKey("coverArt") ? albumObj->GetNamedString("coverArt") : albumObj->GetNamedString("id", ""), 500);
+                        try {
+                            if (coverUrlStr != nullptr && coverUrlStr->Length() > 0)
+                                self->AlbumDetailImage->Source = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(coverUrlStr));
+                        } catch (...) {}
 
                         if (albumObj->HasKey("song")) {
                             JsonArray^ songsArray = albumObj->GetNamedArray("song");
@@ -217,7 +349,23 @@ void LibraryPage::LoadAlbumPage(Platform::String^ albumId)
                                 song->Id = songObj->GetNamedString("id", "");
                                 song->Title = songObj->GetNamedString("title", "Unknown Track");
                                 song->Artist = songObj->GetNamedString("artist", "Unknown Artist");
+                                
+                                if (songObj->HasKey("explicitStatus")) {
+                                    auto val = songObj->GetNamedValue("explicitStatus");
+                                    if (val != nullptr && val->ValueType == JsonValueType::String) {
+                                        song->ExplicitStatus = val->GetString();
+                                    } else { song->ExplicitStatus = L""; }
+                                } else {
+                                    if (albumObj->HasKey("explicitStatus")) {
+                                        auto val = albumObj->GetNamedValue("explicitStatus");
+                                        if (val != nullptr && val->ValueType == JsonValueType::String) {
+                                            song->ExplicitStatus = val->GetString();
+                                        } else { song->ExplicitStatus = L""; }
+                                    } else { song->ExplicitStatus = L""; }
+                                }
+                                
                                 song->Album = songObj->GetNamedString("album", "Unknown Album");
+
                                 if (songObj->HasKey("track")) {
                                     auto trackVal = songObj->GetNamedValue("track");
                                     if (trackVal->ValueType == JsonValueType::String) song->TrackNumber = trackVal->GetString();
@@ -230,7 +378,7 @@ void LibraryPage::LoadAlbumPage(Platform::String^ albumId)
                                 
                                 song->DiscNumber = 1;
                                 if (songObj->HasKey("discNumber")) {
-                                    try { song->DiscNumber = (int)songObj->GetNamedNumber("discNumber"); } catch (...) {}
+                                    try { song->DiscNumber = (int)songObj->GetNamedNumber("discNumber"); } catch (Exception^ ex) { DebugLogger::Instance->LogException("LoadAlbumPage (DiscNumber)", ex); }
                                 }
                                 
                                 if (songObj->HasKey("duration")) {
@@ -240,10 +388,25 @@ void LibraryPage::LoadAlbumPage(Platform::String^ albumId)
                                     song->Duration = ref new Platform::String(buf);
                                 } else { song->Duration = "--:--"; song->DurationInSeconds = 0; }
 
+                                if (songObj->HasKey("year")) {
+                                    auto y = songObj->GetNamedValue("year");
+                                    if (y->ValueType == JsonValueType::Number) {
+                                        wchar_t yBuf[16]; swprintf_s(yBuf, L"%d", (int)y->GetNumber());
+                                        song->Year = ref new Platform::String(yBuf);
+                                    } else song->Year = y->Stringify();
+                                }
+
                                 song->StreamUrl = NavidromeService::Instance->GetStreamUrl(song->Id);
-                                Platform::String^ coverArtId = songObj->GetNamedString("coverArt", "");
+                                Platform::String^ coverArtId = songObj->HasKey("coverArt") ? songObj->GetNamedString("coverArt") : "";
                                 song->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(coverArtId, 500);
                                 song->CoverArt = self->AlbumDetailImage->Source;
+                                
+                                if (songObj->HasKey("starred")) song->IsFavorite = true;
+                                else song->IsFavorite = false;
+                                
+                                if (songObj->HasKey("userRating")) song->Rating = songObj->GetNamedNumber("userRating");
+                                else song->Rating = 0.0;
+
                                 
                                 self->_albumSongs->Append(song);
                                 
@@ -267,6 +430,7 @@ void LibraryPage::LoadAlbumPage(Platform::String^ albumId)
     });
 }
 
+
 void LibraryPage::PlaySong(unsigned int index)
 {
     PlaybackService::Instance->PlayQueue(PlaybackService::Instance->Queue, index);
@@ -285,60 +449,26 @@ void LibraryPage::LoadLyrics(Song^ song)
     self->LyricsVM->IsTimed = false;
     self->LyricsVM->ActiveIndex = -1;
 
-    // Stage 1: LRCLib (Modern, high quality)
-    create_task(LyricsService::FetchFromLrcLibAsync(song->Artist, song->Title, song->Album, (double)song->DurationInSeconds)).then([self, song](LyricsResult^ res) {
-        if (res != nullptr && res->Lines->Size > 0) {
-            self->Dispatcher->RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([self, res]() {
+    // Use OpenSubsonic (Modern, server-side) as the primary and only source
+    create_task(NavidromeService::Instance->GetLyricsBySongIdAsync(song->Id)).then([self](Platform::String^ json) {
+        if (json != nullptr) {
+            auto result = LyricsService::ParseOpenSubsonicJson(json);
+            self->Dispatcher->RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([self, result]() {
                 self->LyricsVM->Lines->Clear();
                 self->LyricsVM->ActiveIndex = -1;
-                for (auto l : res->Lines) self->LyricsVM->Lines->Append(l);
-                self->LyricsVM->IsTimed = res->IsTimed;
+                
+                if (result != nullptr && result->Lines->Size > 0) {
+                    for (auto l : result->Lines) self->LyricsVM->Lines->Append(l);
+                    self->LyricsVM->IsTimed = result->IsTimed;
+                } else {
+                    self->LyricsVM->SetLyrics(""); // No lyrics found fallback
+                }
             }));
-            return;
+        } else {
+            self->Dispatcher->RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([self]() {
+                self->LyricsVM->SetLyrics("");
+            }));
         }
-
-        // Stage 2: Navidrome OpenSubsonic (Server-side lyrics)
-        create_task(NavidromeService::Instance->GetLyricsBySongIdAsync(song->Id)).then([self, song](Platform::String^ osJson) {
-            if (osJson != nullptr) {
-                auto osResult = LyricsService::ParseOpenSubsonicJson(osJson);
-                if (osResult != nullptr && osResult->Lines->Size > 0) {
-                    self->Dispatcher->RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([self, osResult]() {
-                        self->LyricsVM->Lines->Clear();
-                        self->LyricsVM->ActiveIndex = -1;
-                        for (auto l : osResult->Lines) self->LyricsVM->Lines->Append(l);
-                        self->LyricsVM->IsTimed = osResult->IsTimed;
-                    }));
-                    return;
-                }
-            }
-
-            // Stage 3: Netease (Crowdsourced fallback)
-            create_task(LyricsService::FetchFromNeteaseAsync(song->Artist, song->Title)).then([self, song](LyricsResult^ nResult) {
-                if (nResult != nullptr && nResult->Lines->Size > 0) {
-                    self->Dispatcher->RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([self, nResult]() {
-                        self->LyricsVM->Lines->Clear();
-                        self->LyricsVM->ActiveIndex = -1;
-                        for (auto l : nResult->Lines) self->LyricsVM->Lines->Append(l);
-                        self->LyricsVM->IsTimed = nResult->IsTimed;
-                    }));
-                    return;
-                }
-
-                // Stage 4: Legacy Subsonic (Last resort)
-                create_task(NavidromeService::Instance->GetLyricsAsync(song->Artist, song->Title)).then([self](Platform::String^ legacyJson) {
-                    self->Dispatcher->RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([self, legacyJson]() {
-                        if (legacyJson != nullptr) {
-                            try {
-                                JsonObject^ resp = JsonObject::Parse(legacyJson)->GetNamedObject("subsonic-response");
-                                JsonObject^ lrc = resp->GetNamedObject("lyrics");
-                                String^ c = lrc->HasKey("content") ? lrc->GetNamedString("content") : lrc->GetNamedString("text", "");
-                                self->LyricsVM->SetLyrics(c);
-                            } catch (...) { self->LyricsVM->SetLyrics(""); }
-                        } else self->LyricsVM->SetLyrics("");
-                    }));
-                });
-            });
-        });
     });
 }
 
@@ -418,10 +548,10 @@ void LibraryPage::OnRandomAlbumClicked(Object^ sender, RoutedEventArgs^ e) {
 }
 
 void LibraryPage::OnArtistClicked(Object^ sender, ItemClickEventArgs^ e) { auto am = dynamic_cast<ArtistModel^>(e->ClickedItem); if (am != nullptr) LoadArtistPage(am->Id); }
-void LibraryPage::OnAlbumClicked(Object^ sender, ItemClickEventArgs^ e) { auto am = dynamic_cast<AlbumModel^>(e->ClickedItem); if (am != nullptr) LoadAlbumPage(am->Id); }
+void LibraryPage::OnAlbumClicked(Object^ sender, ItemClickEventArgs^ e) { auto am = dynamic_cast<AlbumID3^>(e->ClickedItem); if (am != nullptr) LoadAlbumPage(am->Id); }
 void LibraryPage::OnGenericAlbumClicked(Object^ sender, ItemClickEventArgs^ e)
 {
-    auto am = dynamic_cast<AlbumModel^>(e->ClickedItem);
+    auto am = dynamic_cast<AlbumID3^>(e->ClickedItem);
     if (am != nullptr) {
         auto self = this;
         create_task(NavidromeService::Instance->GetAlbumAsync(am->Id)).then([self](Platform::String^ jsonStr) {
@@ -437,10 +567,48 @@ void LibraryPage::OnGenericAlbumClicked(Object^ sender, ItemClickEventArgs^ e)
                             s->Id = songObj->GetNamedString("id");
                             s->Title = songObj->GetNamedString("title", "Unknown");
                             s->Artist = songObj->GetNamedString("artist", "Unknown");
+                            
+                            if (songObj->HasKey("explicitStatus")) {
+                                auto val = songObj->GetNamedValue("explicitStatus");
+                                if (val != nullptr && val->ValueType == JsonValueType::String) {
+                                    s->ExplicitStatus = val->GetString();
+                                } else { s->ExplicitStatus = L""; }
+                            } else {
+                                auto albumNode = root->GetNamedObject("album");
+                                if (albumNode->HasKey("explicitStatus")) {
+                                    auto val = albumNode->GetNamedValue("explicitStatus");
+                                    if (val != nullptr && val->ValueType == JsonValueType::String) {
+                                        s->ExplicitStatus = val->GetString();
+                                    } else { s->ExplicitStatus = L""; }
+                                } else { s->ExplicitStatus = L""; }
+                            }
+                            
                             s->Album = songObj->GetNamedString("album", "Unknown");
+
+                            if (songObj->HasKey("year")) {
+                                auto y = songObj->GetNamedValue("year");
+                                if (y->ValueType == JsonValueType::Number) {
+                                    wchar_t yBuf[16]; swprintf_s(yBuf, L"%d", (int)y->GetNumber());
+                                    s->Year = ref new Platform::String(yBuf);
+                                } else s->Year = y->Stringify();
+                            }
                             s->StreamUrl = NavidromeService::Instance->GetStreamUrl(s->Id);
-                            s->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(songObj->GetNamedString("coverArt"), 500);
-                            s->CoverArt = ref new BitmapImage(ref new Uri(s->CoverUrl));
+                            s->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(songObj->HasKey("coverArt") ? songObj->GetNamedString("coverArt") : "", 500);
+                            auto disp = App::MainDispatcher;
+                            if (disp != nullptr) {
+                                disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([s, url = s->CoverUrl]() {
+                                    try {
+                                        if (url != nullptr && url->Length() > 0)
+                                            s->CoverArt = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(url));
+                                    } catch (...) {}
+                                }));
+                            }
+                            
+                            if (songObj->HasKey("starred")) s->IsFavorite = true;
+                            else s->IsFavorite = false;
+                            
+                            if (songObj->HasKey("userRating")) s->Rating = songObj->GetNamedNumber("userRating");
+                            else s->Rating = 0.0;
                             albumQueue->Append(s);
                         }
                         if (albumQueue->Size > 0) {
@@ -448,7 +616,7 @@ void LibraryPage::OnGenericAlbumClicked(Object^ sender, ItemClickEventArgs^ e)
                             self->FullPlayerGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
                             self->BrowseGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
                         }
-                    } catch (...) {}
+                    } catch (Exception^ ex) { DebugLogger::Instance->LogException("OnGenericAlbumClicked (JSON)", ex); }
                 }));
             }
         });
@@ -462,11 +630,151 @@ void LibraryPage::OnTrackClicked(Object^ sender, ItemClickEventArgs^ e) {
     }
 }
 
+void LibraryPage::OnFavoriteIconLoaded(Object^ sender, RoutedEventArgs^ e) {
+    auto icon = dynamic_cast<FontIcon^>(sender);
+    if (!icon) return;
+    auto song = dynamic_cast<Song^>(icon->Tag);
+    if (song) {
+        icon->Glyph = song->IsFavorite ? ref new Platform::String(L"\uEB52") : ref new Platform::String(L"\uEB51");
+    }
+}
+
+void LibraryPage::OnTrackFavoriteClicked(Object^ sender, RoutedEventArgs^ e) {
+    auto btn = dynamic_cast<Windows::UI::Xaml::Controls::Primitives::ToggleButton^>(sender);
+    if (!btn) return;
+    auto song = dynamic_cast<Song^>(btn->Tag);
+    if (song != nullptr) {
+        bool isFav = false;
+        if (btn->IsChecked != nullptr) isFav = btn->IsChecked->Value;
+        else isFav = !song->IsFavorite;
+        
+        song->IsFavorite = isFav;
+        auto icon = dynamic_cast<FontIcon^>(btn->Content);
+        if (icon) icon->Glyph = isFav ? ref new Platform::String(L"\uEB52") : ref new Platform::String(L"\uEB51");
+        
+        NavidromeService::Instance->ToggleFavoriteAsync(song->Id, isFav);
+    }
+}
+
+void LibraryPage::OnTrackRatingChanged(Microsoft::UI::Xaml::Controls::RatingControl^ sender, Object^ args) {
+    auto song = dynamic_cast<Song^>(sender->Tag);
+    if (song != nullptr) {
+        double newVar = sender->Value;
+        if (song->Rating != newVar && newVar >= 0) {
+            song->Rating = newVar;
+            NavidromeService::Instance->SetRatingAsync(song->Id, (int)newVar);
+        }
+    }
+}
+
+
+void LibraryPage::OnQueueDragItemsCompleted(ListViewBase^ sender, DragItemsCompletedEventArgs^ args) {
+    if (args->DropResult == Windows::ApplicationModel::DataTransfer::DataPackageOperation::Move) {
+        auto pb = PlaybackService::Instance;
+        
+        // Find the current song's index to ensure we sync the correct part of the queue
+        int currentIndex = (int)pb->CurrentIndex;
+        if (currentIndex >= (int)pb->Queue->Size || (pb->CurrentSong != nullptr && pb->Queue->GetAt(currentIndex)->Id != pb->CurrentSong->Id)) {
+            currentIndex = -1;
+            for (unsigned int i = 0; i < pb->Queue->Size; i++) {
+                if (pb->Queue->GetAt(i)->Id == pb->CurrentSong->Id) {
+                    currentIndex = (int)i;
+                    break;
+                }
+            }
+        }
+
+        if (currentIndex != -1) {
+            unsigned int masterStartIndex = (unsigned int)(currentIndex + 1);
+            
+            // Capture the new order into a temporary list first to avoid dependency issues
+            // (Clearing the ItemsSource would otherwise clear sender->Items during iteration)
+            auto newOrder = ref new Platform::Collections::Vector<Song^>();
+            for (unsigned int i = 0; i < sender->Items->Size; i++) {
+                auto s = dynamic_cast<Song^>(sender->Items->GetAt(i));
+                if (s != nullptr) newOrder->Append(s);
+            }
+
+            // Sync master queue with the captured new order
+            while (pb->Queue->Size > masterStartIndex) {
+                pb->Queue->RemoveAt(masterStartIndex);
+            }
+            
+            // Also sync our backing vector
+            _upcomingQueue->Clear();
+
+            for (unsigned int i = 0; i < newOrder->Size; i++) {
+                auto s = newOrder->GetAt(i);
+                pb->Queue->Append(s);
+                _upcomingQueue->Append(s);
+            }
+            
+            // Restore current index
+            pb->CurrentIndex = (unsigned int)currentIndex;
+            
+            SyncQueueToCastingTarget();
+        }
+    }
+}
+
+void LibraryPage::OnRemoveFromQueueClick(Object^ sender, RoutedEventArgs^ e) {
+    auto btn = dynamic_cast<Button^>(sender);
+    if (btn != nullptr) {
+        auto song = dynamic_cast<Song^>(btn->Tag);
+        if (song != nullptr) {
+            auto pb = PlaybackService::Instance;
+            for (unsigned int i = 0; i < pb->Queue->Size; i++) {
+                if (pb->Queue->GetAt(i) == song) {
+                    pb->RemoveFromQueue(i);
+                    break;
+                }
+            }
+            UpdateUpcomingQueue();
+            SyncQueueToCastingTarget();
+        }
+    }
+}
+
+void LibraryPage::OnClearQueueClick(Object^ sender, RoutedEventArgs^ e) {
+    auto pb = PlaybackService::Instance;
+    unsigned int masterStartIndex = pb->CurrentIndex + 1;
+    while (pb->Queue->Size > masterStartIndex) {
+        pb->Queue->RemoveAt(masterStartIndex);
+    }
+    UpdateUpcomingQueue();
+    SyncQueueToCastingTarget();
+}
+
+
+void LibraryPage::SyncQueueToCastingTarget() {
+    if (CastingService::Instance->IsCastingActive && CastingService::Instance->TargetDeviceIp != nullptr) {
+        auto pb = PlaybackService::Instance;
+        JsonArray^ array = ref new JsonArray();
+        for (unsigned int i = 0; i < pb->Queue->Size; i++) {
+            auto s = pb->Queue->GetAt(i);
+            JsonObject^ obj = ref new JsonObject();
+            obj->Insert("Id", JsonValue::CreateStringValue(s->Id));
+            obj->Insert("Title", JsonValue::CreateStringValue(s->Title != nullptr ? s->Title : ""));
+            obj->Insert("Artist", JsonValue::CreateStringValue(s->Artist != nullptr ? s->Artist : ""));
+            obj->Insert("Album", JsonValue::CreateStringValue(s->Album != nullptr ? s->Album : ""));
+            obj->Insert("CoverUrl", JsonValue::CreateStringValue(s->CoverUrl != nullptr ? s->CoverUrl : ""));
+            obj->Insert("StreamUrl", JsonValue::CreateStringValue(s->StreamUrl != nullptr ? s->StreamUrl : ""));
+            array->Append(obj);
+        }
+        CastingService::Instance->SendCommand("QUEUE|" + array->Stringify());
+    }
+}
+
 bool LibraryPage::IsFullPlayerActive::get() {
     return FullPlayerGrid != nullptr && FullPlayerGrid->Visibility == Windows::UI::Xaml::Visibility::Visible;
 }
 void LibraryPage::OnPlayAlbumClicked(Object^ sender, RoutedEventArgs^ e) { if (_albumSongs->Size > 0) { PlaybackService::Instance->PlayQueue(_albumSongs, 0); } }
-void LibraryPage::OnQueueItemClick(Object^ sender, ItemClickEventArgs^ e) { auto song = dynamic_cast<Song^>(e->ClickedItem); if (song != nullptr) { auto pb = PlaybackService::Instance; for (unsigned int i = 0; i < pb->Queue->Size; i++) if (pb->Queue->GetAt(i) == song) { PlaybackService::Instance->PlayQueue(pb->Queue, i); break; } } }
+void LibraryPage::OnQueueItemClick(Object^ sender, ItemClickEventArgs^ e) { 
+    auto song = dynamic_cast<Song^>(e->ClickedItem); 
+    if (song != nullptr) { 
+        PlaybackService::Instance->PlaySong(song); 
+    } 
+}
 void LibraryPage::ToggleFullPlayer() { 
     if (FullPlayerGrid->Visibility == Windows::UI::Xaml::Visibility::Collapsed) { 
         FullPlayerGrid->Visibility = Windows::UI::Xaml::Visibility::Visible; 
@@ -501,6 +809,26 @@ void LibraryPage::OnLyricsToggleClicked(Object^ sender, RoutedEventArgs^ e) {
     else { 
         LyricsOverlay->Visibility = Windows::UI::Xaml::Visibility::Collapsed; 
         AlbumArtView->Visibility = Windows::UI::Xaml::Visibility::Visible; 
+    }
+}
+void LibraryPage::OnSyncThumbnailsClicked(Object^ sender, RoutedEventArgs^ e) {
+    auto btn = dynamic_cast<Button^>(sender);
+    if (btn != nullptr) {
+        btn->IsEnabled = false;
+        auto originalContent = btn->Content;
+        btn->Content = "Syncing...";
+        
+        LibraryVM->SyncLibraryThumbnails();
+        
+        // Just a dummy delay to show it's working (the actual sync is fire and forget in VM)
+        auto timer = ref new DispatcherTimer();
+        TimeSpan ts; ts.Duration = 3000 * 10000LL;
+        timer->Interval = ts;
+        timer->Tick += ref new Windows::Foundation::EventHandler<Object^>([btn, originalContent, timer](Object^, Object^) {
+            btn->Content = "Synced!";
+            timer->Stop();
+        });
+        timer->Start();
     }
 }
 void LibraryPage::OnDisconnectClicked(Object^ sender, RoutedEventArgs^ e) {
@@ -565,10 +893,24 @@ void LibraryPage::OnCarouselPrev(Object^ sender, RoutedEventArgs^ e)
         SpotlightCarousel->SelectedIndex--;
 }
 
-void LibraryPage::OnCarouselNext(Object^ sender, RoutedEventArgs^ e)
-{
-    if (SpotlightCarousel->SelectedIndex < (int)SpotlightCarousel->Items->Size - 1)
-        SpotlightCarousel->SelectedIndex++;
+void LibraryPage::OnCarouselNext(Object^ sender, RoutedEventArgs^ e) {
+    auto current = SpotlightCarousel->SelectedIndex;
+    int size = (int)SpotlightCarousel->Items->Size;
+    if (size > 0) {
+        if (current < size - 1) SpotlightCarousel->SelectedIndex = current + 1;
+        else SpotlightCarousel->SelectedIndex = 0;
+    }
+}
+
+void LibraryPage::OnGenreClicked(Object^ sender, ItemClickEventArgs^ e) {
+    auto genre = dynamic_cast<GenreModel^>(e->ClickedItem);
+    if (genre != nullptr) {
+        LoadGenreAlbums(genre->Name);
+    }
+}
+
+void LibraryPage::OnBackClicked(Object^ sender, RoutedEventArgs^ e) {
+    LoadHomePage();
 }
 
 void LibraryPage::UpdateUpcomingQueue()
@@ -580,11 +922,17 @@ void LibraryPage::UpdateUpcomingQueue()
     _upcomingQueue->Clear();
     
     // Find current index
-    int currentIndex = -1;
-    for (unsigned int i = 0; i < fullQueue->Size; i++) {
-        if (fullQueue->GetAt(i)->Id == pb->CurrentSong->Id) {
-            currentIndex = (int)i;
-            break;
+    int currentIndex = (int)pb->CurrentIndex;
+    
+    // Safety check: is the song at this index actually the current song?
+    if (currentIndex >= (int)fullQueue->Size || fullQueue->GetAt(currentIndex)->Id != pb->CurrentSong->Id) {
+        // Find it by ID instead
+        currentIndex = -1;
+        for (unsigned int i = 0; i < fullQueue->Size; i++) {
+            if (fullQueue->GetAt(i)->Id == pb->CurrentSong->Id) {
+                currentIndex = (int)i;
+                break;
+            }
         }
     }
     
@@ -592,6 +940,78 @@ void LibraryPage::UpdateUpcomingQueue()
     if (currentIndex != -1) {
         for (unsigned int i = (unsigned int)(currentIndex + 1); i < fullQueue->Size; i++) {
             _upcomingQueue->Append(fullQueue->GetAt(i));
+        }
+    }
+}
+
+void LibraryPage::OnTrackContextOpening(Object^ sender, Object^ e)
+{
+    auto menu = dynamic_cast<MenuFlyout^>(sender);
+    if (menu == nullptr) return;
+    
+    MenuFlyoutSubItem^ addToPlaylistSub = nullptr;
+    for (unsigned int i = 0; i < menu->Items->Size; i++) {
+        auto item = menu->Items->GetAt(i);
+        auto frameworkItem = dynamic_cast<FrameworkElement^>(item);
+        if (frameworkItem != nullptr) {
+            if (frameworkItem->Name == "AddToPlaylistMenu") addToPlaylistSub = dynamic_cast<MenuFlyoutSubItem^>(item);
+        }
+    }
+    
+    if (addToPlaylistSub != nullptr) {
+        addToPlaylistSub->Items->Clear();
+        auto vm = ViewModels::PlaylistsViewModel::Instance;
+        for (unsigned int i = 0; i < vm->Playlists->Size; i++) {
+            auto p = vm->Playlists->GetAt(i);
+            auto item = ref new MenuFlyoutItem();
+            item->Text = p->Name;
+            item->Tag = p;
+            item->Click += ref new RoutedEventHandler([this, p, menu](Object^ s, RoutedEventArgs^ args) {
+                auto grid = dynamic_cast<Grid^>(menu->Target);
+                if (grid != nullptr) {
+                    auto song = dynamic_cast<Song^>(grid->DataContext);
+                    if (song != nullptr) {
+                        ViewModels::PlaylistsViewModel::Instance->AddSongToPlaylist(p->Id, song->Id);
+                    }
+                }
+            });
+            addToPlaylistSub->Items->Append(item);
+        }
+    }
+}
+
+void LibraryPage::OnPlayMenuClicked(Object^ sender, RoutedEventArgs^ e) {
+    auto item = dynamic_cast<MenuFlyoutItem^>(sender);
+    auto grid = dynamic_cast<Grid^>(dynamic_cast<MenuFlyout^>(item->Parent)->Target);
+    if (grid != nullptr) {
+        auto song = dynamic_cast<Song^>(grid->DataContext);
+        if (song) PlaybackService::Instance->PlaySong(song);
+    }
+}
+
+void LibraryPage::OnAddQueueMenuClicked(Object^ sender, RoutedEventArgs^ e) {
+    auto item = dynamic_cast<MenuFlyoutItem^>(sender);
+    auto grid = dynamic_cast<Grid^>(dynamic_cast<MenuFlyout^>(item->Parent)->Target);
+    if (grid != nullptr) {
+        auto song = dynamic_cast<Song^>(grid->DataContext);
+        if (song) PlaybackService::Instance->Queue->Append(song);
+    }
+}
+
+// OnRemoveFromPlaylistClicked removed - migrated to PlaylistDetailsPage.xaml.cpp
+
+
+
+void LibraryPage::OnMoreButtonClicked(Object^ sender, RoutedEventArgs^ e)
+{
+    auto btn = dynamic_cast<Button^>(sender);
+    if (btn != nullptr) {
+        auto grid = dynamic_cast<Grid^>(VisualTreeHelper::GetParent(btn));
+        if (grid != nullptr) {
+            auto flyout = grid->ContextFlyout;
+            if (flyout != nullptr) {
+                flyout->ShowAt(grid);
+            }
         }
     }
 }

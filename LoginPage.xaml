@@ -15,14 +15,7 @@
         </ResourceDictionary>
     </Page.Resources>
 
-    <Grid x:Name="RootGrid">
-        <Grid.Background>
-            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#0A0A1A" Offset="0" />
-                <GradientStop Color="#101025" Offset="1" />
-            </LinearGradientBrush>
-        </Grid.Background>
-
+    <Grid x:Name="RootGrid" Background="{ThemeResource AppBackgroundBrush}">
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="DeviceStates">
                 <VisualState x:Name="XboxState">
@@ -33,18 +26,24 @@
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
 
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="380" Spacing="16">
-            <TextBlock Text="Opal" FontSize="42" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,12" Foreground="#4ECCA3"/>
-            <TextBlock Text="Connect to your Music" FontSize="16" HorizontalAlignment="Center" Margin="0,0,0,8" Opacity="0.8" Foreground="White" SelectionChanged="TextBlock_SelectionChanged"/>
-            <TextBox x:Name="ServerTextBox" Foreground="White" Header="Server URL" PlaceholderText="https://navidrome.example" FontSize="8" Height="47" KeyDown="OnLoginFieldKeyDown" TextChanged="ServerTextBox_TextChanged"/>
-            <TextBox x:Name="UsernameTextBox" Header="Username" Foreground="White" FontSize="8" Height="47" KeyDown="OnLoginFieldKeyDown"/>
-            <PasswordBox x:Name="PasswordBox" Header="Password" Foreground="White" FontSize="8" Height="47" KeyDown="OnLoginFieldKeyDown"/>
-            <CheckBox x:Name="RememberMeCheckBox" Content="Remember Me" IsChecked="True" FontSize="8" />
-            <Button x:Name="ConnectButton" Content="Connect" HorizontalAlignment="Stretch" Height="32" FontSize="12" Background="#4ECCA3" Foreground="White" Click="OnConnectClicked" />
-            
-            <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center" Margin="0,24,0,0">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="600" Spacing="16" Height="Auto">
+            <TextBlock Text="Opal" FontSize="32" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,20,0,12" Foreground="#4ECCA3"/>
+            <TextBlock Text="Connect to your Music" FontSize="16" HorizontalAlignment="Center" Margin="0,-20,0,8" Opacity="0.8" Foreground="{ThemeResource AppTextForegroundBrush}" SelectionChanged="TextBlock_SelectionChanged"/>
+            <TextBox x:Name="ServerTextBox" Header="Server URL" PlaceholderText="https://navidrome.example" FontSize="8" Height="47" KeyDown="OnLoginFieldKeyDown" TextChanged="ServerTextBox_TextChanged"/>
+            <TextBox x:Name="UsernameTextBox" Header="Username" FontSize="8" Height="47" KeyDown="OnLoginFieldKeyDown"/>
+            <PasswordBox x:Name="PasswordBox" Header="Password" FontSize="8" Height="47" KeyDown="OnLoginFieldKeyDown"/>
+            <CheckBox x:Name="RememberMeCheckBox" Content="Remember Me" IsChecked="True" FontSize="8" Width="97" Height="12" HorizontalAlignment="Left" RenderTransformOrigin="0.5,0.5" >
+                <CheckBox.RenderTransform>
+                    <CompositeTransform ScaleX="1"/>
+                </CheckBox.RenderTransform>
+            </CheckBox>
+            <Button x:Name="ConnectButton" Content="Connect" HorizontalAlignment="Stretch" Height="24" FontSize="8" Background="#4ECCA3" Foreground="White" Click="OnConnectClicked" />
+            <HyperlinkButton Content="Privacy Policy" FontSize="6"  Margin="0,0,0,0"  NavigateUri="https://darademsc.ddns.net/#privacy" HorizontalAlignment="Center" />
+            <HyperlinkButton Content="Terms of Service" FontSize="6" Margin="0,-10,0,0" NavigateUri="https://darademsc.ddns.net/#tos" HorizontalAlignment="Center" />
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,-10,0,10">
                 <ProgressRing x:Name="ProgressRing" IsActive="False" Width="36" Height="36" />
-                <TextBlock x:Name="StatusText" FontSize="20" VerticalAlignment="Center" />
+                <TextBlock x:Name="StatusText" FontSize="12" VerticalAlignment="Center" Width="250" Margin="0,0,30,0" TextWrapping="Wrap"/>
             </StackPanel>
         </StackPanel>
     </Grid>

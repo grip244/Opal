@@ -2,6 +2,9 @@
 #include "LoginPage.xaml.h"
 #include <Windows.System.Profile.h>
 #include "LibraryPage.xaml.h" // Needed for navigation after login
+#include "ViewModels/LibraryViewModel.h"
+#include "ViewModels/PlaylistsViewModel.h"
+#include "Services/DebugLogger.h"
 
 using namespace Opal;
 using namespace Platform;
@@ -64,29 +67,42 @@ void LoginPage::OnConnectClicked(Object^ sender, RoutedEventArgs^ e)
     String^ server = this->ServerTextBox->Text;
     String^ user = this->UsernameTextBox->Text;
     String^ pass = this->PasswordBox->Password;
+    bool rememberMe = RememberMeCheckBox->IsChecked->Value;
 
     auto navService = NavidromeService::Instance;
-    create_task(navService->LoginAsync(server, user, pass)).then([this, server, user, pass](bool success) {
-        this->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([this, success, server, user, pass]() {
-            this->ProgressRing->IsActive = false;
-            if (success) {
-                this->OnLoginSuccess(server, user, pass);
-            } else {
-                this->ConnectButton->IsEnabled = true;
-                this->StatusText->Text = "Error: Could not connect to Navidrome";
-            }
-        }));
+    create_task(navService->LoginAsync(server, user, pass)).then([this, server, user, pass, rememberMe](String^ resultMsg) {
+        bool success = (resultMsg == "SUCCESS");
+        if (success && rememberMe) {
+            // Save credentials on the background thread (Safer for Xbox PasswordVault transitions)
+            try {
+                SettingsService::Instance->SaveServer(server);
+                SettingsService::Instance->SaveUsername(user);
+                SettingsService::Instance->SavePassword(server, user, pass);
+            } catch (Exception^ ex) { DebugLogger::Instance->LogException("OnConnectClicked (Save Credentials)", ex); }
+        }
+
+        auto disp = this->Dispatcher;
+        if (disp != nullptr) {
+            disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([this, success, resultMsg]() {
+                this->ProgressRing->IsActive = false;
+                if (success) {
+                    this->OnLoginSuccess();
+                } else {
+                    this->ConnectButton->IsEnabled = true;
+                    this->StatusText->Text = resultMsg;
+                }
+            }));
+        }
     });
 }
 
-void LoginPage::OnLoginSuccess(String^ server, String^ user, String^ pass)
+void LoginPage::OnLoginSuccess()
 {
-    if (RememberMeCheckBox->IsChecked->Value) {
-        SettingsService::Instance->SaveServer(server);
-        SettingsService::Instance->SaveUsername(user);
-        SettingsService::Instance->SavePassword(server, user, pass);
-    }
+    // Defer syncing thumbnails until after navigation/initial load is complete
+    // ViewModels::LibraryViewModel::Instance->SyncLibraryThumbnails();
 
+    // Credentials already saved on background thread
+    ViewModels::PlaylistsViewModel::Instance->LoadPlaylistsAsync();
     // Navigate to LibraryPage
     this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(LibraryPage::typeid));
 }

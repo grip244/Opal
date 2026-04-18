@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+    xmlns:models="using:Opal"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
     <Page.Resources>
@@ -13,6 +14,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
+
         </ResourceDictionary>
     </Page.Resources>
     
@@ -24,10 +26,10 @@
                         <Setter Target="MainNavigationView.PaneDisplayMode" Value="LeftCompact" />
                         <Setter Target="MainNavigationView.IsPaneToggleButtonVisible" Value="True" />
                         <Setter Target="GlobalPlayerBar.Margin" Value="0" />
-                        <Setter Target="GlobalPlayerBar.Height" Value="112" />
+                        <Setter Target="GlobalPlayerBar.Height" Value="96" />
                         <Setter Target="GlobalPlayerBar.Padding" Value="0" />
-                        <Setter Target="MiniThumbnailBorder.Width" Value="112" />
-                        <Setter Target="MiniThumbnailBorder.Height" Value="112" />
+                        <Setter Target="MiniThumbnailBorder.Width" Value="96" />
+                        <Setter Target="MiniThumbnailBorder.Height" Value="96" />
                         <Setter Target="MiniThumbnailBorder.CornerRadius" Value="0" />
                         <Setter Target="GlobalPlayerBar.CornerRadius" Value="0" />
                         <Setter Target="NowPlayingTitle.FontSize" Value="16" />
@@ -53,19 +55,56 @@
                 <AutoSuggestBox x:Name="SearchBox" 
                                 PlaceholderText="Search music..." 
                                 QueryIcon="Find"
-                                QuerySubmitted="OnSearchEntered"/>
+                                TextChanged="OnSearchTextChanged"
+                                SuggestionChosen="OnSearchSuggestionChosen"
+                                QuerySubmitted="OnSearchEntered">
+                    <AutoSuggestBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Padding="4">
+                                <Grid Width="40" Height="40" Margin="0,0,12,0">
+                                    <Border Background="#33FFFFFF" CornerRadius="4">
+                                        <FontIcon Glyph="{Binding Icon}" FontFamily="Segoe MDL2 Assets" FontSize="16" Opacity="0.5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <Border CornerRadius="4">
+                                        <Image Source="{Binding Image}" Stretch="UniformToFill" />
+                                    </Border>
+                                </Grid>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="14" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Subtitle}" FontSize="12" Opacity="0.7" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </StackPanel>
+                        </DataTemplate>
+                    </AutoSuggestBox.ItemTemplate>
+                </AutoSuggestBox>
             </muxc:NavigationView.AutoSuggestBox>
             <muxc:NavigationView.MenuItems>
                 <muxc:NavigationViewItem Content="Library" Tag="Library" Icon="Home" />
                 <muxc:NavigationViewItem Content="Artists" Tag="Artists" Icon="Contact" />
                 <muxc:NavigationViewItem Content="Albums" Tag="Albums" Icon="AllApps" />
+                <muxc:NavigationViewItem Content="Tracks" Tag="Tracks" Icon="Audio" />
+                <muxc:NavigationViewItem Content="Genres" Tag="Genres" Icon="Tag" />
+                <muxc:NavigationViewItemSeparator />
+                <muxc:NavigationViewItem x:Name="PlaylistsNavItem" Tag="Playlists" Icon="List">
+                    <muxc:NavigationViewItem.Content>
+                        <Grid HorizontalAlignment="Stretch" MinWidth="160">
+                            <TextBlock Text="Playlists" VerticalAlignment="Center" />
+                            <Button Click="OnNewPlaylistClick" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-8,0" Background="Transparent" BorderThickness="0" Width="32" Height="32" Padding="0" CornerRadius="16" UseSystemFocusVisuals="True">
+                                <SymbolIcon Symbol="Add" />
+                            </Button>
+                        </Grid>
+                    </muxc:NavigationViewItem.Content>
+                </muxc:NavigationViewItem>
+                <!-- Dynamic playlists will be inserted after this item -->
             </muxc:NavigationView.MenuItems>
+            
+
             
             <Frame x:Name="ContentFrame" Navigated="OnNavigated" Padding="0" />
         </muxc:NavigationView>
 
         <!-- Global Player Bar -->
-        <Border x:Name="GlobalPlayerBar" Grid.Row="1" Background="#E6000000" BorderBrush="#22FFFFFF" BorderThickness="0,1,0,0" CornerRadius="0" Height="112" Margin="0" Padding="0" Visibility="Collapsed">
+        <Border x:Name="GlobalPlayerBar" Grid.Row="1" Background="{ThemeResource OverlayBackgroundBrush}" BorderBrush="{ThemeResource AppControlBorderBrush}" BorderThickness="0,1,0,0" CornerRadius="0" Height="112" Margin="0" Padding="0" Visibility="Collapsed">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="300" />
@@ -84,8 +123,20 @@
                         </Grid>
                     </Border>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4" Margin="24,0,0,0">
-                        <TextBlock x:Name="NowPlayingTitle" Text="Not Playing" FontSize="18" FontWeight="Bold" TextTrimming="CharacterEllipsis" Foreground="White" />
-                        <TextBlock x:Name="NowPlayingArtist" Text="Disconnected" FontSize="13" Opacity="0.7" TextTrimming="CharacterEllipsis" Foreground="White" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock x:Name="NowPlayingTitle" Text="Not Playing" FontSize="18" FontWeight="Bold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                            <Border x:Name="PlayerExplicitBadge" Visibility="Collapsed" Background="{ThemeResource AppTertiaryTextForegroundBrush}" CornerRadius="3" Padding="4,2" VerticalAlignment="Center">
+                                <TextBlock Text="E" FontSize="10" FontWeight="Bold" Foreground="{ThemeResource AppBackgroundBrush}" />
+                            </Border>
+                        </StackPanel>
+                        <TextBlock x:Name="NowPlayingArtist" Text="Disconnected" FontSize="13" Opacity="0.7" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}" />
+                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+                            <ToggleButton x:Name="FavoriteBtn" Background="Transparent" Padding="4" VerticalAlignment="Center" Click="OnFavoriteClicked" ToolTipService.ToolTip="Favorite">
+                                <FontIcon x:Name="FavoriteIcon" FontFamily="Segoe MDL2 Assets" Glyph="&#xEB51;" FontSize="16" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                            </ToggleButton>
+                            <muxc:RatingControl x:Name="GlobalRatingControl" MaxRating="5" ValueChanged="OnGlobalRatingChanged" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                        </StackPanel>
+
                     </StackPanel>
                 </Grid>
 
@@ -96,26 +147,56 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock x:Name="CurrentTimeText" Text="0:00" FontSize="14" Opacity="0.6" Margin="0,0,12,0" Foreground="White" />
+                        <TextBlock x:Name="CurrentTimeText" Text="0:00" FontSize="14" Opacity="0.6" Margin="0,0,12,0" Foreground="{ThemeResource AppTextForegroundBrush}" />
                         <Slider x:Name="ProgressSlider" Grid.Column="1" Minimum="0" Maximum="100" Value="0" ThumbToolTipValueConverter="{x:Null}" PointerCaptureLost="OnProgressSeek" />
-                        <TextBlock x:Name="TotalTimeText" Text="0:00" Grid.Column="2" FontSize="14" Opacity="0.6" Margin="12,0,0,0" Foreground="White" />
+                        <TextBlock x:Name="TotalTimeText" Text="0:00" Grid.Column="2" FontSize="14" Opacity="0.6" Margin="12,0,0,0" Foreground="{ThemeResource AppTextForegroundBrush}" />
                     </Grid>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="24">
                         <Button x:Name="ShuffleButton" Click="OnShuffleClicked" Background="Transparent" Padding="12" ToolTipService.ToolTip="Reshuffle" UseSystemFocusVisuals="True">
-                            <SymbolIcon Symbol="Shuffle" Foreground="White" />
+                            <SymbolIcon Symbol="Shuffle" Foreground="{ThemeResource AppTextForegroundBrush}" />
                         </Button>
                         <Button x:Name="PrevButton" Click="OnPreviousClicked" Background="Transparent" Padding="12" UseSystemFocusVisuals="True">
-                            <SymbolIcon Symbol="Previous" Foreground="White" />
+                            <SymbolIcon Symbol="Previous" Foreground="{ThemeResource AppTextForegroundBrush}" />
                         </Button>
-                        <Button x:Name="PlayPauseButton" Click="OnPlayPauseClicked" Width="56" Height="56" CornerRadius="28" Background="{ThemeResource SystemAccentColor}" Foreground="White" UseSystemFocusVisuals="True">
+                        <Button x:Name="PlayPauseButton" Click="OnPlayPauseClicked" Width="56" Height="56" CornerRadius="28" Background="{ThemeResource SystemAccentColor}" Foreground="{ThemeResource AppTextForegroundBrush}" UseSystemFocusVisuals="True">
                             <SymbolIcon x:Name="PlayPauseIcon" Symbol="Play" Scale="1.1,1.1,1" />
                         </Button>
                         <Button x:Name="NextButton" Click="OnNextClicked" Background="Transparent" Padding="12" UseSystemFocusVisuals="True">
-                            <SymbolIcon Symbol="Next" Foreground="White" />
+                            <SymbolIcon Symbol="Next" Foreground="{ThemeResource AppTextForegroundBrush}" />
                         </Button>
                         <Button x:Name="LyricsButton" Click="OnLyricsToggleClicked" Background="Transparent" Padding="12" ToolTipService.ToolTip="Lyrics Toggle" UseSystemFocusVisuals="True">
-                            <SymbolIcon Symbol="Comment" Foreground="White" />
+                            <SymbolIcon Symbol="Comment" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                        </Button>
+                        <Button x:Name="CastButton" Background="Transparent" Padding="12" ToolTipService.ToolTip="Casting Active" UseSystemFocusVisuals="True">
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEC15;" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                            <Button.Flyout>
+                                <Flyout x:Name="CastFlyout" Opened="OnCastFlyoutOpened">
+                                    <StackPanel Spacing="10" Width="250">
+                                        <TextBlock Text="Cast to Device" Style="{StaticResource BaseTextBlockStyle}" FontWeight="Bold"/>
+                                        
+                                        <TextBlock Text="Discovered Devices:" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7"/>
+                                        <ListView x:Name="DiscoveredDevicesList" Height="150" SelectionMode="Single" SelectionChanged="OnDeviceSelected">
+                                            <ListView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" Spacing="10" Padding="0,5">
+                                                        <SymbolIcon Symbol="Remote" />
+                                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ListView.ItemTemplate>
+                                        </ListView>
+
+                                        <MenuFlyoutSeparator />
+                                        <TextBlock Text="Manual IP Fallback:" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7"/>
+                                        <TextBox x:Name="TargetIPBox" PlaceholderText="Target IP (e.g. 192.168.1.5)" InputScope="Number"/>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+                                            <Button x:Name="DisconnectButton" Content="Disconnect" Click="OnDisconnectClicked" Visibility="Collapsed" />
+                                            <Button Content="Cast Now" Click="OnCastNowClicked" Style="{StaticResource AccentButtonStyle}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Flyout>
+                            </Button.Flyout>
                         </Button>
                         <Slider x:Name="VolumeSlider" Width="150" Minimum="0" Maximum="100" Value="100" ValueChanged="OnVolumeChanged" VerticalAlignment="Center" Margin="16,0,0,0" UseSystemFocusVisuals="True" />
                     </StackPanel>

@@ -5,10 +5,13 @@
 
 #include "pch.h"
 #include "MainPage.xaml.h"
+#include "Services/CastingService.h"
+#include "Services/DebugLogger.h"
 
 using namespace Opal;
 
 using namespace Platform;
+using namespace Windows::UI::Core;
 using namespace Windows::ApplicationModel;
 using namespace Windows::ApplicationModel::Activation;
 using namespace Windows::Foundation;
@@ -22,6 +25,10 @@ using namespace Windows::UI::Xaml::Interop;
 using namespace Windows::UI::Xaml::Media;
 using namespace Windows::UI::Xaml::Navigation;
 
+CoreDispatcher^ App::_mainDispatcher = nullptr;
+CoreDispatcher^ App::MainDispatcher::get() { return _mainDispatcher; }
+void App::MainDispatcher::set(CoreDispatcher^ value) { _mainDispatcher = value; }
+
 /// <summary>
 /// Initializes the singleton application object.  This is the first line of authored code
 /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -30,6 +37,7 @@ App::App()
 {
     InitializeComponent();
     Suspending += ref new SuspendingEventHandler(this, &App::OnSuspending);
+    DebugLogger::Instance->StartHttpServer(5555);
 }
 
 /// <summary>
@@ -39,6 +47,7 @@ App::App()
 /// <param name="e">Details about the launch request and process.</param>
 void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEventArgs^ e)
 {
+    App::MainDispatcher = Window::Current->Dispatcher;
    // this->RequiresPointerMode = Windows::UI::Xaml::ApplicationRequiresPointerMode::WhenRequested;
     Windows::UI::ViewManagement::ApplicationView::GetForCurrentView()->SetDesiredBoundsMode(Windows::UI::ViewManagement::ApplicationViewBoundsMode::UseCoreWindow);
     auto rootFrame = dynamic_cast<Frame^>(Window::Current->Content);
@@ -74,6 +83,9 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
             // Ensure the current window is active
             Window::Current->Activate();
         }
+        DebugLogger::Instance->Log("App", "Attempting to start CastingService listener");
+        Opal::CastingService::Instance->StartListening();
+        Opal::CastingService::Instance->StartDiscovery();
     }
     else
     {
@@ -91,6 +103,7 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
         }
     }
 }
+
 
 /// <summary>
 /// Invoked when application execution is being suspended.  Application state is saved

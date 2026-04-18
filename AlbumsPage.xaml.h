@@ -17,7 +17,7 @@ namespace Opal
     private:
         void OnAlbumClicked(Platform::Object^ sender, Windows::UI::Xaml::Controls::ItemClickEventArgs^ e);
         void OnFilterOrSortChanged(Platform::Object^ sender, Platform::Object^ e);
-        Windows::Foundation::Collections::IVector<AlbumModel^>^ _allAlbums;
-        Windows::Foundation::Collections::IVector<AlbumModel^>^ _albums;
+        Windows::Foundation::Collections::IVector<AlbumID3^>^ _allAlbums;
+        Windows::Foundation::Collections::IVector<AlbumID3^>^ _albums;
     };
 }

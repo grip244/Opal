@@ -18,9 +18,6 @@ namespace Opal {
         public:
             static LyricsResult^ ParseLrc(Platform::String^ rawLrc);
             static LyricsResult^ ParseOpenSubsonicJson(Platform::String^ jsonStr);
-
-            static Windows::Foundation::IAsyncOperation<LyricsResult^>^ FetchFromLrcLibAsync(Platform::String^ artist, Platform::String^ title, Platform::String^ album, double durationSeconds);
-            static Windows::Foundation::IAsyncOperation<LyricsResult^>^ FetchFromNeteaseAsync(Platform::String^ artist, Platform::String^ title);
         };
     }
 }

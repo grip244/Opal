@@ -15,7 +15,7 @@ namespace Opal
     private:
         void OnLoginFieldKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e);
         void OnConnectClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-        void OnLoginSuccess(Platform::String^ server, Platform::String^ user, Platform::String^ pass);
+        void OnLoginSuccess();
         void OnPageLoaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 
 

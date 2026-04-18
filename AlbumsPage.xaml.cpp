@@ -3,6 +3,7 @@
 #include "LibraryPage.xaml.h"
 #include "Services/NavidromeService.h"
 #include <ppltasks.h>
+#include "Services/DebugLogger.h"
 #include <algorithm>
 #include <vector>
 #include <cwctype>
@@ -20,8 +21,8 @@ using namespace Windows::UI::Xaml::Navigation;
 
 AlbumsPage::AlbumsPage()
 {
-    _allAlbums = ref new Platform::Collections::Vector<AlbumModel^>();
-    _albums = ref new Platform::Collections::Vector<AlbumModel^>();
+    _allAlbums = ref new Platform::Collections::Vector<AlbumID3^>();
+    _albums = ref new Platform::Collections::Vector<AlbumID3^>();
     InitializeComponent();
 }
 
@@ -47,12 +48,29 @@ void AlbumsPage::LoadAlbums()
                         if (albumListObj != nullptr) {
                             JsonArray^ albumArray = albumListObj->GetNamedArray("album", nullptr);
                             _albums->Clear();
+                            _allAlbums->Clear();
                             for (unsigned int i = 0; i < albumArray->Size; i++) {
                                 JsonObject^ albObj = albumArray->GetObjectAt(i);
-                                auto am = ref new AlbumModel();
+                                auto am = ref new AlbumID3();
                                 am->Id = albObj->GetNamedString("id", "");
                                 am->Title = albObj->HasKey("title") ? albObj->GetNamedString("title") : (albObj->HasKey("name") ? albObj->GetNamedString("name") : "Unknown Album");
                                 am->Artist = albObj->HasKey("artist") ? albObj->GetNamedString("artist") : (albObj->HasKey("artistName") ? albObj->GetNamedString("artistName") : "Unknown Artist");
+                                
+                                if (albObj->HasKey("explicitStatus")) {
+                                    auto val = albObj->GetNamedValue("explicitStatus");
+                                    if (val != nullptr && val->ValueType == JsonValueType::String) {
+                                        am->ExplicitStatus = val->GetString();
+                                    } else { am->ExplicitStatus = L""; }
+                                } else { am->ExplicitStatus = L""; }
+                                
+                                if (albObj->HasKey("version")) {
+                                    auto val = albObj->GetNamedValue("version");
+                                    if (val != nullptr && val->ValueType == JsonValueType::String) am->Version = val->GetString();
+                                }
+                                if (albObj->HasKey("sortName")) {
+                                    auto val = albObj->GetNamedValue("sortName");
+                                    if (val != nullptr && val->ValueType == JsonValueType::String) am->SortName = val->GetString();
+                                }
                                 
                                 if (albObj->HasKey("year")) {
                                     auto yearVal = albObj->GetNamedValue("year");
@@ -67,14 +85,14 @@ void AlbumsPage::LoadAlbums()
                                 }
                                 
                                 Platform::String^ coverUrlStr = NavidromeService::Instance->GetCoverArtUrl(am->Id, 500);
-                                try { am->CoverArt = ref new BitmapImage(ref new Uri(coverUrlStr)); } catch (...) {}
+                                try { am->CoverArt = ref new BitmapImage(ref new Uri(coverUrlStr)); } catch (Exception^ ex) { DebugLogger::Instance->LogException("LoadAlbums (CoverArt)", ex); }
                                 
                                 _allAlbums->Append(am);
                             }
                             this->OnFilterOrSortChanged(nullptr, nullptr);
                         }
                     }
-                } catch (...) {}
+                } catch (Exception^ ex) { DebugLogger::Instance->LogException("LoadAlbums (JSON Parse)", ex); }
             }));
         }
     });
@@ -101,8 +119,9 @@ void AlbumsPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
         else if (idx == 6) { maxYear = 1979; }
     }
 
-    std::vector<AlbumModel^> result;
-    for (auto am : _allAlbums) {
+    std::vector<AlbumID3^> result;
+    for (unsigned int i = 0; i < _allAlbums->Size; i++) {
+        auto am = _allAlbums->GetAt(i);
         bool textMatch = true;
         if (wQuery.length() > 0) {
             std::wstring wTitle(am->Title->Data());
@@ -116,7 +135,7 @@ void AlbumsPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
         if (YearFilterCombo != nullptr && YearFilterCombo->SelectedIndex > 0) {
             int yr = 0;
             if (am->Year != nullptr && am->Year->Length() > 0) {
-                try { yr = _wtoi(am->Year->Data()); } catch (...) {}
+                try { yr = _wtoi(am->Year->Data()); } catch (Exception^ ex) { DebugLogger::Instance->LogException("OnFilterOrSortChanged (_wtoi yr)", ex); }
             }
             yearMatch = (yr >= minYear && yr <= maxYear);
         }
@@ -126,27 +145,27 @@ void AlbumsPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
 
     // 3. Sort
     int sortIdx = (SortByCombo != nullptr) ? SortByCombo->SelectedIndex : 0;
-    std::sort(result.begin(), result.end(), [sortIdx](AlbumModel^ a, AlbumModel^ b) {
+    std::sort(result.begin(), result.end(), [sortIdx](AlbumID3^ a, AlbumID3^ b) {
         if (sortIdx == 0) { // A-Z
             return std::wstring(a->Title->Data()) < std::wstring(b->Title->Data());
         }
         else { // Year
             int ya = 0, yb = 0;
-            if (a->Year != nullptr && a->Year->Length() > 0) { try { ya = _wtoi(a->Year->Data()); } catch (...) {} }
-            if (b->Year != nullptr && b->Year->Length() > 0) { try { yb = _wtoi(b->Year->Data()); } catch (...) {} }
+            if (a->Year != nullptr && a->Year->Length() > 0) { try { ya = _wtoi(a->Year->Data()); } catch (Exception^ ex) { DebugLogger::Instance->LogException("OnFilterOrSortChanged (sort ya)", ex); } }
+            if (b->Year != nullptr && b->Year->Length() > 0) { try { yb = _wtoi(b->Year->Data()); } catch (Exception^ ex) { DebugLogger::Instance->LogException("OnFilterOrSortChanged (sort yb)", ex); } }
             if (sortIdx == 1) return ya < yb; // Oldest
             return ya > yb; // Newest
         }
     });
 
-    auto output = ref new Platform::Collections::Vector<AlbumModel^>();
+    auto output = ref new Platform::Collections::Vector<AlbumID3^>();
     for (auto item : result) output->Append(item);
     AlbumsGridView->ItemsSource = output;
 }
 
 void AlbumsPage::OnAlbumClicked(Object^ sender, ItemClickEventArgs^ e)
 {
-    auto am = dynamic_cast<AlbumModel^>(e->ClickedItem);
+    auto am = dynamic_cast<AlbumID3^>(e->ClickedItem);
     if (am != nullptr)
     {
         // Navigate to LibraryPage with Album ID

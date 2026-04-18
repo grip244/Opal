@@ -1,0 +1,55 @@
+<Page
+    x:Class="Opal.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Opal"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid Padding="40">
+        <StackPanel Spacing="32" MaxWidth="800" HorizontalAlignment="Left">
+            <TextBlock Text="Settings" FontSize="36" FontWeight="Bold" Margin="0,0,0,12"/>
+
+            <StackPanel Spacing="16">
+                <TextBlock Text="Cache Management" FontSize="20" FontWeight="SemiBold"/>
+                <Border Background="#11FFFFFF" Padding="24" CornerRadius="8">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Thumbnail Sync" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="Download all album cover art to local storage for faster browsing and offline access." 
+                                   FontSize="14" Opacity="0.7" TextWrapping="Wrap"/>
+                        <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,8,0,0">
+                            <Button x:Name="SyncButton" Content="Sync All Thumbnails" Click="OnSyncClicked" 
+                                    Style="{StaticResource AccentButtonStyle}" Padding="20,8"/>
+                            <Button Content="Clear Cache" Click="OnClearCacheClicked" Padding="20,8"/>
+                        </StackPanel>
+                        <TextBlock x:Name="StatusText" FontSize="12" Opacity="0.5" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="16">
+                <TextBlock Text="Playback" FontSize="20" FontWeight="SemiBold"/>
+                <Border Background="#11FFFFFF" Padding="24" CornerRadius="8">
+                    <StackPanel Spacing="12">
+                        <ToggleSwitch x:Name="AutoPlayToggle" Header="Auto-Play" 
+                                      Toggled="OnAutoPlayToggled" IsOn="True" UseSystemFocusVisuals="True"/>
+                        <TextBlock Text="Automatically fetch and play random songs when the current queue ends." 
+                                   FontSize="12" Opacity="0.5" TextWrapping="Wrap" Margin="0,-4,0,0"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="16">
+                <TextBlock Text="Account" FontSize="20" FontWeight="SemiBold"/>
+                <Border Background="#11FFFFFF" Padding="24" CornerRadius="8">
+                    <StackPanel Spacing="12">
+                        <TextBlock x:Name="ServerInfoText" FontSize="14" Opacity="0.7"/>
+                        <Button Content="Logout" Click="OnLogoutClicked" Foreground="#FFFF4444" Padding="20,8"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Page>

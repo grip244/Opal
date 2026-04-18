@@ -1,4 +1,5 @@
 #pragma once
+#include <Windows.UI.Xaml.Data.h>
 
 #include <collection.h>
 #include "Models/LyricLine.h"
@@ -9,6 +10,8 @@ namespace Opal {
         [Windows::UI::Xaml::Data::Bindable]
         public ref class LyricsViewModel sealed : Windows::UI::Xaml::Data::INotifyPropertyChanged {
         public:
+            virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged;
+
             static property LyricsViewModel^ Instance
             {
                 LyricsViewModel^ get();
@@ -35,9 +38,7 @@ namespace Opal {
                 bool get() { return !_isTimed; }
             }
 
-            virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged;
-
-        protected:
+        private:
             void OnPropertyChanged(Platform::String^ propertyName);
 
         private:

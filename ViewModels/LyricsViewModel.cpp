@@ -33,7 +33,15 @@ void LyricsViewModel::ActiveIndex::set(int value) {
 }
 
 void LyricsViewModel::OnPropertyChanged(String^ propertyName) {
-    PropertyChanged(this, ref new PropertyChangedEventArgs(propertyName));
+    auto disp = App::MainDispatcher;
+    if (disp == nullptr) return;
+    if (disp->HasThreadAccess) {
+        PropertyChanged(this, ref new PropertyChangedEventArgs(propertyName));
+    } else {
+        disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([this, propertyName]() {
+            PropertyChanged(this, ref new PropertyChangedEventArgs(propertyName));
+        }));
+    }
 }
 
 void LyricsViewModel::IsTimed::set(bool value) {
@@ -45,23 +53,28 @@ void LyricsViewModel::IsTimed::set(bool value) {
 }
 
 void LyricsViewModel::SetLyrics(String^ rawLrc) {
-    _lines->Clear();
-    auto result = LyricsService::ParseLrc(rawLrc);
-    for (auto line : result->Lines) {
-        _lines->Append(line);
-    }
+    auto disp = App::MainDispatcher;
+    if (disp == nullptr) return;
 
-    if (_lines->Size == 0) {
-        auto line = ref new LyricLine();
-        line->Text = "No lyrics found.";
-        line->TimestampMs = 0;
-        _lines->Append(line);
-        IsTimed = false;
-    } else {
-        IsTimed = result->IsTimed;
-    }
-    
-    ActiveIndex = -1;
+    disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([this, rawLrc]() {
+        _lines->Clear();
+        auto result = LyricsService::ParseLrc(rawLrc);
+        for (auto line : result->Lines) {
+            _lines->Append(line);
+        }
+
+        if (_lines->Size == 0) {
+            auto line = ref new LyricLine();
+            line->Text = "No lyrics found.";
+            line->TimestampMs = 0;
+            _lines->Append(line);
+            IsTimed = false;
+        } else {
+            IsTimed = result->IsTimed;
+        }
+        
+        ActiveIndex = -1;
+    }));
 }
 
 void LyricsViewModel::UpdatePosition(uint32 timestampMs) {

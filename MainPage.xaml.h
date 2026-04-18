@@ -4,16 +4,29 @@
 
 namespace Opal
 {
+    namespace ViewModels { ref class PlaylistsViewModel; }
+
     public ref class MainPage sealed
     {
     public:
         MainPage();
+        
+        property bool IsFullPlayerActive {
+            bool get();
+        }
 
-    private:
+        void UpdateSidebarPlaylists();
+        property ViewModels::PlaylistsViewModel^ PlaylistsVM {
+            ViewModels::PlaylistsViewModel^ get();
+        }
+
+        void OnNewPlaylistClick(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnMenuItemInvoked(Microsoft::UI::Xaml::Controls::NavigationView^ sender, Microsoft::UI::Xaml::Controls::NavigationViewItemInvokedEventArgs^ args);
-        void OnNavigated(Platform::Object^ sender, Windows::UI::Xaml::Navigation::NavigationEventArgs^ e);
-        void OnPageLoaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-
+        void OnFavoriteClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnGlobalRatingChanged(Microsoft::UI::Xaml::Controls::RatingControl^ sender, Platform::Object^ args);
+        void OnSearchTextChanged(Windows::UI::Xaml::Controls::AutoSuggestBox^ sender, Windows::UI::Xaml::Controls::AutoSuggestBoxTextChangedEventArgs^ args);
+        void OnSearchSuggestionChosen(Windows::UI::Xaml::Controls::AutoSuggestBox^ sender, Windows::UI::Xaml::Controls::AutoSuggestBoxSuggestionChosenEventArgs^ args);
+        void OnSearchEntered(Windows::UI::Xaml::Controls::AutoSuggestBox^ sender, Windows::UI::Xaml::Controls::AutoSuggestBoxQuerySubmittedEventArgs^ args);
         void OnPlayPauseClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnNextClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnPreviousClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
@@ -24,6 +37,16 @@ namespace Opal
         void OnThumbnailClicked(Platform::Object^ sender, Windows::UI::Xaml::Input::TappedRoutedEventArgs^ e);
         void OnThumbnailPointerEntered(Platform::Object^ sender, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ e);
         void OnThumbnailPointerExited(Platform::Object^ sender, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ e);
-        void OnSearchEntered(Windows::UI::Xaml::Controls::AutoSuggestBox^ sender, Windows::UI::Xaml::Controls::AutoSuggestBoxQuerySubmittedEventArgs^ args);
+        void OnCastFlyoutOpened(Platform::Object^ sender, Platform::Object^ e);
+        void OnCastNowClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnDisconnectClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnDeviceSelected(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
+
+    private:
+        void OnNavigated(Platform::Object^ sender, Windows::UI::Xaml::Navigation::NavigationEventArgs^ e);
+        void OnPageLoaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+
+        void SyncQueue();
+        void UpdateMenuVisibility();
     };
 }

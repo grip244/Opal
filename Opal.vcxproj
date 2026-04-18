@@ -54,28 +54,24 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
-    
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v145</PlatformToolset>
-    
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v145</PlatformToolset>
-    
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v145</PlatformToolset>
-    
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -93,7 +89,7 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros">
-    <PackageCertificateThumbprint>B369D7DF1C53AC316DF5E9447D4A1729CA1E879F</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>CB21F240CDF0634131E76128B21628612D0F6A0F</PackageCertificateThumbprint>
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
     <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
     <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
@@ -151,9 +147,11 @@
     <ClInclude Include="Services\SettingsService.h" />
     <ClInclude Include="Models\LyricLine.h" />
     <ClInclude Include="Models\SharedModels.h" />
+    <ClInclude Include="Converters\ExplicitStatusConverter.h" />
     <ClInclude Include="Services\LyricsService.h" />
     <ClInclude Include="ViewModels\LyricsViewModel.h" />
     <ClInclude Include="ViewModels\LibraryViewModel.h" />
+    <ClInclude Include="ViewModels\GenreViewModel.h" />
     <ClInclude Include="LoginPage.xaml.h">
       <DependentUpon>LoginPage.xaml</DependentUpon>
     </ClInclude>
@@ -166,7 +164,30 @@
     <ClInclude Include="AlbumsPage.xaml.h">
       <DependentUpon>AlbumsPage.xaml</DependentUpon>
     </ClInclude>
+    <ClInclude Include="TracksPage.xaml.h">
+      <DependentUpon>TracksPage.xaml</DependentUpon>
+    </ClInclude>
+    <ClInclude Include="GenresPage.xaml.h">
+      <DependentUpon>GenresPage.xaml</DependentUpon>
+    </ClInclude>
+    <ClInclude Include="SettingsPage.xaml.h">
+      <DependentUpon>SettingsPage.xaml</DependentUpon>
+    </ClInclude>
     <ClInclude Include="Services\PlaybackService.h" />
+    <ClInclude Include="Services\CastingService.h" />
+    <ClInclude Include="Services\ImageCacheService.h" />
+    <ClInclude Include="Services\DebugLogger.h" />
+    <ClInclude Include="Converters\RemoteSystemKindToIconConverter.h" />
+    <ClInclude Include="Converters\BooleanToVisibilityConverter.h" />
+    <ClInclude Include="Converters\StringFormatConverter.h" />
+    <ClInclude Include="PlaylistsPage.xaml.h">
+      <DependentUpon>PlaylistsPage.xaml</DependentUpon>
+    </ClInclude>
+    <ClInclude Include="PlaylistDetailsPage.xaml.h">
+      <DependentUpon>PlaylistDetailsPage.xaml</DependentUpon>
+    </ClInclude>
+    <ClInclude Include="ViewModels\PlaylistsViewModel.h" />
+    <ClInclude Include="Converters\NullToVisibilityConverter.h" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -187,6 +208,27 @@
     <Page Include="AlbumsPage.xaml">
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="TracksPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="GenresPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="SettingsPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="PlaylistsPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="PlaylistDetailsPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Templates\DeviceTemplates.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Themes\ThemeResources.xaml">
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
@@ -194,21 +236,70 @@
     </AppxManifest>
   </ItemGroup>
   <ItemGroup>
+    <Image Include="Assets\BadgeLogo.scale-100.png" />
+    <Image Include="Assets\BadgeLogo.scale-125.png" />
+    <Image Include="Assets\BadgeLogo.scale-150.png" />
+    <Image Include="Assets\BadgeLogo.scale-200.png" />
+    <Image Include="Assets\BadgeLogo.scale-400.png" />
     <Image Include="Assets\LargeTile.scale-100.png" />
     <Image Include="Assets\LargeTile.scale-125.png" />
     <Image Include="Assets\LargeTile.scale-150.png" />
     <Image Include="Assets\LargeTile.scale-200.png" />
-    <Image Include="Assets\LargeTile.scale-400.png" />
     <Image Include="Assets\LockScreenLogo.scale-200.png" />
-    <Image Include="Assets\SplashScreen.scale-200.png" />
-    <Image Include="Assets\Square150x150Logo.scale-200.png" />
+    <Image Include="Assets\SmallTile.scale-100.png" />
+    <Image Include="Assets\SmallTile.scale-125.png" />
+    <Image Include="Assets\SmallTile.scale-150.png" />
+    <Image Include="Assets\SmallTile.scale-200.png" />
+    <Image Include="Assets\SmallTile.scale-400.png" />
+    <Image Include="Assets\SplashScreen.scale-100.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Assets\SplashScreen.scale-200.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Assets\SplashScreen.scale-400.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-100.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-125.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-150.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-200.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-400.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="Assets\Square310x310Logo.scale-100.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="Assets\Square44x44Logo.scale-200.png" />
-    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
-    <Image Include="Assets\StoreLogo.png" />
+    <Image Include="Assets\Square44x44Logo.scale-100.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.scale-200.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.scale-400.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Assets\StoreLogo.scale-100.png" />
+    <Image Include="Assets\StoreLogo.scale-125.png" />
+    <Image Include="Assets\StoreLogo.scale-150.png" />
+    <Image Include="Assets\StoreLogo.scale-200.png" />
+    <Image Include="Assets\StoreLogo.scale-400.png" />
+    <Image Include="Assets\Wide310x150Logo.scale-100.png" />
+    <Image Include="Assets\Wide310x150Logo.scale-125.png" />
+    <Image Include="Assets\Wide310x150Logo.scale-150.png" />
     <Image Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Image Include="Assets\Wide310x150Logo.scale-400.png" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="App.xaml.cpp">
@@ -229,7 +320,19 @@
     <ClCompile Include="AlbumsPage.xaml.cpp">
       <DependentUpon>AlbumsPage.xaml</DependentUpon>
     </ClCompile>
+    <ClCompile Include="TracksPage.xaml.cpp">
+      <DependentUpon>TracksPage.xaml</DependentUpon>
+    </ClCompile>
+    <ClCompile Include="GenresPage.xaml.cpp">
+      <DependentUpon>GenresPage.xaml</DependentUpon>
+    </ClCompile>
+    <ClCompile Include="SettingsPage.xaml.cpp">
+      <DependentUpon>SettingsPage.xaml</DependentUpon>
+    </ClCompile>
     <ClCompile Include="Services\PlaybackService.cpp" />
+    <ClCompile Include="Services\CastingService.cpp" />
+    <ClCompile Include="Services\DebugLogger.cpp" />
+    <ClCompile Include="Services\ImageCacheService.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -243,10 +346,22 @@
     <ClCompile Include="Services\LyricsService.cpp" />
     <ClCompile Include="ViewModels\LyricsViewModel.cpp" />
     <ClCompile Include="ViewModels\LibraryViewModel.cpp" />
+    <ClCompile Include="ViewModels\GenreViewModel.cpp" />
+    <ClCompile Include="Converters\ExplicitStatusConverter.cpp" />
+    <ClCompile Include="Converters\RemoteSystemKindToIconConverter.cpp" />
+    <ClCompile Include="Converters\BooleanToVisibilityConverter.cpp" />
+    <ClCompile Include="Converters\StringFormatConverter.cpp" />
+    <ClCompile Include="PlaylistsPage.xaml.cpp">
+      <DependentUpon>PlaylistsPage.xaml</DependentUpon>
+    </ClCompile>
+    <ClCompile Include="PlaylistDetailsPage.xaml.cpp">
+      <DependentUpon>PlaylistDetailsPage.xaml</DependentUpon>
+    </ClCompile>
+    <ClCompile Include="ViewModels\PlaylistsViewModel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="agents.md" />
-    <None Include="Opal_TemporaryKey.pfx" />
+    <None Include="Opal.pfx" />
     <None Include="Package.appxmanifest.modified" />
     <None Include="packages.config" />
   </ItemGroup>
@@ -264,4 +379,3 @@
     <Error Condition="!Exists('packages\Microsoft.Web.WebView2.1.0.3856.49\build\native\Microsoft.Web.WebView2.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Web.WebView2.1.0.3856.49\build\native\Microsoft.Web.WebView2.targets'))" />
   </Target>
 </Project>
-

@@ -20,6 +20,15 @@
     <ClCompile Include="ViewModels\LyricsViewModel.cpp" />
     <ClCompile Include="ArtistsPage.xaml.cpp" />
     <ClCompile Include="AlbumsPage.xaml.cpp" />
+    <ClCompile Include="TracksPage.xaml.cpp" />
+    <ClCompile Include="Services\PlaybackService.cpp" />
+    <ClCompile Include="Services\CastingService.cpp" />
+    <ClCompile Include="Services\DebugLogger.cpp" />
+    <ClCompile Include="ViewModels\LibraryViewModel.cpp" />
+    <ClCompile Include="Services\ImageCacheService.cpp" />
+    <ClCompile Include="Converters\ExplicitStatusConverter.cpp" />
+    <ClCompile Include="Converters\RemoteSystemKindToIconConverter.cpp" />
+    <ClCompile Include="Converters\BooleanToVisibilityConverter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -31,6 +40,15 @@
     <ClInclude Include="Models\SharedModels.h" />
     <ClInclude Include="ArtistsPage.xaml.h" />
     <ClInclude Include="AlbumsPage.xaml.h" />
+    <ClInclude Include="TracksPage.xaml.h" />
+    <ClInclude Include="ViewModels\LibraryViewModel.h" />
+    <ClInclude Include="Services\PlaybackService.h" />
+    <ClInclude Include="Services\CastingService.h" />
+    <ClInclude Include="Services\DebugLogger.h" />
+    <ClInclude Include="Converters\ExplicitStatusConverter.h" />
+    <ClInclude Include="Services\ImageCacheService.h" />
+    <ClInclude Include="Converters\RemoteSystemKindToIconConverter.h" />
+    <ClInclude Include="Converters\BooleanToVisibilityConverter.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\LockScreenLogo.scale-200.png">
@@ -48,9 +66,6 @@
     <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\StoreLogo.png">
-      <Filter>Assets</Filter>
-    </Image>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
       <Filter>Assets</Filter>
     </Image>
@@ -66,10 +81,88 @@
     <Image Include="Assets\LargeTile.scale-200.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\LargeTile.scale-400.png">
+    <Image Include="Assets\Square310x310Logo.scale-100.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\Square310x310Logo.scale-100.png">
+    <Image Include="Assets\Square150x150Logo.scale-400.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-100.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-150.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-125.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.scale-400.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.scale-100.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.scale-400.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.scale-100.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\BadgeLogo.scale-100.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\BadgeLogo.scale-125.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\BadgeLogo.scale-150.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\BadgeLogo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\BadgeLogo.scale-400.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.scale-100.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.scale-125.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.scale-150.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.scale-400.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SmallTile.scale-100.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SmallTile.scale-125.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SmallTile.scale-150.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SmallTile.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SmallTile.scale-400.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Wide310x150Logo.scale-100.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Wide310x150Logo.scale-125.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Wide310x150Logo.scale-150.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Wide310x150Logo.scale-400.png">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>
@@ -82,11 +175,15 @@
     <Page Include="LibraryPage.xaml" />
     <Page Include="ArtistsPage.xaml" />
     <Page Include="AlbumsPage.xaml" />
+    <Page Include="TracksPage.xaml" />
+    <Page Include="SettingsPage.xaml" />
+    <Page Include="UI\Templates\DeviceTemplates.xaml" />
+    <Page Include="UI\Themes\ThemeResources.xaml" />
   </ItemGroup>
   <ItemGroup>
     <None Include="agents.md" />
     <None Include="Package.appxmanifest.modified" />
-    <None Include="Opal_TemporaryKey.pfx" />
     <None Include="packages.config" />
+    <None Include="Opal.pfx" />
   </ItemGroup>
 </Project>

@@ -26,13 +26,8 @@
         </ResourceDictionary>
     </Page.Resources>
 
-    <Grid x:Name="RootGrid" Padding="24">
-        <Grid.Background>
-            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#0A0A1A" Offset="0" />
-                <GradientStop Color="#101025" Offset="1" />
-            </LinearGradientBrush>
-        </Grid.Background>
+    <Grid x:Name="RootGrid" Padding="24" Background="{ThemeResource AppBackgroundBrush}">
+
 
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="DeviceStates">
@@ -53,7 +48,7 @@
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" HorizontalAlignment="Left" Margin="0,0,0,32" Spacing="16">
-                <TextBlock Text="Artists" FontSize="26" FontWeight="Bold" HorizontalAlignment="Left" Foreground="White" SelectionChanged="TextBlock_SelectionChanged" />
+                <TextBlock Text="Artists" FontSize="26" FontWeight="Bold" HorizontalAlignment="Left" Foreground="{ThemeResource AppTextForegroundBrush}" SelectionChanged="TextBlock_SelectionChanged" />
             </StackPanel>
 
             <GridView x:Name="ArtistsGridView" Grid.Row="1" ItemClick="OnArtistClicked" IsItemClickEnabled="True" ItemContainerStyle="{StaticResource ArtistItemStyle}">

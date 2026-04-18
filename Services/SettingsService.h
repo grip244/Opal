@@ -22,6 +22,11 @@ namespace Opal
         Platform::String^ GetPassword(Platform::String^ server, Platform::String^ username);
 
         void ClearCredentials(Platform::String^ server, Platform::String^ username);
+        
+        property bool IsAutoPlayEnabled {
+            bool get();
+            void set(bool value);
+        }
 
     private:
         SettingsService();

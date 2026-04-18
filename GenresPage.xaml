@@ -1,0 +1,66 @@
+<Page
+    x:Class="Opal.GenresPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Opal"
+    xmlns:models="using:Opal"
+    xmlns:converters="using:Opal.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    NavigationCacheMode="Enabled">
+
+    <Page.Resources>
+        <converters:StringFormatConverter x:Key="StringFormatConverter" />
+        <DataTemplate x:Key="GenreTemplate" x:DataType="models:GenreModel">
+            <Grid Width="200" Height="120" Margin="8">
+                <Border CornerRadius="12" Background="{x:Bind BackgroundColor}" BorderThickness="1" BorderBrush="#22FFFFFF">
+                    <Grid>
+                        <!-- Subtle glass overlay -->
+                        <Border CornerRadius="12" Background="#11FFFFFF" />
+                        
+                        <Grid Padding="20">
+                            <StackPanel VerticalAlignment="Bottom" Spacing="2">
+                                <TextBlock Text="{x:Bind Name}" FontSize="22" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind AlbumCount, Converter={StaticResource StringFormatConverter}, ConverterParameter='\{0\} Albums'}" FontSize="12" Opacity="0.7" Foreground="White" FontWeight="SemiBold" />
+                            </StackPanel>
+                            
+                            <!-- Large subtle icon in background -->
+                            <SymbolIcon Symbol="Audio" HorizontalAlignment="Right" VerticalAlignment="Top" Opacity="0.15" Foreground="White" RenderTransformOrigin="0.5,0.5">
+                                <SymbolIcon.RenderTransform>
+                                    <CompositeTransform Rotation="15" TranslateX="10" TranslateY="-5" />
+                                </SymbolIcon.RenderTransform>
+                            </SymbolIcon>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid Background="{ThemeResource AppBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Padding="24,24,24,12">
+            <TextBlock Text="Genres" Style="{StaticResource HeaderTextBlockStyle}" FontWeight="Bold" />
+            <TextBlock Text="Browse your library by genre" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" />
+        </StackPanel>
+
+        <GridView x:Name="GenreGrid"
+                  Grid.Row="1"
+                  Padding="16"
+                  SelectionMode="None"
+                  IsItemClickEnabled="True"
+                  ItemClick="OnGenreClicked"
+                  ItemTemplate="{StaticResource GenreTemplate}">
+            <GridView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <ItemsWrapGrid Orientation="Horizontal" HorizontalAlignment="Center" />
+                </ItemsPanelTemplate>
+            </GridView.ItemsPanel>
+        </GridView>
+    </Grid>
+</Page>

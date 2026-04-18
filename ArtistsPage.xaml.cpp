@@ -3,6 +3,7 @@
 #include "LibraryPage.xaml.h"
 #include "Services/NavidromeService.h"
 #include <ppltasks.h>
+#include "Services/DebugLogger.h"
 
 using namespace Opal;
 using namespace Platform;
@@ -51,13 +52,13 @@ void ArtistsPage::LoadArtists()
                                 am->Id = artObj->GetNamedString("id", "");
                                 am->Name = artObj->GetNamedString("name", "Unknown Artist");
                                 Platform::String^ coverUrlStr = NavidromeService::Instance->GetCoverArtUrl(am->Id, 500);
-                                try { am->CoverArt = ref new BitmapImage(ref new Uri(coverUrlStr)); } catch (...) {}
+                                try { am->CoverArt = ref new BitmapImage(ref new Uri(coverUrlStr)); } catch (Exception^ ex) { DebugLogger::Instance->LogException("LoadArtists (CoverArt)", ex); }
                                 _artists->Append(am);
                             }
                         }
                         this->ArtistsGridView->ItemsSource = _artists;
                     }
-                } catch (...) {}
+                } catch (Exception^ ex) { DebugLogger::Instance->LogException("LoadArtists (JSON Parse)", ex); }
             }));
         }
     });

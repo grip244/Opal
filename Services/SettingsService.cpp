@@ -34,9 +34,28 @@ void SettingsService::SaveUsername(String^ username)
 
 void SettingsService::SavePassword(String^ server, String^ username, String^ password)
 {
-    auto vault = ref new PasswordVault();
-    try { vault->Remove(vault->Retrieve("Opal.Password", username)); } catch (...) {}
-    vault->Add(ref new PasswordCredential("Opal.Password", username, password));
+    if (username == nullptr || username->Length() == 0 || password == nullptr) return;
+
+    try {
+        auto vault = ref new PasswordVault();
+        
+        // Try to remove existing credential for this user safely
+        try {
+            auto creds = vault->RetrieveAll();
+            for (auto c : creds) {
+                if (c->Resource == "Opal.Password" && c->UserName == username) {
+                    vault->Remove(c);
+                }
+            }
+        } catch (...) {
+            // It's okay if retrieval/removal fails if it didn't exist
+        }
+
+        vault->Add(ref new PasswordCredential("Opal.Password", username, password));
+    }
+    catch (Exception^ ex) {
+        // Suppress vault errors on Xbox to prevent crashes during login transitions
+    }
 }
 
 Platform::String^ SettingsService::GetServer()
@@ -55,18 +74,41 @@ Platform::String^ SettingsService::GetUsername()
 
 Platform::String^ SettingsService::GetPassword(String^ server, String^ username)
 {
-    auto vault = ref new PasswordVault();
+    if (username == nullptr || username->Length() == 0) return "";
+    
     try
     {
-        auto cred = vault->Retrieve("Opal.Password", username);
-        cred->RetrievePassword();
-        return cred->Password;
+        auto vault = ref new PasswordVault();
+        auto creds = vault->RetrieveAll();
+        for (auto cred : creds) {
+            if (cred->Resource == "Opal.Password" && cred->UserName == username) {
+                cred->RetrievePassword();
+                return cred->Password;
+            }
+        }
     }
+    catch (Exception^ ex) { return ""; }
     catch (...) { return ""; }
+    return "";
 }
 
 void SettingsService::ClearCredentials(String^ server, String^ username)
 {
     auto vault = ref new PasswordVault();
     try { vault->Remove(vault->Retrieve("Opal.Password", username)); } catch (...) {}
+}
+
+bool SettingsService::IsAutoPlayEnabled::get()
+{
+    auto vals = ApplicationData::Current->LocalSettings->Values;
+    if (vals->HasKey("Opal.AutoPlay")) {
+        auto val = vals->Lookup("Opal.AutoPlay");
+        return (bool)val;
+    }
+    return true; // Default to on
+}
+
+void SettingsService::IsAutoPlayEnabled::set(bool value)
+{
+    ApplicationData::Current->LocalSettings->Values->Insert("Opal.AutoPlay", PropertyValue::CreateBoolean(value));
 }

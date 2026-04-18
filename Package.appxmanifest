@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
@@ -8,20 +8,22 @@
   IgnorableNamespaces="uap uap3 mp">
 
   <Identity
-    Name="de1ca472-7b0c-4e76-bdd9-89f3b44b44ab"
-    Publisher="CN=Opal"
-    Version="1.0.0.0" />
+    Name="Daradeinc.OpalMusicPlayer"
+    Publisher="CN=5603CF31-664D-44B0-93AC-55D357A3E500"
+    Version="1.1.2.0" />
 
   <mp:PhoneIdentity PhoneProductId="de1ca472-7b0c-4e76-bdd9-89f3b44b44ab" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>Opal</DisplayName>
-    <PublisherDisplayName>Opal</PublisherDisplayName>
+    <DisplayName>Opal Music Player</DisplayName>
+    <PublisherDisplayName>Darade inc</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
   <Dependencies>
     <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+
+    <TargetDeviceFamily Name="Windows.Xbox" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
   </Dependencies>
 
   <Resources>
@@ -32,24 +34,33 @@
     <Application Id="App"
       Executable="$targetnametoken$.exe"
       EntryPoint="Opal.App">
+      <Extensions>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="opal">
+            <uap:DisplayName>Opal Remote Launch</uap:DisplayName>
+          </uap:Protocol>
+        </uap:Extension>
+      </Extensions>
       <uap:VisualElements
-        DisplayName="Opal"
+        DisplayName="Opal Music Player"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png"
         Description="Opal"
         BackgroundColor="transparent">
-        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" Square310x310Logo="Assets\LargeTile.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" Square310x310Logo="Assets\LargeTile.png" Square71x71Logo="Assets\SmallTile.png" ShortName="Opal">
           <uap:ShowNameOnTiles>
-            <uap:ShowOn Tile="square310x310Logo"/>
+            <uap:ShowOn Tile="square150x150Logo"/>
           </uap:ShowNameOnTiles>
         </uap:DefaultTile >
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
+        <uap:LockScreen BadgeLogo="Assets\BadgeLogo.png" Notification="badgeAndTileText"/>
       </uap:VisualElements>
     </Application>
   </Applications>
 
   <Capabilities>
     <Capability Name="internetClient" />
+    <Capability Name="internetClientServer" />
     <Capability Name="privateNetworkClientServer" />
     <uap3:Capability Name="backgroundMediaPlayback" />
   </Capabilities>

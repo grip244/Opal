@@ -3,8 +3,10 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Opal"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:converters="using:Opal.Converters"
     mc:Ignorable="d"
     NavigationCacheMode="Required"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
@@ -42,15 +44,16 @@
                     </Setter.Value>
                 </Setter>
             </Style>
+            <converters:ExplicitStatusConverter x:Key="ExplicitStatusConverter" />
         </ResourceDictionary>
     </Page.Resources>
     
-    <Grid x:Name="RootGrid" Padding="{StaticResource PagePadding}">
+    <Grid x:Name="RootGrid" Background="{ThemeResource AppBackgroundBrush}">
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="DeviceStates">
                 <VisualState x:Name="XboxState">
                     <VisualState.Setters>
-                        <Setter Target="RootGrid.Padding" Value="48,40,48,48" />
+                        <Setter Target="BrowseGrid.Padding" Value="48,40,48,48" />
                         <Setter Target="HomeStack.Spacing" Value="24" />
                         <Setter Target="LibraryTitle.FontSize" Value="20" />
                         <Setter Target="NewestTitle.FontSize" Value="20" />
@@ -60,17 +63,14 @@
                         <Setter Target="RecentlyReleasedGridView.ItemContainerStyle" Value="{StaticResource XboxAlbumItemStyle}" />
                         <Setter Target="SpotlightHero.Height" Value="180" />
                         <Setter Target="SpotlightHero.Margin" Value="-48,0,-48,12" />
+                        <Setter Target="LyricsListView.Width" Value="1000" />
+                        <Setter Target="LyricsOverlay.Padding" Value="40,20" />
+                        <Setter Target="QueuePanel.Margin" Value="12,24,40,24" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
 
-        <Grid.Background>
-            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#0A0A1A" Offset="0" />
-                <GradientStop Color="#101025" Offset="1" />
-            </LinearGradientBrush>
-        </Grid.Background>
 
         <Grid x:Name="PlayerPanel">
             <Grid.RowDefinitions>
@@ -82,7 +82,7 @@
 
             <!-- Content Area -->
             <Grid Grid.Row="1">
-                <Grid x:Name="BrowseGrid" Visibility="Visible">
+                <Grid x:Name="BrowseGrid" Visibility="Visible" Padding="{StaticResource PagePadding}">
                     <!-- HomeGrid, ArtistGrid, AlbumGrid -->
                     <Grid x:Name="HomeGrid" Visibility="Collapsed" d:Visibility="Visible">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -102,7 +102,12 @@
                                                             <Image Source="{Binding CoverArt}" Stretch="UniformToFill" />
                                                         </Border>
                                                         <StackPanel VerticalAlignment="Center" Spacing="4">
-                                                            <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="Bold" Foreground="White" TextWrapping="Wrap" MaxLines="1" TextTrimming="CharacterEllipsis" />
+                                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Foreground="White" />
+                                                                <Border Background="#55FFFFFF" CornerRadius="4" Padding="6,2" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
+                                                                    <TextBlock Text="E" FontSize="9" FontWeight="Bold" Foreground="White" />
+                                                                </Border>
+                                                            </StackPanel>
                                                             <TextBlock Text="{Binding Artist}" FontSize="18" Opacity="0.9" Foreground="White" />
                                                             <TextBlock Text="{Binding Album}" FontSize="14" Opacity="0.6" Foreground="White" />
                                                         </StackPanel>
@@ -121,11 +126,40 @@
                                     </Button>
                                 </Grid>
 
+                                <!-- Recommended Genres -->
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="Recommended Genres" FontSize="20" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                    <GridView x:Name="FeaturedGenresGrid"
+                                              SelectionMode="None"
+                                              IsItemClickEnabled="True"
+                                              ItemClick="OnGenreClicked"
+                                              Padding="0,4"
+                                              ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollMode="Disabled">
+                                        <GridView.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <ItemsWrapGrid Orientation="Vertical" MaximumRowsOrColumns="1" />
+                                            </ItemsPanelTemplate>
+                                        </GridView.ItemsPanel>
+                                        <GridView.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Width="160" Height="90" Margin="0,0,12,0">
+                                                    <Border CornerRadius="12" Background="{Binding BackgroundColor}" BorderThickness="1" BorderBrush="#11FFFFFF">
+                                                        <Grid Padding="16">
+                                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="15" Foreground="White" VerticalAlignment="Bottom" TextTrimming="CharacterEllipsis" />
+                                                            <SymbolIcon Symbol="Audio" HorizontalAlignment="Right" VerticalAlignment="Top" Opacity="0.2" Foreground="White" />
+                                                        </Grid>
+                                                    </Border>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </GridView.ItemTemplate>
+                                    </GridView>
+                                </StackPanel>
+
 
                                 <!-- Explore from your library -->
                                 <StackPanel Spacing="12">
                                     <Grid>
-                                        <TextBlock x:Name="LibraryTitle" Text="Explore from your library" FontSize="24" FontWeight="Bold" Foreground="White" />
+                                        <TextBlock x:Name="LibraryTitle" Text="Explore from your library" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
                                     </Grid>
                                     <GridView x:Name="ExploreGridView" ItemClick="OnGenericAlbumClicked" IsItemClickEnabled="True" SelectionMode="None" 
                                               HorizontalAlignment="Stretch" VerticalAlignment="Top" Padding="0,0,0,8"
@@ -140,11 +174,50 @@
                                         <GridView.ItemTemplate>
                                             <DataTemplate>
                                                 <StackPanel Spacing="6">
-                                                    <Border CornerRadius="8" Background="#11FFFFFF" BorderThickness="1" BorderBrush="#22FFFFFF" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
+                                                    <Border CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
                                                         <Image Source="{Binding CoverArt}" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                     </Border>
-                                                    <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="White"/>
-                                                    <TextBlock Text="{Binding Artist}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis" Foreground="#DDD"/>
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                                        <Border Background="{ThemeResource AppTertiaryTextForegroundBrush}" CornerRadius="3" Padding="3,1" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
+                                                            <TextBlock Text="E" FontSize="8" FontWeight="Bold" Foreground="{ThemeResource AppBackgroundBrush}" />
+                                                        </Border>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding Artist}" FontSize="11" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridView.ItemTemplate>
+                                    </GridView>
+                                </StackPanel>
+
+                                <!-- Recently Played -->
+                                <StackPanel Spacing="12">
+                                    <Grid>
+                                        <TextBlock x:Name="RecentlyPlayedTitle" Text="Recently Played" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                    </Grid>
+                                    <GridView x:Name="RecentlyPlayedGridView" ItemClick="OnGenericAlbumClicked" IsItemClickEnabled="True" SelectionMode="None" 
+                                              HorizontalAlignment="Stretch" VerticalAlignment="Top" Padding="0,0,0,8"
+                                              ItemContainerStyle="{StaticResource AlbumItemStyle}"
+                                              ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Hidden" 
+                                              ItemsSource="{x:Bind LibraryVM.RecentPlayedAlbums, Mode=OneWay}">
+                                        <GridView.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <ItemsWrapGrid Orientation="Vertical" MaximumRowsOrColumns="1" />
+                                            </ItemsPanelTemplate>
+                                        </GridView.ItemsPanel>
+                                        <GridView.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Spacing="6">
+                                                    <Border CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
+                                                        <Image Source="{Binding CoverArt}" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Border>
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                                        <Border Background="{ThemeResource AppTertiaryTextForegroundBrush}" CornerRadius="3" Padding="3,1" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
+                                                            <TextBlock Text="E" FontSize="8" FontWeight="Bold" Foreground="{ThemeResource AppBackgroundBrush}" />
+                                                        </Border>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding Artist}" FontSize="11" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}"/>
                                                 </StackPanel>
                                             </DataTemplate>
                                         </GridView.ItemTemplate>
@@ -155,7 +228,7 @@
                                 <!-- Newly Added Releases -->
                                 <StackPanel Spacing="12">
                                     <Grid>
-                                        <TextBlock x:Name="NewestTitle" Text="Newly added releases" FontSize="24" FontWeight="Bold" Foreground="White" />
+                                        <TextBlock x:Name="NewestTitle" Text="Newly added releases" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
                                     </Grid>
                                     <GridView x:Name="NewlyAddedGridView" ItemClick="OnGenericAlbumClicked" IsItemClickEnabled="True" SelectionMode="None" 
                                               HorizontalAlignment="Stretch" VerticalAlignment="Top" Padding="0,0,0,8"
@@ -170,11 +243,16 @@
                                         <GridView.ItemTemplate>
                                             <DataTemplate>
                                                 <StackPanel Spacing="6">
-                                                    <Border CornerRadius="8" Background="#11FFFFFF" BorderThickness="1" BorderBrush="#22FFFFFF" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
+                                                    <Border CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
                                                         <Image Source="{Binding CoverArt}" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                     </Border>
-                                                    <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="White"/>
-                                                    <TextBlock Text="{Binding Artist}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis" Foreground="#DDD"/>
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                                        <Border Background="{ThemeResource AppTertiaryTextForegroundBrush}" CornerRadius="3" Padding="3,1" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
+                                                            <TextBlock Text="E" FontSize="8" FontWeight="Bold" Foreground="{ThemeResource AppBackgroundBrush}" />
+                                                        </Border>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding Artist}" FontSize="11" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}"/>
                                                 </StackPanel>
                                             </DataTemplate>
                                         </GridView.ItemTemplate>
@@ -186,7 +264,7 @@
                                 <!-- Recently Released Albums -->
                                 <StackPanel Spacing="12">
                                     <Grid>
-                                        <TextBlock x:Name="RecentTitle" Text="Recently released" FontSize="24" FontWeight="Bold" Foreground="White" />
+                                        <TextBlock x:Name="RecentTitle" Text="Recently released" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
                                     </Grid>
                                     <GridView x:Name="RecentlyReleasedGridView" ItemClick="OnGenericAlbumClicked" IsItemClickEnabled="True" SelectionMode="None" 
                                               HorizontalAlignment="Stretch" VerticalAlignment="Top" Padding="0,0,0,8"
@@ -201,11 +279,16 @@
                                         <GridView.ItemTemplate>
                                             <DataTemplate>
                                                 <StackPanel Spacing="6">
-                                                    <Border CornerRadius="8" Background="#11FFFFFF" BorderThickness="1" BorderBrush="#22FFFFFF" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
+                                                    <Border CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
                                                         <Image Source="{Binding CoverArt}" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                     </Border>
-                                                    <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="White"/>
-                                                    <TextBlock Text="{Binding Artist}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis" Foreground="#DDD"/>
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                                        <Border Background="{ThemeResource AppTertiaryTextForegroundBrush}" CornerRadius="3" Padding="3,1" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
+                                                            <TextBlock Text="E" FontSize="8" FontWeight="Bold" Foreground="{ThemeResource AppBackgroundBrush}" />
+                                                        </Border>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding Artist}" FontSize="11" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}"/>
                                                 </StackPanel>
                                             </DataTemplate>
                                         </GridView.ItemTemplate>
@@ -216,29 +299,53 @@
                         </ScrollViewer>
                     </Grid>
 
-                    <Grid x:Name="ArtistGrid" Visibility="Collapsed">
+                        <Grid x:Name="ArtistGrid" Visibility="Collapsed">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,0,0,16">
-                            <Ellipse Width="80" Height="80">
-                                <Ellipse.Fill>
-                                    <ImageBrush x:Name="ArtistDetailImageBrush" Stretch="UniformToFill" />
-                                </Ellipse.Fill>
-                            </Ellipse>
-                            <TextBlock x:Name="ArtistDetailName" FontSize="24" FontWeight="Bold" VerticalAlignment="Center" />
-                        </StackPanel>
+                        
+                        <Grid Margin="0,0,0,24">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            
+                            <Button x:Name="BackButton" Click="OnBackClicked" Margin="0,0,24,0" VerticalAlignment="Center">
+                                <SymbolIcon Symbol="Back" />
+                            </Button>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="20">
+                                <Ellipse x:Name="ArtistImageEllipse" Width="100" Height="100" VerticalAlignment="Center" Visibility="Collapsed">
+                                    <Ellipse.Fill>
+                                        <ImageBrush x:Name="ArtistDetailImageBrush" Stretch="UniformToFill" />
+                                    </Ellipse.Fill>
+                                </Ellipse>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock x:Name="ArtistDetailType" Text="ARTIST" FontSize="12" FontWeight="SemiBold" Opacity="0.6" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                    <TextBlock x:Name="ArtistDetailName" FontSize="48" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
                         
                         <GridView x:Name="AlbumsGridView" Grid.Row="1" ItemClick="OnAlbumClicked" IsItemClickEnabled="True">
                             <GridView.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Width="150" Margin="12">
-                                        <Border CornerRadius="8" Width="140" Height="140" Background="#11FFFFFF">
+                                        <Border CornerRadius="8" Width="140" Height="140" Background="{ThemeResource AppControlBackgroundBrush}">
                                             <Image Source="{Binding CoverArt}" Stretch="UniformToFill" />
                                         </Border>
-                                        <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextAlignment="Center" Margin="0,8,0,0" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding Year}" FontSize="12" Opacity="0.7" TextAlignment="Center" />
+                                        <StackPanel Orientation="Vertical" Spacing="2" HorizontalAlignment="Center" Margin="0,8,0,0">
+                                            <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding Artist}" FontSize="12" Opacity="0.8" TextAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="•" FontSize="10" Opacity="0.5" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding Year}" FontSize="12" Opacity="0.6" TextAlignment="Center" />
+                                            </StackPanel>
+                                            <Border Background="#55FFFFFF" CornerRadius="3" Padding="3,1" HorizontalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
+                                                <TextBlock Text="E" FontSize="8" FontWeight="Bold" Foreground="White" />
+                                            </Border>
+                                        </StackPanel>
                                     </StackPanel>
                                 </DataTemplate>
                             </GridView.ItemTemplate>
@@ -251,11 +358,16 @@
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
                         <StackPanel Orientation="Horizontal" Spacing="24" Margin="0,0,0,16">
-                            <Border CornerRadius="8" Background="#22FFFFFF" Height="100" Width="100">
+                            <Border CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" Height="100" Width="100">
                                 <Image x:Name="AlbumDetailImage" Stretch="Uniform" />
                             </Border>
                             <StackPanel VerticalAlignment="Center" Spacing="4">
-                                <TextBlock x:Name="AlbumDetailTitle" FontSize="28" FontWeight="Bold" TextWrapping="Wrap" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock x:Name="AlbumDetailTitle" FontSize="28" FontWeight="Bold" TextWrapping="Wrap" />
+                                    <Border x:Name="AlbumExplicitBadge" Visibility="Collapsed" Background="#55FFFFFF" CornerRadius="4" Padding="6,2" VerticalAlignment="Center" Margin="0,4,0,0">
+                                        <TextBlock Text="E" FontSize="14" FontWeight="Bold" Foreground="White" />
+                                    </Border>
+                                </StackPanel>
                                 <TextBlock x:Name="AlbumDetailArtist" FontSize="14" Opacity="0.8" />
                                 <Button Content="Play Album" Click="OnPlayAlbumClicked" FontSize="14" Background="{ThemeResource SystemAccentColor}" Foreground="White" CornerRadius="16" Padding="12,4" Margin="0,4,0,0" UseSystemFocusVisuals="True" />
                             </StackPanel>
@@ -265,14 +377,42 @@
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Grid Margin="0,8">
+                                        <Grid.ContextFlyout>
+                                            <MenuFlyout Opening="OnTrackContextOpening">
+                                                <MenuFlyoutItem Text="Play" Click="OnPlayMenuClicked" Icon="Play" />
+                                                <MenuFlyoutItem Text="Add to Queue" Click="OnAddQueueMenuClicked" Icon="Add" />
+                                                <MenuFlyoutSeparator />
+                                                <MenuFlyoutSubItem Name="AddToPlaylistMenu" Text="Add to Playlist..." Icon="List" />
+                                            </MenuFlyout>
+                                        </Grid.ContextFlyout>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="40" />
                                             <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="220" />
                                             <ColumnDefinition Width="80" />
+                                            <ColumnDefinition Width="48" />
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="{Binding TrackNumber}" FontSize="14" VerticalAlignment="Center" Opacity="0.5" />
-                                        <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="16" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="2" Text="{Binding Duration}" FontSize="12" Opacity="0.6" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                                        
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                            <Border Background="#55FFFFFF" CornerRadius="4" Padding="6,2" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
+                                                <TextBlock Text="E" FontSize="9" FontWeight="Bold" Foreground="White" />
+                                            </Border>
+                                        </StackPanel>
+                                        
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                            <ToggleButton Tag="{Binding}" IsChecked="{Binding IsFavorite, Mode=OneWay}" Click="OnTrackFavoriteClicked" Background="Transparent" Padding="4" BorderThickness="0" UseSystemFocusVisuals="True">
+                                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEB51;" Loaded="OnFavoriteIconLoaded" Tag="{Binding}" FontSize="16" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                            </ToggleButton>
+                                            <muxc:RatingControl MaxRating="5" Value="{Binding Rating, Mode=OneWay}" Tag="{Binding}" ValueChanged="OnTrackRatingChanged" VerticalAlignment="Center" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="3" Text="{Binding Duration}" FontSize="12" Opacity="0.6" VerticalAlignment="Center" HorizontalAlignment="Right" />
+
+                                        <Button Grid.Column="4" Background="Transparent" BorderThickness="0" UseSystemFocusVisuals="True" VerticalAlignment="Center" HorizontalAlignment="Center" Click="OnMoreButtonClicked" Width="36" Height="36" Padding="0" Visibility="Visible">
+                                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE712;" FontSize="14" Foreground="{ThemeResource AppTextForegroundBrush}" Opacity="0.6" />
+                                        </Button>
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
@@ -290,19 +430,19 @@
                 </Grid>
 
                 <!-- Full Player View (Lyrics/Art only) -->
-                <Grid x:Name="FullPlayerGrid" Visibility="Collapsed" Background="#D1000000">
+                <Grid x:Name="FullPlayerGrid" Visibility="Collapsed" Background="{ThemeResource OverlayBackgroundBrush}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="2*" />
                         <ColumnDefinition Width="1*" />
                     </Grid.ColumnDefinitions>
 
                     <Grid Grid.Column="0">
-                        <Button x:Name="CollapseButton" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="40" Background="#33FFFFFF" Foreground="White" Width="48" Height="48" CornerRadius="24" BorderThickness="0" Click="OnCollapseClicked" UseSystemFocusVisuals="True" ToolTipService.ToolTip="Collapse Player">
+                        <Button x:Name="CollapseButton" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="40" Background="{ThemeResource AppControlBackgroundBrush}" Foreground="{ThemeResource AppTextForegroundBrush}" Width="48" Height="48" CornerRadius="24" BorderThickness="0" Click="OnCollapseClicked" UseSystemFocusVisuals="True" ToolTipService.ToolTip="Collapse Player">
                             <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70D;" FontSize="18" />
                         </Button>
                         <StackPanel x:Name="AlbumArtView" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="32">
                             <Grid Width="360" Height="360">
-                                <Border CornerRadius="20" BorderThickness="1" BorderBrush="#22FFFFFF" Background="#11FFFFFF">
+                                <Border CornerRadius="20" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Background="{ThemeResource AppControlBackgroundBrush}">
                                     <Image x:Name="NowPlayingImage" Stretch="Uniform" Width="360" Height="360" />
                                 </Border>
                             </Grid>
@@ -318,7 +458,7 @@
                                 <ListView x:Name="LyricsListView" Grid.Row="1" SelectionMode="Single" ItemsSource="{x:Bind LyricsVM.Lines, Mode=OneTime}" SelectedIndex="{x:Bind LyricsVM.ActiveIndex, Mode=TwoWay}" IsItemClickEnabled="False" HorizontalAlignment="Center" Width="700">
                                     <ListView.ItemTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding Text}" HorizontalAlignment="Center" TextAlignment="Center" FontSize="28" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding Text}" HorizontalAlignment="Center" TextAlignment="Center" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}" />
                                         </DataTemplate>
                                     </ListView.ItemTemplate>
                                 </ListView>
@@ -327,28 +467,46 @@
                     </Grid>
 
                     <!-- Queue -->
-                    <Border x:Name="QueuePanel" Grid.Column="1" Background="#12FFFFFF" CornerRadius="16" Padding="24" Margin="24,24,24,24">
+                    <Border x:Name="QueuePanel" Grid.Column="1" Background="{ThemeResource AppControlBackgroundBrush}" CornerRadius="16" Padding="24" Margin="24,24,24,24">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
-                            <TextBlock Text="UP NEXT" FontSize="16" FontWeight="Bold" Opacity="0.6" Margin="0,0,0,16" />
-                            <ListView x:Name="QueueListView" Grid.Row="1" SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnQueueItemClick" ItemsSource="{x:Bind UpcomingQueue, Mode=OneWay}">
+                            <Grid Margin="0,0,0,16">
+                                <TextBlock Text="UP NEXT" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                <Button HorizontalAlignment="Right" VerticalAlignment="Center" Click="OnClearQueueClick" Background="Transparent" BorderThickness="0" Padding="8" UseSystemFocusVisuals="True" ToolTipService.ToolTip="Clear upcoming queue">
+                                    <SymbolIcon Symbol="Delete" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}" />
+                                </Button>
+                            </Grid>
+                            <ListView x:Name="QueueListView" Grid.Row="1" SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnQueueItemClick" ItemsSource="{x:Bind UpcomingQueue, Mode=OneWay}" CanDragItems="True" CanReorderItems="True" AllowDrop="True" DragItemsCompleted="OnQueueDragItemsCompleted">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <Grid Margin="0,8">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="60" />
+                                                <ColumnDefinition Width="30" />
+                                                <ColumnDefinition Width="50" />
                                                 <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <Border CornerRadius="6" Background="#11FFFFFF" Grid.Column="0" Width="50" Height="50">
+                                            
+                                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE700;" FontSize="12" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Column="0" Opacity="0.5" />
+                                            
+                                            <Border CornerRadius="6" Background="{ThemeResource AppControlBackgroundBrush}" Grid.Column="1" Width="45" Height="45">
                                                 <Image Source="{Binding CoverArt}" Stretch="UniformToFill" />
                                             </Border>
-                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0">
-                                                <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                                <TextBlock Text="{Binding Artist}" FontSize="14" Opacity="0.7" TextTrimming="CharacterEllipsis"/>
+                                            <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="16,0,0,0">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" MaxLines="1" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                                        <Border Background="{ThemeResource AppTertiaryTextForegroundBrush}" CornerRadius="3" Padding="3,1" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
+                                                            <TextBlock Text="E" FontSize="8" FontWeight="Bold" Foreground="{ThemeResource AppBackgroundBrush}" />
+                                                        </Border>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Artist}" FontSize="10" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}" TextTrimming="CharacterEllipsis"/>
                                             </StackPanel>
+                                            <Button Grid.Column="3" Click="OnRemoveFromQueueClick" Tag="{Binding}" Background="Transparent" Padding="8" BorderThickness="0" UseSystemFocusVisuals="True" ToolTipService.ToolTip="Remove from queue">
+                                                <SymbolIcon Symbol="Cancel" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}" />
+                                            </Button>
                                         </Grid>
                                     </DataTemplate>
                                 </ListView.ItemTemplate>

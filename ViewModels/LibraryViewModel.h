@@ -16,19 +16,24 @@ namespace Opal
             }
 
 
-            property Windows::Foundation::Collections::IObservableVector<AlbumModel^>^ ExploreAlbums
+            property Windows::Foundation::Collections::IObservableVector<AlbumID3^>^ ExploreAlbums
             {
-                Windows::Foundation::Collections::IObservableVector<AlbumModel^>^ get() { return _exploreAlbums; }
+                Windows::Foundation::Collections::IObservableVector<AlbumID3^>^ get() { return _exploreAlbums; }
             }
 
-            property Windows::Foundation::Collections::IObservableVector<AlbumModel^>^ NewestAlbums
+            property Windows::Foundation::Collections::IObservableVector<AlbumID3^>^ NewestAlbums
             {
-                Windows::Foundation::Collections::IObservableVector<AlbumModel^>^ get() { return _newestAlbums; }
+                Windows::Foundation::Collections::IObservableVector<AlbumID3^>^ get() { return _newestAlbums; }
             }
 
-            property Windows::Foundation::Collections::IObservableVector<AlbumModel^>^ RecentReleasedAlbums
+            property Windows::Foundation::Collections::IObservableVector<AlbumID3^>^ RecentReleasedAlbums
             {
-                Windows::Foundation::Collections::IObservableVector<AlbumModel^>^ get() { return _recentReleasedAlbums; }
+                Windows::Foundation::Collections::IObservableVector<AlbumID3^>^ get() { return _recentReleasedAlbums; }
+            }
+
+            property Windows::Foundation::Collections::IObservableVector<AlbumID3^>^ RecentPlayedAlbums
+            {
+                Windows::Foundation::Collections::IObservableVector<AlbumID3^>^ get() { return _recentPlayedAlbums; }
             }
 
             property Windows::Foundation::Collections::IObservableVector<Song^>^ SpotlightSongs
@@ -38,14 +43,17 @@ namespace Opal
 
 
             void LoadAllCategories();
+            void SyncLibraryThumbnails();
+            void SyncLibraryBatch(int offset);
 
         private:
             LibraryViewModel();
             static LibraryViewModel^ _instance;
 
-            Platform::Collections::Vector<AlbumModel^>^ _exploreAlbums;
-            Platform::Collections::Vector<AlbumModel^>^ _newestAlbums;
-            Platform::Collections::Vector<AlbumModel^>^ _recentReleasedAlbums;
+            Platform::Collections::Vector<AlbumID3^>^ _exploreAlbums;
+            Platform::Collections::Vector<AlbumID3^>^ _newestAlbums;
+            Platform::Collections::Vector<AlbumID3^>^ _recentReleasedAlbums;
+            Platform::Collections::Vector<AlbumID3^>^ _recentPlayedAlbums;
             Platform::Collections::Vector<Song^>^ _spotlightSongs;
         };
     }
