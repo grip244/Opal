@@ -2,6 +2,7 @@
 // pch.h
 //
 
+#define DISABLE_XAML_GENERATED_BINDING_DEBUG_OUTPUT
 #pragma once
 
 #include <collection.h>
@@ -14,3 +15,5 @@
 #include "Converters/BooleanToVisibilityConverter.h"
 #include "Converters/RemoteSystemKindToIconConverter.h"
 #include "Converters/StringFormatConverter.h"
+#include "Converters/TimeSpanToStringConverter.h"
+#include "Converters/NullToVisibilityConverter.h"

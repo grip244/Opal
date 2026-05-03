@@ -87,9 +87,8 @@ void TracksPage::LoadTracks()
                                 }
 
                                 song->StreamUrl = NavidromeService::Instance->GetStreamUrl(song->Id);
-                                Platform::String^ coverArtId = songObj->HasKey("coverArt") ? songObj->GetNamedString("coverArt") : "";
+                                Platform::String^ coverArtId = songObj->HasKey("coverArt") ? songObj->GetNamedString("coverArt") : song->Id;
                                 song->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(coverArtId, 500);
-                                try { song->CoverArt = ref new BitmapImage(ref new Uri(song->CoverUrl)); } catch (...) {}
                                 
                                 if (songObj->HasKey("starred")) song->IsFavorite = true;
                                 else song->IsFavorite = false;
@@ -125,15 +124,8 @@ void TracksPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
         Song^ song = _allTracks->GetAt(i);
         bool textMatch = true;
         if (wQuery.length() > 0) {
-            std::wstring wTitle(song->Title->Data());
-            std::wstring wArtist(song->Artist->Data());
-            std::wstring wAlbum(song->Album->Data());
-            for (auto& c : wTitle) c = towlower(c);
-            for (auto& c : wArtist) c = towlower(c);
-            for (auto& c : wAlbum) c = towlower(c);
-            textMatch = (wTitle.find(wQuery) != std::wstring::npos || 
-                         wArtist.find(wQuery) != std::wstring::npos ||
-                         wAlbum.find(wQuery) != std::wstring::npos);
+            std::wstring wTerms(song->SearchTerms->Data());
+            textMatch = (wTerms.find(wQuery) != std::wstring::npos);
         }
 
         if (textMatch) result.push_back(song);
@@ -260,7 +252,7 @@ void TracksPage::OnAddQueueMenuClicked(Object^ sender, RoutedEventArgs^ e) {
     auto grid = dynamic_cast<Grid^>(dynamic_cast<MenuFlyout^>(item->Parent)->Target);
     if (grid != nullptr) {
         auto song = dynamic_cast<Song^>(grid->DataContext);
-        if (song) PlaybackService::Instance->Queue->Append(song);
+        if (song) PlaybackService::Instance->AddToQueue(song);
     }
 }
 

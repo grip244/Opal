@@ -24,6 +24,7 @@ namespace Opal
         void LoadPlaylistTracks();
         void OnBackClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnTrackClicked(Platform::Object^ sender, Windows::UI::Xaml::Controls::ItemClickEventArgs^ e);
+        void OnPlayAllClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnDragItemsCompleted(Windows::UI::Xaml::Controls::ListViewBase^ sender, Windows::UI::Xaml::Controls::DragItemsCompletedEventArgs^ args);
         void OnTrackContextOpening(Platform::Object^ sender, Platform::Object^ e);
         void OnPlayMenuClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);

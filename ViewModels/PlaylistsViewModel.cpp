@@ -53,8 +53,7 @@ void PlaylistsViewModel::LoadPlaylistsAsync()
 
                             String^ coverId = pObj->HasKey("coverArt") ? pObj->GetNamedString("coverArt") : "";
                             if (coverId->Length() > 0) {
-                                String^ url = NavidromeService::Instance->GetCoverArtUrl(coverId, 300);
-                                pm->CoverArt = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(url));
+                                pm->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(coverId, 300);
                             }
 
                             newPlaylists.push_back(pm);
@@ -140,4 +139,10 @@ void PlaylistsViewModel::UploadPlaylistImage(String^ playlistId, IBuffer^ imageD
     create_task(NavidromeService::Instance->UploadPlaylistImageAsync(playlistId, imageData, mimeType)).then([self]() {
         self->LoadPlaylistsAsync();
     });
+}
+
+void PlaylistsViewModel::Clear()
+{
+    _playlists->Clear();
+    NotifyPropertyChanged("Playlists");
 }

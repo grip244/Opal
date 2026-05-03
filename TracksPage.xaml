@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Opal"
+    xmlns:controls="using:Opal.UI.Controls"
     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:converters="using:Opal.Converters"
@@ -110,7 +111,7 @@
 
                             
                             <Border Grid.Column="0" CornerRadius="6" Width="{StaticResource ThumbSize}" Height="{StaticResource ThumbSize}" Background="{ThemeResource AppControlBackgroundBrush}">
-                                <Image Source="{Binding CoverArt}" Stretch="UniformToFill" />
+                                <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="100" />
                             </Border>
 
 

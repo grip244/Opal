@@ -10,8 +10,7 @@ namespace Opal
         SettingsPage();
 
     private:
-        void OnSyncClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-        void OnClearCacheClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+
         void OnLogoutClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnAutoPlayToggled(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
     };

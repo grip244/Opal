@@ -27,6 +27,8 @@ DebugLogger::DebugLogger() {
     _listener->ConnectionReceived += ref new Windows::Foundation::TypedEventHandler<StreamSocketListener^, StreamSocketListenerConnectionReceivedEventArgs^>(this, &DebugLogger::OnConnectionReceived);
 }
 
+static concurrency::task<void> g_lastWriteTask = concurrency::create_task([]{});
+
 void DebugLogger::Log(String^ component, String^ message) {
     if (component == nullptr) component = "System";
     if (message == nullptr) message = "";
@@ -51,13 +53,17 @@ void DebugLogger::Log(String^ component, String^ message) {
     // Also write to file for guaranteed access (bypasses loopback isolation)
     try {
         auto localFolder = Windows::Storage::ApplicationData::Current->LocalFolder;
-        create_task(localFolder->CreateFileAsync("log.txt", Windows::Storage::CreationCollisionOption::OpenIfExists)).then([logStr](task<Windows::Storage::StorageFile^> t) {
-            try {
-                auto file = t.get();
-                Windows::Storage::FileIO::AppendTextAsync(file, ref new String((logStr + L"\r\n").c_str()));
-            } catch (...) {
-                // Silently ignore file access errors to prevent application crash
-            }
+        g_lastWriteTask = g_lastWriteTask.then([localFolder, logStr]() {
+            return create_task(localFolder->CreateFileAsync("log.txt", Windows::Storage::CreationCollisionOption::OpenIfExists)).then([logStr](task<Windows::Storage::StorageFile^> t) {
+                try {
+                    auto file = t.get();
+                    return create_task(Windows::Storage::FileIO::AppendTextAsync(file, ref new String((logStr + L"\r\n").c_str())));
+                } catch (...) {
+                    return create_task([]{});
+                }
+            }).then([](task<void> innerTask) {
+                try { innerTask.get(); } catch (...) {}
+            });
         });
     } catch (...) {}
 

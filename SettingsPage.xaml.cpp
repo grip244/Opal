@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "SettingsPage.xaml.h"
 #include "Services/NavidromeService.h"
-#include "Services/ImageCacheService.h"
 #include "ViewModels/LibraryViewModel.h"
+#include "ViewModels/PlaylistsViewModel.h"
 #include "LoginPage.xaml.h"
 #include "Services/SettingsService.h"
 
@@ -16,7 +16,8 @@ SettingsPage::SettingsPage()
     InitializeComponent();
     
     auto nav = NavidromeService::Instance;
-    ServerInfoText->Text = "Connected to: " + nav->GetServerUrl() + " as " + nav->GetUsername();
+    AccountUserText->Text = nav->GetUsername();
+    AccountServerText->Text = nav->GetServerUrl();
     
     AutoPlayToggle->IsOn = SettingsService::Instance->IsAutoPlayEnabled;
 }
@@ -24,19 +25,6 @@ SettingsPage::SettingsPage()
 void SettingsPage::OnAutoPlayToggled(Object^ sender, RoutedEventArgs^ e)
 {
     SettingsService::Instance->IsAutoPlayEnabled = AutoPlayToggle->IsOn;
-}
-
-void SettingsPage::OnSyncClicked(Object^ sender, RoutedEventArgs^ e)
-{
-    SyncButton->IsEnabled = false;
-    StatusText->Text = "Sync started in background...";
-    ViewModels::LibraryViewModel::Instance->SyncLibraryThumbnails();
-}
-
-void SettingsPage::OnClearCacheClicked(Object^ sender, RoutedEventArgs^ e)
-{
-    Services::ImageCacheService::Instance->ClearCacheAsync();
-    StatusText->Text = "Cache cleared.";
 }
 
 void SettingsPage::OnLogoutClicked(Object^ sender, RoutedEventArgs^ e)
@@ -52,6 +40,10 @@ void SettingsPage::OnLogoutClicked(Object^ sender, RoutedEventArgs^ e)
     
     // Clear active session
     nav->SetCredentials(nullptr, nullptr, nullptr);
+
+    // Clear UI data
+    ViewModels::LibraryViewModel::Instance->ClearAll();
+    ViewModels::PlaylistsViewModel::Instance->Clear();
 
     this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(LoginPage::typeid));
     this->Frame->BackStack->Clear();

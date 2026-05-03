@@ -128,11 +128,8 @@ void AlbumsPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
         auto am = _allAlbums->GetAt(i);
         bool textMatch = true;
         if (wQuery.length() > 0) {
-            std::wstring wTitle(am->Title->Data());
-            std::wstring wArtist(am->Artist->Data());
-            for (auto& c : wTitle) c = towlower(c);
-            for (auto& c : wArtist) c = towlower(c);
-            textMatch = (wTitle.find(wQuery) != std::wstring::npos || wArtist.find(wQuery) != std::wstring::npos);
+            std::wstring wTerms(am->SearchTerms->Data());
+            textMatch = (wTerms.find(wQuery) != std::wstring::npos);
         }
 
         bool yearMatch = true;

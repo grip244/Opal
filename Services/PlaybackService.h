@@ -37,6 +37,8 @@ namespace Opal {
             void PreviousSong();
             void Shuffle();
             void StartAutoPlayback();
+            void SetQueue(Windows::Foundation::Collections::IVector<Song^>^ songs);
+            void AddToQueue(Song^ song);
             void RemoveFromQueue(unsigned int index);
             void MoveInQueue(unsigned int fromIndex, unsigned int toIndex);
 
@@ -51,6 +53,7 @@ namespace Opal {
             Platform::Collections::Vector<Song^>^ _queue;
             Song^ _currentSong;
             unsigned int _currentIndex;
+            long long _currentSongStartTime;
             std::set<std::wstring> _playedIds;
             bool _hasScrobbledCurrentSong;
 

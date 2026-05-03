@@ -5,6 +5,7 @@
     xmlns:local="using:Opal"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
     <Page.Resources>
@@ -26,6 +27,19 @@
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
 
+        <!-- Notification Toast -->
+        <muxc:TeachingTip x:Name="ErrorToast"
+            Title="Connection Error"
+            Subtitle="Authentication failed. Please check your credentials."
+            PreferredPlacement="Top"
+            PlacementMargin="20"
+            IsLightDismissEnabled="True"
+            CloseButtonContent="Close">
+            <muxc:TeachingTip.IconSource>
+                <muxc:SymbolIconSource Symbol="Stop" />
+            </muxc:TeachingTip.IconSource>
+        </muxc:TeachingTip>
+
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="600" Spacing="16" Height="Auto">
             <TextBlock Text="Opal" FontSize="32" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,20,0,12" Foreground="#4ECCA3"/>
             <TextBlock Text="Connect to your Music" FontSize="16" HorizontalAlignment="Center" Margin="0,-20,0,8" Opacity="0.8" Foreground="{ThemeResource AppTextForegroundBrush}" SelectionChanged="TextBlock_SelectionChanged"/>
@@ -38,8 +52,10 @@
                 </CheckBox.RenderTransform>
             </CheckBox>
             <Button x:Name="ConnectButton" Content="Connect" HorizontalAlignment="Stretch" Height="24" FontSize="8" Background="#4ECCA3" Foreground="White" Click="OnConnectClicked" />
-            <HyperlinkButton Content="Privacy Policy" FontSize="6"  Margin="0,0,0,0"  NavigateUri="https://darademsc.ddns.net/#privacy" HorizontalAlignment="Center" />
-            <HyperlinkButton Content="Terms of Service" FontSize="6" Margin="0,-10,0,0" NavigateUri="https://darademsc.ddns.net/#tos" HorizontalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16" Margin="0,8,0,0">
+                <HyperlinkButton Content="Privacy Policy" FontSize="12" NavigateUri="https://darademsc.ddns.net/#privacy" Padding="0" />
+                <HyperlinkButton Content="Terms of Service" FontSize="12" NavigateUri="https://darademsc.ddns.net/#tos" Padding="0" />
+            </StackPanel>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,-10,0,10">
                 <ProgressRing x:Name="ProgressRing" IsActive="False" Width="36" Height="36" />
