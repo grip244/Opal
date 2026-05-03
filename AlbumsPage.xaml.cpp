@@ -47,8 +47,9 @@ void AlbumsPage::LoadAlbums()
                         JsonObject^ albumListObj = root->HasKey("albumList2") ? root->GetNamedObject("albumList2") : (root->HasKey("albumList") ? root->GetNamedObject("albumList") : nullptr);
                         if (albumListObj != nullptr) {
                             JsonArray^ albumArray = albumListObj->GetNamedArray("album", nullptr);
-                            _albums->Clear();
-                            _allAlbums->Clear();
+                            std::vector<AlbumID3^> albums;
+                            albums.reserve(albumArray->Size);
+
                             for (unsigned int i = 0; i < albumArray->Size; i++) {
                                 JsonObject^ albObj = albumArray->GetObjectAt(i);
                                 auto am = ref new AlbumID3();
@@ -87,8 +88,10 @@ void AlbumsPage::LoadAlbums()
                                 Platform::String^ coverUrlStr = NavidromeService::Instance->GetCoverArtUrl(am->Id, 500);
                                 try { am->CoverArt = ref new BitmapImage(ref new Uri(coverUrlStr)); } catch (Exception^ ex) { DebugLogger::Instance->LogException("LoadAlbums (CoverArt)", ex); }
                                 
-                                _allAlbums->Append(am);
+                                albums.push_back(am);
                             }
+                            _albums->Clear();
+                            _allAlbums = ref new Platform::Collections::Vector<AlbumID3^>(std::move(albums));
                             this->OnFilterOrSortChanged(nullptr, nullptr);
                         }
                     }
@@ -120,6 +123,7 @@ void AlbumsPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
     }
 
     std::vector<AlbumID3^> result;
+    result.reserve(_allAlbums->Size);
     for (unsigned int i = 0; i < _allAlbums->Size; i++) {
         auto am = _allAlbums->GetAt(i);
         bool textMatch = true;
@@ -158,8 +162,7 @@ void AlbumsPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
         }
     });
 
-    auto output = ref new Platform::Collections::Vector<AlbumID3^>();
-    for (auto item : result) output->Append(item);
+    auto output = ref new Platform::Collections::Vector<AlbumID3^>(std::move(result));
     AlbumsGridView->ItemsSource = output;
 }
 
