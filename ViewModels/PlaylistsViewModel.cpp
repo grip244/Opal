@@ -32,9 +32,10 @@ void PlaylistsViewModel::LoadPlaylistsAsync()
                 JsonObject^ root = rootRaw->GetNamedObject("subsonic-response", nullptr);
                 if (root != nullptr && root->HasKey("playlists")) {
                     JsonObject^ playlistsObj = root->GetNamedObject("playlists");
-                    auto newPlaylists = ref new Vector<PlaylistModel^>();
+                    std::vector<PlaylistModel^> newPlaylists;
                     if (playlistsObj->HasKey("playlist")) {
                         JsonArray^ playlistsArray = playlistsObj->GetNamedArray("playlist");
+                        newPlaylists.reserve(playlistsArray->Size);
                         for (unsigned int i = 0; i < playlistsArray->Size; i++) {
                             JsonObject^ pObj = playlistsArray->GetObjectAt(i);
                             auto pm = ref new PlaylistModel();
@@ -55,16 +56,15 @@ void PlaylistsViewModel::LoadPlaylistsAsync()
                                 pm->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(coverId, 300);
                             }
 
-                            pm->PopulateSearchTerms();
-                            newPlaylists->Append(pm);
+                            newPlaylists.push_back(pm);
                         }
                     }
 
                     auto disp = App::MainDispatcher;
                     if (disp != nullptr) {
-                        disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([self, newPlaylists]() {
-                            self->_playlists->Clear();
-                            for (auto p : newPlaylists) self->_playlists->Append(p);
+                        auto finalPlaylists = ref new Vector<PlaylistModel^>(std::move(newPlaylists));
+                        disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([self, finalPlaylists]() {
+                            self->_playlists = finalPlaylists;
                             self->NotifyPropertyChanged("Playlists");
                             self->IsLoading = false;
                         }));
