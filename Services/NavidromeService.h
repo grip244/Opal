@@ -66,5 +66,8 @@ namespace Opal
         Platform::String^ GenerateSalt();
         Platform::String^ ComputeMd5Token(Platform::String^ input);
         Platform::String^ NormalizeUrl(Platform::String^ url);
+
+    internal:
+        static std::wstring NormalizeUrlNative(const std::wstring& url);
     };
 }

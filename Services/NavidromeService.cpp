@@ -44,7 +44,14 @@ void NavidromeService::SetCredentials(String^ serverUrl, String^ username, Strin
 String^ NavidromeService::NormalizeUrl(String^ url)
 {
     if (url == nullptr || url->IsEmpty()) return "";
-    std::wstring s(url->Data());
+    std::wstring result = NormalizeUrlNative(std::wstring(url->Data()));
+    return ref new String(result.c_str());
+}
+
+std::wstring NavidromeService::NormalizeUrlNative(const std::wstring& url)
+{
+    if (url.empty()) return L"";
+    std::wstring s = url;
     auto schemePos = s.find(L"://");
     if (schemePos == std::wstring::npos) {
         s = L"http://" + s;
@@ -56,7 +63,7 @@ String^ NavidromeService::NormalizeUrl(String^ url)
     if (hostPort.find(L':') == std::wstring::npos) {
         s.insert(hostStart + hostPort.size(), L":4533");
     }
-    return ref new String(s.c_str());
+    return s;
 }
 
 String^ NavidromeService::GenerateSalt()
