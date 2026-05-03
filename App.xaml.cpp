@@ -37,7 +37,9 @@ App::App()
 {
     InitializeComponent();
     Suspending += ref new SuspendingEventHandler(this, &App::OnSuspending);
+#if _DEBUG
     DebugLogger::Instance->StartHttpServer(5555);
+#endif
 }
 
 /// <summary>
