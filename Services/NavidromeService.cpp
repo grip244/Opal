@@ -36,9 +36,12 @@ bool NavidromeService::IsAuthenticated()
 
 void NavidromeService::SetCredentials(String^ serverUrl, String^ username, String^ password)
 {
+    std::lock_guard<std::recursive_mutex> lock(_sessionMutex);
     _serverUrl = serverUrl;
     _username = username;
     _password = password;
+    _sessionSalt = nullptr;
+    _sessionToken = nullptr;
 }
 
 String^ NavidromeService::NormalizeUrl(String^ url)
@@ -65,6 +68,15 @@ String^ NavidromeService::GenerateSalt()
     auto buf = CryptographicBuffer::GenerateRandom(8);
     _sessionSalt = CryptographicBuffer::EncodeToHexString(buf);
     return _sessionSalt;
+}
+
+String^ NavidromeService::GetSessionToken(String^ password)
+{
+    std::lock_guard<std::recursive_mutex> lock(_sessionMutex);
+    if (_sessionToken != nullptr) return _sessionToken;
+    auto salt = GenerateSalt();
+    _sessionToken = ComputeMd5Token(password + salt);
+    return _sessionToken;
 }
 
 String^ NavidromeService::ComputeMd5Token(String^ input)
@@ -139,8 +151,8 @@ IAsyncOperation<String^>^ NavidromeService::GetAlbumListAsync(String^ type, int 
     return create_async([=]() -> String^ {
         try
         {
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
 
             std::wstring rel = L"rest/getAlbumList2.view?u=" + std::wstring(_username->Data()) +
@@ -169,8 +181,8 @@ IAsyncOperation<String^>^ NavidromeService::GetAlbumListByGenreAsync(String^ gen
     return create_async([=]() -> String^ {
         try
         {
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
 
             std::wstring rel = L"rest/getAlbumList2.view?u=" + std::wstring(_username->Data()) +
@@ -199,8 +211,8 @@ IAsyncOperation<String^>^ NavidromeService::GetAlbumListByYearAsync(int fromYear
     return create_async([=]() -> String^ {
         try
         {
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
 
             std::wstring rel = L"rest/getAlbumList2.view?u=" + std::wstring(_username->Data()) +
@@ -226,8 +238,8 @@ IAsyncOperation<String^>^ NavidromeService::GetAlbumListByYearAsync(int fromYear
 String^ NavidromeService::GetCoverArtUrl(String^ id, int size)
 {
     if (!IsAuthenticated()) return "";
+    auto token = GetSessionToken(_password);
     auto salt = GenerateSalt();
-    auto token = ComputeMd5Token(_password + salt);
     auto normalizedServerUrl = NormalizeUrl(_serverUrl);
 
     std::wstring rel = L"rest/getCoverArt.view?u=" + std::wstring(_username->Data()) +
@@ -246,8 +258,8 @@ String^ NavidromeService::GetCoverArtUrl(String^ id, int size)
 String^ NavidromeService::GetStreamUrl(String^ id)
 {
     if (!IsAuthenticated()) return "";
+    auto token = GetSessionToken(_password);
     auto salt = GenerateSalt();
-    auto token = ComputeMd5Token(_password + salt);
     auto normalizedServerUrl = NormalizeUrl(_serverUrl);
 
     std::wstring rel = L"rest/stream.view?u=" + std::wstring(_username->Data()) +
@@ -268,8 +280,8 @@ IAsyncOperation<String^>^ NavidromeService::GetSongListAsync(String^ endpoint, i
     return create_async([=]() -> String^ {
         try
         {
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
 
             std::wstring rel = L"rest/" + std::wstring(endpoint->Data()) + L".view?u=" + std::wstring(_username->Data()) +
@@ -296,8 +308,8 @@ IAsyncOperation<String^>^ NavidromeService::GetLyricsBySongIdAsync(String^ songI
     return create_async([=]() -> String^ {
         try
         {
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
 
             std::wstring rel = L"rest/getLyricsBySongId.view?u=" + std::wstring(_username->Data()) +
@@ -324,8 +336,8 @@ IAsyncOperation<String^>^ NavidromeService::SearchAsync(String^ query, int size)
     return create_async([=]() -> String^ {
         try
         {
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
 
             std::wstring rel = L"rest/search3.view?u=" + std::wstring(_username->Data()) +
@@ -361,8 +373,8 @@ IAsyncOperation<String^>^ NavidromeService::GetArtistAsync(String^ id)
 {
     if (!IsAuthenticated() || _serverUrl == nullptr || _username == nullptr) return create_async([]() -> String^ { return nullptr; });
     return create_async([=]() -> String^ {
+        auto token = GetSessionToken(_password);
         auto salt = GenerateSalt();
-        auto token = ComputeMd5Token(_password + salt);
         auto normalizedServerUrl = NormalizeUrl(_serverUrl);
         std::wstring rel = L"rest/getArtist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&id=" + std::wstring(id->Data());
         std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
@@ -377,8 +389,8 @@ IAsyncOperation<String^>^ NavidromeService::GetAlbumAsync(String^ id)
 {
     if (!IsAuthenticated() || _serverUrl == nullptr || _username == nullptr) return create_async([]() -> String^ { return nullptr; });
     return create_async([=]() -> String^ {
+        auto token = GetSessionToken(_password);
         auto salt = GenerateSalt();
-        auto token = ComputeMd5Token(_password + salt);
         auto normalizedServerUrl = NormalizeUrl(_serverUrl);
         std::wstring rel = L"rest/getAlbum.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&id=" + std::wstring(id->Data());
         std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
@@ -393,8 +405,8 @@ IAsyncOperation<String^>^ NavidromeService::GetSongAsync(String^ id)
 {
     if (!IsAuthenticated() || _serverUrl == nullptr || _username == nullptr) return create_async([]() -> String^ { return nullptr; });
     return create_async([=]() -> String^ {
+        auto token = GetSessionToken(_password);
         auto salt = GenerateSalt();
-        auto token = ComputeMd5Token(_password + salt);
         auto normalizedServerUrl = NormalizeUrl(_serverUrl);
         std::wstring rel = L"rest/getSong.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&id=" + std::wstring(id->Data());
         std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
@@ -411,8 +423,8 @@ Windows::Foundation::IAsyncAction^ NavidromeService::ScrobbleAsync(String^ id, b
     return create_async([=]() {
         try
         {
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
 
             std::wstring rel = L"rest/scrobble.view?u=" + std::wstring(_username->Data()) +
@@ -442,8 +454,8 @@ Windows::Foundation::IAsyncAction^ NavidromeService::ToggleFavoriteAsync(String^
     return create_async([=]() {
         try
         {
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
 
             std::wstring endpoint = isFavorite ? L"star" : L"unstar";
@@ -469,8 +481,8 @@ Windows::Foundation::IAsyncAction^ NavidromeService::SetRatingAsync(String^ id, 
     return create_async([=]() {
         try
         {
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
 
             std::wstring rel = L"rest/setRating.view?u=" + std::wstring(_username->Data()) +
@@ -499,8 +511,8 @@ IAsyncOperation<String^>^ NavidromeService::GetPlaylistAsync(String^ id)
 {
     if (!IsAuthenticated() || _serverUrl == nullptr || _username == nullptr) return create_async([]() -> String^ { return nullptr; });
     return create_async([=]() -> String^ {
+        auto token = GetSessionToken(_password);
         auto salt = GenerateSalt();
-        auto token = ComputeMd5Token(_password + salt);
         auto normalizedServerUrl = NormalizeUrl(_serverUrl);
         std::wstring rel = L"rest/getPlaylist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&id=" + std::wstring(id->Data());
         std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
@@ -516,8 +528,8 @@ IAsyncOperation<String^>^ NavidromeService::CreatePlaylistAsync(String^ name)
     if (!IsAuthenticated()) return create_async([]() -> String^ { return nullptr; });
     return create_async([=]() -> String^ {
         try {
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
             auto escapedName = Windows::Foundation::Uri::EscapeComponent(name);
             std::wstring rel = L"rest/createPlaylist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&name=" + std::wstring(escapedName->Data());
@@ -537,8 +549,8 @@ IAsyncAction^ NavidromeService::DeletePlaylistAsync(String^ id)
     if (!IsAuthenticated()) return create_async([]() {});
     return create_async([=]() {
         try {
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
             auto escapedId = Windows::Foundation::Uri::EscapeComponent(id);
             std::wstring rel = L"rest/deletePlaylist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&id=" + std::wstring(escapedId->Data());
@@ -554,8 +566,8 @@ IAsyncAction^ NavidromeService::AddSongToPlaylistAsync(String^ playlistId, Strin
     if (!IsAuthenticated()) return create_async([]() {});
     return create_async([=]() {
         try {
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
             auto escapedPid = Windows::Foundation::Uri::EscapeComponent(playlistId);
             auto escapedSid = Windows::Foundation::Uri::EscapeComponent(songId);
@@ -572,8 +584,8 @@ IAsyncAction^ NavidromeService::AddSongToPlaylistAsync(String^ playlistId, Strin
 IAsyncAction^ NavidromeService::UpdatePlaylistNameAsync(String^ playlistId, String^ newName)
 {
     return create_async([this, playlistId, newName]() {
+        auto token = GetSessionToken(_password);
         auto salt = GenerateSalt();
-        auto token = ComputeMd5Token(_password + salt);
         auto normalizedServerUrl = NormalizeUrl(_serverUrl);
         std::wstring rel = L"rest/updatePlaylist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&playlistId=" + std::wstring(playlistId->Data()) + L"&name=" + std::wstring(newName->Data());
         std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
@@ -587,8 +599,8 @@ IAsyncAction^ NavidromeService::RemoveSongFromPlaylistAsync(String^ playlistId, 
     if (!IsAuthenticated()) return create_async([]() {});
     return create_async([=]() {
         try {
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
             auto escapedPid = Windows::Foundation::Uri::EscapeComponent(playlistId);
             // Pass both id and playlistId for maximum compatibility
@@ -607,8 +619,8 @@ IAsyncAction^ NavidromeService::UpdatePlaylistMetadataAsync(String^ playlistId, 
     if (!IsAuthenticated()) return create_async([]() {});
     return create_async([=]() {
         try {
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
             auto escapedPid = Windows::Foundation::Uri::EscapeComponent(playlistId);
             auto escapedName = Windows::Foundation::Uri::EscapeComponent(name);
@@ -636,8 +648,8 @@ IAsyncAction^ NavidromeService::ReorderPlaylistAsync(String^ playlistId, Windows
         try {
             // Reordering in Subsonic is most reliably done by using createPlaylist with the existing playlistId
             // which overwrites the playlist tracklist.
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
             auto escapedPid = Windows::Foundation::Uri::EscapeComponent(playlistId);
 
@@ -662,8 +674,8 @@ IAsyncAction^ NavidromeService::UploadPlaylistImageAsync(String^ playlistId, Win
     if (!IsAuthenticated()) return create_async([]() {});
     return create_async([=]() {
         try {
+            auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
-            auto token = ComputeMd5Token(_password + salt);
             auto normalizedServerUrl = NormalizeUrl(_serverUrl);
             auto escapedPid = Windows::Foundation::Uri::EscapeComponent(playlistId);
 
