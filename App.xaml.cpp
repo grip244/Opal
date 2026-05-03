@@ -69,10 +69,15 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 
         if (e->PreviousExecutionState == ApplicationExecutionState::Terminated)
         {
-            if (Windows::Storage::ApplicationData::Current->LocalSettings->Values->HasKey("NavigationState"))
+            auto localSettings = Windows::Storage::ApplicationData::Current->LocalSettings;
+            if (localSettings->Values->HasKey("NavigationState"))
             {
-                Platform::String^ savedState = safe_cast<Platform::String^>(Windows::Storage::ApplicationData::Current->LocalSettings->Values->Lookup("NavigationState"));
-                rootFrame->SetNavigationState(savedState);
+                Platform::String^ savedState = dynamic_cast<Platform::String^>(localSettings->Values->Lookup("NavigationState"));
+                if (savedState != nullptr)
+                {
+                    rootFrame->SetNavigationState(savedState);
+                }
+                localSettings->Values->Remove("NavigationState");
             }
         }
 
@@ -125,13 +130,11 @@ void App::OnSuspending(Object^ /*sender*/, SuspendingEventArgs^ /*e*/)
 
     auto deferral = e->SuspendingOperation->GetDeferral();
 
-    Opal::CastingService::Instance->StopListening();
-    Opal::CastingService::Instance->StopDiscovery();
-
     auto rootFrame = dynamic_cast<Frame^>(Window::Current->Content);
     if (rootFrame != nullptr)
     {
-        Windows::Storage::ApplicationData::Current->LocalSettings->Values->Insert("NavigationState", rootFrame->GetNavigationState());
+        auto localSettings = Windows::Storage::ApplicationData::Current->LocalSettings;
+        localSettings->Values->Insert("NavigationState", rootFrame->GetNavigationState());
 
         auto mainPage = dynamic_cast<MainPage^>(rootFrame->Content);
         if (mainPage != nullptr)
@@ -139,18 +142,15 @@ void App::OnSuspending(Object^ /*sender*/, SuspendingEventArgs^ /*e*/)
             auto innerFrame = mainPage->GetNavigationFrame();
             if (innerFrame != nullptr)
             {
-                Windows::Storage::ApplicationData::Current->LocalSettings->Values->Insert("InnerNavigationState", innerFrame->GetNavigationState());
+                localSettings->Values->Insert("InnerNavigationState", innerFrame->GetNavigationState());
             }
         }
     }
 
-    deferral->Complete();
-}
+    Opal::CastingService::Instance->StopListening();
+    Opal::CastingService::Instance->StopDiscovery();
 
-void App::OnResuming(Object^ sender, Object^ e)
-{
-    Opal::CastingService::Instance->StartListening();
-    Opal::CastingService::Instance->StartDiscovery();
+    deferral->Complete();
 }
 
 void App::OnEnteredBackground(Object^ /*sender*/, EnteredBackgroundEventArgs^ /*e*/)
