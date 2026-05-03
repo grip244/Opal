@@ -44,160 +44,17 @@ void LibraryViewModel::LoadAllCategories()
 
     // Load Explore (random)
     create_task(navService->GetAlbumListAsync("random", 20, 0)).then([this](Platform::String^ jsonStr) {
-        if (jsonStr != nullptr) {
-            try {
-                JsonObject^ root = JsonObject::Parse(jsonStr)->GetNamedObject("subsonic-response", nullptr);
-                if (root != nullptr && root->HasKey("albumList2")) {
-                    JsonObject^ list = root->GetNamedObject("albumList2");
-                    if (list->HasKey("album")) {
-                        JsonArray^ albums = list->GetNamedArray("album");
-                        auto newAlbs = ref new Vector<AlbumID3^>();
-                        for (unsigned int i = 0; i < albums->Size; i++) {
-                            JsonObject^ alb = albums->GetObjectAt(i);
-                            auto am = ref new AlbumID3();
-                            am->Id = alb->GetNamedString("id", "");
-                            am->Title = alb->HasKey("title") ? alb->GetNamedString("title") : alb->GetNamedString("name", "Unknown");
-                            am->Artist = alb->GetNamedString("artist", "Unknown");
-                            
-                            if (alb->HasKey("explicitStatus")) {
-                                auto val = alb->GetNamedValue("explicitStatus");
-                                if (val != nullptr && val->ValueType == JsonValueType::String) {
-                                    am->ExplicitStatus = val->GetString();
-                                } else { am->ExplicitStatus = L""; }
-                            } else { am->ExplicitStatus = L""; }
-                            
-                            if (alb->HasKey("version")) {
-                                auto val = alb->GetNamedValue("version");
-                                if (val != nullptr && val->ValueType == JsonValueType::String) am->Version = val->GetString();
-                            }
-                            if (alb->HasKey("sortName")) {
-                                auto val = alb->GetNamedValue("sortName");
-                                if (val != nullptr && val->ValueType == JsonValueType::String) am->SortName = val->GetString();
-                            }
-
-                            if (alb->HasKey("year")) am->Year = alb->GetNamedValue("year")->Stringify();
-                            
-                            auto coverId = alb->HasKey("coverArt") ? alb->GetNamedString("coverArt") : alb->GetNamedString("id", "");
-                            auto url = NavidromeService::Instance->GetCoverArtUrl(coverId, 500);
-                            am->CoverUrl = url;
-                            am->PopulateSearchTerms();
-                            newAlbs->Append(am);
-                        }
-
-                        auto self = this;
-                        App::MainDispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([self, newAlbs]() {
-                            self->_exploreAlbums->Clear();
-                            for (unsigned int i = 0; i < newAlbs->Size; i++) {
-                                self->_exploreAlbums->Append(newAlbs->GetAt(i));
-                            }
-                        }));
-                    }
-                }
-            } catch (...) {}
-        }
+        UpdateAlbumCollection(_exploreAlbums, jsonStr);
     });
 
     // Load Newly Added (newest)
     create_task(navService->GetAlbumListAsync("newest", 20, 0)).then([this](Platform::String^ jsonStr) {
-        if (jsonStr != nullptr) {
-            try {
-                JsonObject^ root = JsonObject::Parse(jsonStr)->GetNamedObject("subsonic-response", nullptr);
-                if (root != nullptr && root->HasKey("albumList2")) {
-                    JsonObject^ list = root->GetNamedObject("albumList2");
-                    if (list->HasKey("album")) {
-                        JsonArray^ albums = list->GetNamedArray("album");
-                        auto newAlbs = ref new Vector<AlbumID3^>();
-                        for (unsigned int i = 0; i < albums->Size; i++) {
-                            JsonObject^ alb = albums->GetObjectAt(i);
-                            auto am = ref new AlbumID3();
-                            am->Id = alb->GetNamedString("id", "");
-                            am->Title = alb->HasKey("title") ? alb->GetNamedString("title") : alb->GetNamedString("name", "Unknown");
-                            am->Artist = alb->GetNamedString("artist", "Unknown");
-                            
-                            if (alb->HasKey("explicitStatus")) {
-                                auto val = alb->GetNamedValue("explicitStatus");
-                                if (val != nullptr && val->ValueType == JsonValueType::String) {
-                                    am->ExplicitStatus = val->GetString();
-                                } else { am->ExplicitStatus = L""; }
-                            } else { am->ExplicitStatus = L""; }
-                            
-                            if (alb->HasKey("version")) {
-                                auto val = alb->GetNamedValue("version");
-                                if (val != nullptr && val->ValueType == JsonValueType::String) am->Version = val->GetString();
-                            }
-                            if (alb->HasKey("sortName")) {
-                                auto val = alb->GetNamedValue("sortName");
-                                if (val != nullptr && val->ValueType == JsonValueType::String) am->SortName = val->GetString();
-                            }
-
-                            auto coverId = alb->HasKey("coverArt") ? alb->GetNamedString("coverArt") : alb->GetNamedString("id", "");
-                            auto url = NavidromeService::Instance->GetCoverArtUrl(coverId, 500);
-                            am->CoverUrl = url;
-                            am->PopulateSearchTerms();
-                            newAlbs->Append(am);
-                        }
-
-                        auto self = this;
-                        App::MainDispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([self, newAlbs]() {
-                            self->_newestAlbums->Clear();
-                            for (unsigned int i = 0; i < newAlbs->Size; i++) {
-                                self->_newestAlbums->Append(newAlbs->GetAt(i));
-                            }
-                        }));
-                    }
-                }
-            } catch (...) {}
-        }
+        UpdateAlbumCollection(_newestAlbums, jsonStr);
     });
     
     // Load Recently Played (recent)
     create_task(navService->GetAlbumListAsync("recent", 20, 0)).then([this](Platform::String^ jsonStr) {
-        if (jsonStr != nullptr) {
-            try {
-                JsonObject^ root = JsonObject::Parse(jsonStr)->GetNamedObject("subsonic-response", nullptr);
-                if (root != nullptr) {
-                    JsonObject^ list = root->HasKey("albumList2") ? root->GetNamedObject("albumList2") : (root->HasKey("albumList") ? root->GetNamedObject("albumList") : nullptr);
-                    if (list != nullptr && list->HasKey("album")) {
-                        JsonArray^ albums = list->GetNamedArray("album");
-                        auto newAlbs = ref new Vector<AlbumID3^>();
-                        for (unsigned int i = 0; i < albums->Size; i++) {
-                            JsonObject^ alb = albums->GetObjectAt(i);
-                            auto am = ref new AlbumID3();
-                            am->Id = alb->GetNamedString("id", "");
-                            am->Title = alb->HasKey("title") ? alb->GetNamedString("title") : alb->GetNamedString("name", "Unknown");
-                            am->Artist = alb->GetNamedString("artist", "Unknown");
-                            
-                            if (alb->HasKey("explicitStatus")) {
-                                auto val = alb->GetNamedValue("explicitStatus");
-                                if (val != nullptr && val->ValueType == JsonValueType::String) {
-                                    am->ExplicitStatus = val->GetString();
-                                } else { am->ExplicitStatus = L""; }
-                            } else { am->ExplicitStatus = L""; }
-                            
-                            if (alb->HasKey("year")) {
-                                try { am->Year = alb->GetNamedNumber("year").ToString(); } catch (...) {
-                                    try { am->Year = alb->GetNamedValue("year")->Stringify(); } catch (...) { am->Year = ""; }
-                                }
-                            }
-
-                            auto coverId = alb->HasKey("coverArt") ? alb->GetNamedString("coverArt") : alb->GetNamedString("id", "");
-                            auto url = NavidromeService::Instance->GetCoverArtUrl(coverId, 500);
-                            am->CoverUrl = url;
-                            am->PopulateSearchTerms();
-                            newAlbs->Append(am);
-                        }
-
-                        auto self = this;
-                        App::MainDispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([self, newAlbs]() {
-                            self->_recentPlayedAlbums->Clear();
-                            for (unsigned int i = 0; i < newAlbs->Size; i++) {
-                                self->_recentPlayedAlbums->Append(newAlbs->GetAt(i));
-                            }
-                        }));
-                    }
-                }
-            } catch (...) {}
-        }
+        UpdateAlbumCollection(_recentPlayedAlbums, jsonStr);
     });
 
     // Load Recently Released (byYear)
@@ -205,114 +62,125 @@ void LibraryViewModel::LoadAllCategories()
     cal->SetToNow();
     int currentYear = cal->Year;
     create_task(navService->GetAlbumListByYearAsync(currentYear, 1900, 20, 0)).then([this](Platform::String^ jsonStr) {
-        if (jsonStr != nullptr) {
-            try {
-                JsonObject^ root = JsonObject::Parse(jsonStr)->GetNamedObject("subsonic-response", nullptr);
-                if (root != nullptr && root->HasKey("albumList2")) {
-                    JsonObject^ list = root->GetNamedObject("albumList2");
-                    if (list->HasKey("album")) {
-                        JsonArray^ albums = list->GetNamedArray("album");
-                        auto newAlbs = ref new Vector<AlbumID3^>();
-                        for (unsigned int i = 0; i < albums->Size; i++) {
-                            JsonObject^ alb = albums->GetObjectAt(i);
-                            auto am = ref new AlbumID3();
-                            am->Id = alb->GetNamedString("id", "");
-                            am->Title = alb->HasKey("title") ? alb->GetNamedString("title") : alb->GetNamedString("name", "Unknown");
-                            am->Artist = alb->GetNamedString("artist", "Unknown");
-                            
-                            if (alb->HasKey("explicitStatus")) {
-                                auto val = alb->GetNamedValue("explicitStatus");
-                                if (val != nullptr && val->ValueType == JsonValueType::String) {
-                                    am->ExplicitStatus = val->GetString();
-                                } else { am->ExplicitStatus = L""; }
-                            } else { am->ExplicitStatus = L""; }
-                            
-                            if (alb->HasKey("version")) {
-                                auto val = alb->GetNamedValue("version");
-                                if (val != nullptr && val->ValueType == JsonValueType::String) am->Version = val->GetString();
-                            }
-                            if (alb->HasKey("sortName")) {
-                                auto val = alb->GetNamedValue("sortName");
-                                if (val != nullptr && val->ValueType == JsonValueType::String) am->SortName = val->GetString();
-                            }
-
-                            if (alb->HasKey("year")) am->Year = alb->GetNamedValue("year")->Stringify();
-                            auto coverId = alb->HasKey("coverArt") ? alb->GetNamedString("coverArt") : alb->GetNamedString("id", "");
-                            auto url = NavidromeService::Instance->GetCoverArtUrl(coverId, 500);
-                            am->CoverUrl = url;
-                            am->PopulateSearchTerms();
-                            newAlbs->Append(am);
-                        }
-
-                        auto self = this;
-                        App::MainDispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([self, newAlbs]() {
-                            self->_recentReleasedAlbums->Clear();
-                            for (unsigned int i = 0; i < newAlbs->Size; i++) {
-                                self->_recentReleasedAlbums->Append(newAlbs->GetAt(i));
-                            }
-                        }));
-                    }
-                }
-            } catch (...) {}
-        }
+        UpdateAlbumCollection(_recentReleasedAlbums, jsonStr);
     });
     
     // Load Spotlight (random songs)
     create_task(navService->GetSongListAsync("getRandomSongs", 5)).then([this](Platform::String^ jsonStr) {
-        if (jsonStr != nullptr) {
-            try {
-                JsonObject^ root = JsonObject::Parse(jsonStr)->GetNamedObject("subsonic-response", nullptr);
-                if (root != nullptr && root->HasKey("randomSongs")) {
-                    JsonObject^ rs = root->GetNamedObject("randomSongs");
-                    if (rs->HasKey("song")) {
-                        JsonArray^ songs = rs->GetNamedArray("song");
-                        auto newSongs = ref new Vector<Song^>();
-                        for (unsigned int i = 0; i < songs->Size; i++) {
-                            JsonObject^ s = songs->GetObjectAt(i);
-                            auto sm = ref new Song();
-                            sm->Id = s->GetNamedString("id", "");
-                            sm->Title = s->GetNamedString("title", "Unknown");
-                            sm->Artist = s->GetNamedString("artist", "Unknown");
-                            sm->Album = s->GetNamedString("album", "");
-                            
-                            if (s->HasKey("explicitStatus")) {
-                                auto val = s->GetNamedValue("explicitStatus");
-                                if (val != nullptr && val->ValueType == JsonValueType::String) {
-                                    sm->ExplicitStatus = val->GetString();
-                                } else { sm->ExplicitStatus = L""; }
-                            } else { sm->ExplicitStatus = L""; }
-
-                            auto coverId = s->HasKey("coverArt") ? s->GetNamedString("coverArt") : s->GetNamedString("id", "");
-                            sm->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(coverId, 800);
-                            sm->StreamUrl = NavidromeService::Instance->GetStreamUrl(sm->Id);
-                            if (s->HasKey("duration")) {
-                                sm->DurationInSeconds = (int)s->GetNamedNumber("duration");
-                            }
-                            if (s->HasKey("year")) {
-                                auto y = s->GetNamedValue("year");
-                                if (y->ValueType == JsonValueType::Number) {
-                                    wchar_t yBuf[16]; swprintf_s(yBuf, L"%d", (int)y->GetNumber());
-                                    sm->Year = ref new Platform::String(yBuf);
-                                } else sm->Year = y->Stringify();
-                            }
-                            sm->IsFavorite = s->HasKey("starred");
-                            sm->Rating = s->HasKey("userRating") ? (int)s->GetNamedNumber("userRating") : 0;
-                            sm->PopulateSearchTerms();
-                            newSongs->Append(sm);
-                        }
-
-                        App::MainDispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([this, newSongs]() {
-                            this->_spotlightSongs->Clear();
-                            for (auto sm : newSongs) {
-                                this->_spotlightSongs->Append(sm);
-                            }
-                        }));
-                    }
-                }
-            } catch (...) {}
-        }
+        UpdateSongCollection(_spotlightSongs, jsonStr);
     });
+}
 
+void LibraryViewModel::UpdateAlbumCollection(Platform::Collections::Vector<AlbumID3^>^ targetCollection, Platform::String^ jsonStr)
+{
+    if (jsonStr == nullptr) return;
+    try {
+        JsonObject^ root = JsonObject::Parse(jsonStr)->GetNamedObject("subsonic-response", nullptr);
+        if (root != nullptr) {
+            JsonObject^ list = root->HasKey("albumList2") ? root->GetNamedObject("albumList2") : (root->HasKey("albumList") ? root->GetNamedObject("albumList") : nullptr);
+            if (list != nullptr && list->HasKey("album")) {
+                JsonArray^ albums = list->GetNamedArray("album");
+                auto newAlbs = ref new Vector<AlbumID3^>();
+                for (unsigned int i = 0; i < albums->Size; i++) {
+                    JsonObject^ alb = albums->GetObjectAt(i);
+                    auto am = ref new AlbumID3();
+                    am->Id = alb->GetNamedString("id", "");
+                    am->Title = alb->HasKey("title") ? alb->GetNamedString("title") : alb->GetNamedString("name", "Unknown");
+                    am->Artist = alb->GetNamedString("artist", "Unknown");
+
+                    if (alb->HasKey("explicitStatus")) {
+                        auto val = alb->GetNamedValue("explicitStatus");
+                        if (val != nullptr && val->ValueType == JsonValueType::String) {
+                            am->ExplicitStatus = val->GetString();
+                        } else { am->ExplicitStatus = L""; }
+                    } else { am->ExplicitStatus = L""; }
+
+                    if (alb->HasKey("version")) {
+                        auto val = alb->GetNamedValue("version");
+                        if (val != nullptr && val->ValueType == JsonValueType::String) am->Version = val->GetString();
+                    }
+                    if (alb->HasKey("sortName")) {
+                        auto val = alb->GetNamedValue("sortName");
+                        if (val != nullptr && val->ValueType == JsonValueType::String) am->SortName = val->GetString();
+                    }
+
+                    if (alb->HasKey("year")) {
+                        try { am->Year = alb->GetNamedNumber("year").ToString(); } catch (...) {
+                            try { am->Year = alb->GetNamedValue("year")->Stringify(); } catch (...) { am->Year = ""; }
+                        }
+                    }
+
+                    auto coverId = alb->HasKey("coverArt") ? alb->GetNamedString("coverArt") : alb->GetNamedString("id", "");
+                    auto url = NavidromeService::Instance->GetCoverArtUrl(coverId, 500);
+                    am->CoverUrl = url;
+                    am->PopulateSearchTerms();
+                    newAlbs->Append(am);
+                }
+
+                App::MainDispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([targetCollection, newAlbs]() {
+                    targetCollection->Clear();
+                    for (unsigned int i = 0; i < newAlbs->Size; i++) {
+                        targetCollection->Append(newAlbs->GetAt(i));
+                    }
+                }));
+            }
+        }
+    } catch (...) {}
+}
+
+void LibraryViewModel::UpdateSongCollection(Platform::Collections::Vector<Song^>^ targetCollection, Platform::String^ jsonStr)
+{
+    if (jsonStr == nullptr) return;
+    try {
+        JsonObject^ root = JsonObject::Parse(jsonStr)->GetNamedObject("subsonic-response", nullptr);
+        if (root != nullptr && root->HasKey("randomSongs")) {
+            JsonObject^ rs = root->GetNamedObject("randomSongs");
+            if (rs->HasKey("song")) {
+                JsonArray^ songs = rs->GetNamedArray("song");
+                auto newSongs = ref new Vector<Song^>();
+                for (unsigned int i = 0; i < songs->Size; i++) {
+                    JsonObject^ s = songs->GetObjectAt(i);
+                    auto sm = ref new Song();
+                    sm->Id = s->GetNamedString("id", "");
+                    sm->Title = s->GetNamedString("title", "Unknown");
+                    sm->Artist = s->GetNamedString("artist", "Unknown");
+                    sm->Album = s->GetNamedString("album", "");
+
+                    if (s->HasKey("explicitStatus")) {
+                        auto val = s->GetNamedValue("explicitStatus");
+                        if (val != nullptr && val->ValueType == JsonValueType::String) {
+                            sm->ExplicitStatus = val->GetString();
+                        } else { sm->ExplicitStatus = L""; }
+                    } else { sm->ExplicitStatus = L""; }
+
+                    auto coverId = s->HasKey("coverArt") ? s->GetNamedString("coverArt") : s->GetNamedString("id", "");
+                    sm->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(coverId, 800);
+                    sm->StreamUrl = NavidromeService::Instance->GetStreamUrl(sm->Id);
+                    if (s->HasKey("duration")) {
+                        sm->DurationInSeconds = (int)s->GetNamedNumber("duration");
+                    }
+                    if (s->HasKey("year")) {
+                        auto y = s->GetNamedValue("year");
+                        if (y->ValueType == JsonValueType::Number) {
+                            wchar_t yBuf[16]; swprintf_s(yBuf, L"%d", (int)y->GetNumber());
+                            sm->Year = ref new Platform::String(yBuf);
+                        } else sm->Year = y->Stringify();
+                    }
+                    sm->IsFavorite = s->HasKey("starred");
+                    sm->Rating = s->HasKey("userRating") ? (int)s->GetNamedNumber("userRating") : 0;
+                    sm->PopulateSearchTerms();
+                    newSongs->Append(sm);
+                }
+
+                App::MainDispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([targetCollection, newSongs]() {
+                    targetCollection->Clear();
+                    for (auto sm : newSongs) {
+                        targetCollection->Append(sm);
+                    }
+                }));
+            }
+        }
+    } catch (...) {}
 }
 
 void LibraryViewModel::ClearAll()

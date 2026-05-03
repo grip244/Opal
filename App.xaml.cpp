@@ -37,6 +37,7 @@ App::App()
 {
     InitializeComponent();
     Suspending += ref new SuspendingEventHandler(this, &App::OnSuspending);
+    Resuming += ref new EventHandler<Object^>(this, &App::OnResuming);
     EnteredBackground += ref new EnteredBackgroundEventHandler(this, &App::OnEnteredBackground);
     LeavingBackground += ref new LeavingBackgroundEventHandler(this, &App::OnLeavingBackground);
 #ifdef _DEBUG
@@ -123,7 +124,7 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 /// </summary>
 /// <param name="sender">The source of the suspend request.</param>
 /// <param name="e">Details about the suspend request.</param>
-void App::OnSuspending(Object^ sender, SuspendingEventArgs^ e)
+void App::OnSuspending(Object^ /*sender*/, SuspendingEventArgs^ /*e*/)
 {
     (void) sender;  // Unused parameter
 
@@ -152,13 +153,13 @@ void App::OnSuspending(Object^ sender, SuspendingEventArgs^ e)
     deferral->Complete();
 }
 
-void App::OnEnteredBackground(Object^ sender, EnteredBackgroundEventArgs^ e)
+void App::OnEnteredBackground(Object^ /*sender*/, EnteredBackgroundEventArgs^ /*e*/)
 {
     // The app is now in the background. 
     // We should minimize memory usage here if possible.
 }
 
-void App::OnLeavingBackground(Object^ sender, LeavingBackgroundEventArgs^ e)
+void App::OnLeavingBackground(Object^ /*sender*/, LeavingBackgroundEventArgs^ /*e*/)
 {
     // The app is returning to the foreground.
 }
@@ -168,7 +169,7 @@ void App::OnLeavingBackground(Object^ sender, LeavingBackgroundEventArgs^ e)
 /// </summary>
 /// <param name="sender">The Frame which failed navigation</param>
 /// <param name="e">Details about the navigation failure</param>
-void App::OnNavigationFailed(Platform::Object ^sender, Windows::UI::Xaml::Navigation::NavigationFailedEventArgs ^e)
+void App::OnNavigationFailed(Platform::Object^ /*sender*/, Windows::UI::Xaml::Navigation::NavigationFailedEventArgs^ e)
 {
     throw ref new FailureException("Failed to load Page " + e->SourcePageType.Name);
 }
