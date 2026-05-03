@@ -144,6 +144,17 @@ MainPage::MainPage()
 void MainPage::OnPageLoaded(Object^ sender, RoutedEventArgs^ e)
 {
     DebugLogger::Instance->Log("MainPage", "Page Loaded");
+
+    if (Windows::Storage::ApplicationData::Current->LocalSettings->Values->HasKey("InnerNavigationState"))
+    {
+        Platform::String^ state = dynamic_cast<Platform::String^>(Windows::Storage::ApplicationData::Current->LocalSettings->Values->Lookup("InnerNavigationState"));
+        if (state != nullptr)
+        {
+            ContentFrame->SetNavigationState(state);
+        }
+        Windows::Storage::ApplicationData::Current->LocalSettings->Values->Remove("InnerNavigationState");
+    }
+
     UpdateSidebarPlaylists();
 
     auto timer = ref new DispatcherTimer();
@@ -806,4 +817,9 @@ void MainPage::UpdateSidebarPlaylists()
             MainNavigationView->MenuItems->Append(item);
         }
     }));
+}
+
+Windows::UI::Xaml::Controls::Frame^ MainPage::GetNavigationFrame()
+{
+    return ContentFrame;
 }
