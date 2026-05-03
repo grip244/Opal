@@ -34,6 +34,11 @@ using namespace Windows::Data::Json;
 using namespace Windows::UI::Xaml::Media::Imaging;
 using namespace concurrency;
 
+Windows::UI::Xaml::Controls::Frame^ MainPage::GetNavigationFrame()
+{
+    return ContentFrame;
+}
+
 MainPage::MainPage()
 {
     InitializeComponent();

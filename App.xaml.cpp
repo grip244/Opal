@@ -24,6 +24,7 @@ using namespace Windows::UI::Xaml::Input;
 using namespace Windows::UI::Xaml::Interop;
 using namespace Windows::UI::Xaml::Media;
 using namespace Windows::UI::Xaml::Navigation;
+using namespace Windows::Storage;
 
 CoreDispatcher^ App::_mainDispatcher = nullptr;
 CoreDispatcher^ App::MainDispatcher::get() { return _mainDispatcher; }
@@ -132,13 +133,18 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 /// <param name="e">Details about the suspend request.</param>
 void App::OnSuspending(Object^ /*sender*/, SuspendingEventArgs^ /*e*/)
 {
+    (void) sender;  // Unused parameter
+
     auto deferral = e->SuspendingOperation->GetDeferral();
 
-    // Save application state and stop any background activity
+    Opal::CastingService::Instance->StopListening();
+    Opal::CastingService::Instance->StopDiscovery();
+
     auto rootFrame = dynamic_cast<Frame^>(Window::Current->Content);
     if (rootFrame != nullptr)
     {
-        Windows::Storage::ApplicationData::Current->LocalSettings->Values->Insert("NavigationState", rootFrame->GetNavigationState());
+        auto navState = rootFrame->GetNavigationState();
+        ApplicationData::Current->LocalSettings->Values->Insert("NavigationState", navState);
 
         auto mainPage = dynamic_cast<MainPage^>(rootFrame->Content);
         if (mainPage != nullptr)
@@ -146,21 +152,13 @@ void App::OnSuspending(Object^ /*sender*/, SuspendingEventArgs^ /*e*/)
             auto innerFrame = mainPage->GetNavigationFrame();
             if (innerFrame != nullptr)
             {
-                Windows::Storage::ApplicationData::Current->LocalSettings->Values->Insert("InnerNavigationState", innerFrame->GetNavigationState());
+                auto innerNavState = innerFrame->GetNavigationState();
+                ApplicationData::Current->LocalSettings->Values->Insert("InnerNavigationState", innerNavState);
             }
         }
     }
 
-    CastingService::Instance->StopListening();
-    CastingService::Instance->StopDiscovery();
-
     deferral->Complete();
-}
-
-void App::OnResuming(Object^ sender, Object^ e)
-{
-    CastingService::Instance->StartListening();
-    CastingService::Instance->StartDiscovery();
 }
 
 void App::OnEnteredBackground(Object^ /*sender*/, EnteredBackgroundEventArgs^ /*e*/)
