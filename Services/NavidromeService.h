@@ -2,6 +2,7 @@
 
 #include <ppltasks.h>
 #include <string>
+#include <mutex>
 
 namespace Opal
 {
@@ -55,6 +56,10 @@ namespace Opal
         NavidromeService();
         static NavidromeService^ _instance;
 
+        internal:
+        std::recursive_mutex _sessionMutex;
+
+        private:
         Windows::Web::Http::HttpClient^ _httpClient;
         Windows::Web::Http::Filters::HttpBaseProtocolFilter^ _filter;
 
@@ -63,8 +68,13 @@ namespace Opal
         Platform::String^ _password;
 
         Platform::String^ _sessionSalt;
+        Platform::String^ _sessionToken;
         Platform::String^ GenerateSalt();
+        Platform::String^ GetSessionToken(Platform::String^ password);
         Platform::String^ ComputeMd5Token(Platform::String^ input);
         Platform::String^ NormalizeUrl(Platform::String^ url);
+
+    internal:
+        static std::wstring NormalizeUrlNative(const std::wstring& url);
     };
 }

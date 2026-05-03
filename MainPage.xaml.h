@@ -42,11 +42,17 @@ namespace Opal
         void OnDisconnectClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnDeviceSelected(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
 
+    internal:
+        Windows::UI::Xaml::Controls::Frame^ GetNavigationFrame();
+
     private:
         void OnNavigated(Platform::Object^ sender, Windows::UI::Xaml::Navigation::NavigationEventArgs^ e);
         void OnPageLoaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 
         void SyncQueue();
         void UpdateMenuVisibility();
+
+    internal:
+        Windows::UI::Xaml::Controls::Frame^ GetNavigationFrame();
     };
 }

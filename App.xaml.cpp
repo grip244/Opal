@@ -24,6 +24,7 @@ using namespace Windows::UI::Xaml::Input;
 using namespace Windows::UI::Xaml::Interop;
 using namespace Windows::UI::Xaml::Media;
 using namespace Windows::UI::Xaml::Navigation;
+using namespace Windows::Storage;
 
 CoreDispatcher^ App::_mainDispatcher = nullptr;
 CoreDispatcher^ App::MainDispatcher::get() { return _mainDispatcher; }
@@ -37,6 +38,7 @@ App::App()
 {
     InitializeComponent();
     Suspending += ref new SuspendingEventHandler(this, &App::OnSuspending);
+    Resuming += ref new EventHandler<Object^>(this, &App::OnResuming);
     EnteredBackground += ref new EnteredBackgroundEventHandler(this, &App::OnEnteredBackground);
     LeavingBackground += ref new LeavingBackgroundEventHandler(this, &App::OnLeavingBackground);
 #ifdef _DEBUG
@@ -68,9 +70,22 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 
         if (e->PreviousExecutionState == ApplicationExecutionState::Terminated)
         {
-            // TODO: Restore the saved session state only when appropriate, scheduling the
+            // Restore the saved session state only when appropriate, scheduling the
             // final launch steps after the restore is complete
-
+            if (Windows::Storage::ApplicationData::Current->LocalSettings->Values->HasKey("NavigationState"))
+            {
+                Platform::String^ state = dynamic_cast<Platform::String^>(Windows::Storage::ApplicationData::Current->LocalSettings->Values->Lookup("NavigationState"));
+                if (state != nullptr)
+                {
+                    rootFrame->SetNavigationState(state);
+                }
+            }
+        }
+        else
+        {
+            // Clear navigation state on fresh launch
+            Windows::Storage::ApplicationData::Current->LocalSettings->Values->Remove("NavigationState");
+            Windows::Storage::ApplicationData::Current->LocalSettings->Values->Remove("InnerNavigationState");
         }
 
         if (e->PrelaunchActivated == false)
@@ -116,21 +131,43 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 /// </summary>
 /// <param name="sender">The source of the suspend request.</param>
 /// <param name="e">Details about the suspend request.</param>
-void App::OnSuspending(Object^ sender, SuspendingEventArgs^ e)
+void App::OnSuspending(Object^ /*sender*/, SuspendingEventArgs^ /*e*/)
 {
     (void) sender;  // Unused parameter
-    (void) e;   // Unused parameter
 
-    //TODO: Save application state and stop any background activity
+    auto deferral = e->SuspendingOperation->GetDeferral();
+
+    Opal::CastingService::Instance->StopListening();
+    Opal::CastingService::Instance->StopDiscovery();
+
+    auto rootFrame = dynamic_cast<Frame^>(Window::Current->Content);
+    if (rootFrame != nullptr)
+    {
+        auto navState = rootFrame->GetNavigationState();
+        ApplicationData::Current->LocalSettings->Values->Insert("NavigationState", navState);
+
+        auto mainPage = dynamic_cast<MainPage^>(rootFrame->Content);
+        if (mainPage != nullptr)
+        {
+            auto innerFrame = mainPage->GetNavigationFrame();
+            if (innerFrame != nullptr)
+            {
+                auto innerNavState = innerFrame->GetNavigationState();
+                ApplicationData::Current->LocalSettings->Values->Insert("InnerNavigationState", innerNavState);
+            }
+        }
+    }
+
+    deferral->Complete();
 }
 
-void App::OnEnteredBackground(Object^ sender, EnteredBackgroundEventArgs^ e)
+void App::OnEnteredBackground(Object^ /*sender*/, EnteredBackgroundEventArgs^ /*e*/)
 {
     // The app is now in the background. 
     // We should minimize memory usage here if possible.
 }
 
-void App::OnLeavingBackground(Object^ sender, LeavingBackgroundEventArgs^ e)
+void App::OnLeavingBackground(Object^ /*sender*/, LeavingBackgroundEventArgs^ /*e*/)
 {
     // The app is returning to the foreground.
 }
@@ -140,7 +177,7 @@ void App::OnLeavingBackground(Object^ sender, LeavingBackgroundEventArgs^ e)
 /// </summary>
 /// <param name="sender">The Frame which failed navigation</param>
 /// <param name="e">Details about the navigation failure</param>
-void App::OnNavigationFailed(Platform::Object ^sender, Windows::UI::Xaml::Navigation::NavigationFailedEventArgs ^e)
+void App::OnNavigationFailed(Platform::Object^ /*sender*/, Windows::UI::Xaml::Navigation::NavigationFailedEventArgs^ e)
 {
     throw ref new FailureException("Failed to load Page " + e->SourcePageType.Name);
 }
