@@ -54,8 +54,8 @@ void TracksPage::LoadTracks()
                         JsonObject^ randomSongsObj = root->GetNamedObject("randomSongs", nullptr);
                         if (randomSongsObj != nullptr) {
                             JsonArray^ songArray = randomSongsObj->GetNamedArray("song", nullptr);
-                            _tracks->Clear();
-                            _allTracks->Clear();
+                            std::vector<Song^> tracks;
+                            tracks.reserve(songArray->Size);
                             for (unsigned int i = 0; i < songArray->Size; i++) {
                                 JsonObject^ songObj = songArray->GetObjectAt(i);
                                 auto song = ref new Song();
@@ -96,9 +96,10 @@ void TracksPage::LoadTracks()
                                 if (songObj->HasKey("userRating")) song->Rating = songObj->GetNamedNumber("userRating");
                                 else song->Rating = 0.0;
                                 
-                                song->PopulateSearchTerms();
-                                _allTracks->Append(song);
+                                tracks.push_back(song);
                             }
+                            _tracks->Clear();
+                            _allTracks = ref new Platform::Collections::Vector<Song^>(std::move(tracks));
                             this->OnFilterOrSortChanged(nullptr, nullptr);
                         }
                     }
@@ -118,6 +119,7 @@ void TracksPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
     for (auto& c : wQuery) c = towlower(c);
 
     std::vector<Song^> result;
+    result.reserve(_allTracks->Size);
     for (unsigned int i = 0; i < _allTracks->Size; i++) {
         Song^ song = _allTracks->GetAt(i);
         bool textMatch = true;
@@ -143,8 +145,7 @@ void TracksPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
         }
     });
 
-    auto output = ref new Platform::Collections::Vector<Song^>();
-    for (auto item : result) output->Append(item);
+    auto output = ref new Platform::Collections::Vector<Song^>(std::move(result));
     TracksListView->ItemsSource = output;
 }
 

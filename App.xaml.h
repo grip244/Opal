@@ -29,6 +29,7 @@ namespace Opal
 	private:
 		static Windows::UI::Core::CoreDispatcher^ _mainDispatcher;
 		void OnSuspending(Platform::Object^ sender, Windows::ApplicationModel::SuspendingEventArgs^ e);
+		void OnResuming(Platform::Object^ sender, Platform::Object^ e);
 		void OnEnteredBackground(Platform::Object^ sender, Windows::ApplicationModel::EnteredBackgroundEventArgs^ e);
 		void OnLeavingBackground(Platform::Object^ sender, Windows::ApplicationModel::LeavingBackgroundEventArgs^ e);
 		void OnResuming(Platform::Object^ sender, Platform::Object^ e);

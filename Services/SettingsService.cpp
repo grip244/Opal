@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "SettingsService.h"
+#include "DebugLogger.h"
 
 using namespace Opal;
 using namespace Platform;
@@ -55,6 +56,7 @@ void SettingsService::SavePassword(String^ server, String^ username, String^ pas
     }
     catch (Exception^ ex) {
         // Suppress vault errors on Xbox to prevent crashes during login transitions
+        DebugLogger::Instance->LogException("SettingsService::SavePassword", ex);
     }
 }
 
@@ -87,15 +89,25 @@ Platform::String^ SettingsService::GetPassword(String^ server, String^ username)
             }
         }
     }
-    catch (Exception^ ex) { return ""; }
-    catch (...) { return ""; }
+    catch (Exception^ ex) {
+        DebugLogger::Instance->LogException("SettingsService::GetPassword", ex);
+        return "";
+    }
+    catch (...) {
+        DebugLogger::Instance->Log("SettingsService", "Unknown exception in GetPassword");
+        return "";
+    }
     return "";
 }
 
 void SettingsService::ClearCredentials(String^ server, String^ username)
 {
     auto vault = ref new PasswordVault();
-    try { vault->Remove(vault->Retrieve("Opal.Password", username)); } catch (...) {}
+    try {
+        vault->Remove(vault->Retrieve("Opal.Password", username));
+    } catch (...) {
+        DebugLogger::Instance->Log("SettingsService", "Unknown exception in ClearCredentials");
+    }
 }
 
 bool SettingsService::IsAutoPlayEnabled::get()
