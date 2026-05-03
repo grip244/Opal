@@ -68,9 +68,16 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 
         if (e->PreviousExecutionState == ApplicationExecutionState::Terminated)
         {
-            // TODO: Restore the saved session state only when appropriate, scheduling the
-            // final launch steps after the restore is complete
-
+            auto localSettings = Windows::Storage::ApplicationData::Current->LocalSettings;
+            if (localSettings->Values->HasKey("NavigationState"))
+            {
+                Platform::String^ savedState = dynamic_cast<Platform::String^>(localSettings->Values->Lookup("NavigationState"));
+                if (savedState != nullptr)
+                {
+                    rootFrame->SetNavigationState(savedState);
+                }
+                localSettings->Values->Remove("NavigationState");
+            }
         }
 
         if (e->PrelaunchActivated == false)
@@ -119,9 +126,30 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 void App::OnSuspending(Object^ sender, SuspendingEventArgs^ e)
 {
     (void) sender;  // Unused parameter
-    (void) e;   // Unused parameter
 
-    //TODO: Save application state and stop any background activity
+    auto deferral = e->SuspendingOperation->GetDeferral();
+
+    auto rootFrame = dynamic_cast<Frame^>(Window::Current->Content);
+    if (rootFrame != nullptr)
+    {
+        auto localSettings = Windows::Storage::ApplicationData::Current->LocalSettings;
+        localSettings->Values->Insert("NavigationState", rootFrame->GetNavigationState());
+
+        auto mainPage = dynamic_cast<MainPage^>(rootFrame->Content);
+        if (mainPage != nullptr)
+        {
+            auto innerFrame = mainPage->GetNavigationFrame();
+            if (innerFrame != nullptr)
+            {
+                localSettings->Values->Insert("InnerNavigationState", innerFrame->GetNavigationState());
+            }
+        }
+    }
+
+    Opal::CastingService::Instance->StopListening();
+    Opal::CastingService::Instance->StopDiscovery();
+
+    deferral->Complete();
 }
 
 void App::OnEnteredBackground(Object^ sender, EnteredBackgroundEventArgs^ e)
