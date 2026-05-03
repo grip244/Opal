@@ -32,6 +32,7 @@ namespace Opal
 		void OnResuming(Platform::Object^ sender, Platform::Object^ e);
 		void OnEnteredBackground(Platform::Object^ sender, Windows::ApplicationModel::EnteredBackgroundEventArgs^ e);
 		void OnLeavingBackground(Platform::Object^ sender, Windows::ApplicationModel::LeavingBackgroundEventArgs^ e);
+		void OnResuming(Platform::Object^ sender, Platform::Object^ e);
 		void OnNavigationFailed(Platform::Object ^sender, Windows::UI::Xaml::Navigation::NavigationFailedEventArgs ^e);
 	};
 }

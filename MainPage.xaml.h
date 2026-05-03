@@ -51,5 +51,8 @@ namespace Opal
 
         void SyncQueue();
         void UpdateMenuVisibility();
+
+    internal:
+        Windows::UI::Xaml::Controls::Frame^ GetNavigationFrame();
     };
 }

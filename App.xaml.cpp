@@ -69,16 +69,22 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 
         if (e->PreviousExecutionState == ApplicationExecutionState::Terminated)
         {
-            auto localSettings = Windows::Storage::ApplicationData::Current->LocalSettings;
-            if (localSettings->Values->HasKey("NavigationState"))
+            // Restore the saved session state only when appropriate, scheduling the
+            // final launch steps after the restore is complete
+            if (Windows::Storage::ApplicationData::Current->LocalSettings->Values->HasKey("NavigationState"))
             {
-                Platform::String^ savedState = dynamic_cast<Platform::String^>(localSettings->Values->Lookup("NavigationState"));
-                if (savedState != nullptr)
+                Platform::String^ state = dynamic_cast<Platform::String^>(Windows::Storage::ApplicationData::Current->LocalSettings->Values->Lookup("NavigationState"));
+                if (state != nullptr)
                 {
-                    rootFrame->SetNavigationState(savedState);
+                    rootFrame->SetNavigationState(state);
                 }
-                localSettings->Values->Remove("NavigationState");
             }
+        }
+        else
+        {
+            // Clear navigation state on fresh launch
+            Windows::Storage::ApplicationData::Current->LocalSettings->Values->Remove("NavigationState");
+            Windows::Storage::ApplicationData::Current->LocalSettings->Values->Remove("InnerNavigationState");
         }
 
         if (e->PrelaunchActivated == false)
@@ -126,15 +132,13 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 /// <param name="e">Details about the suspend request.</param>
 void App::OnSuspending(Object^ /*sender*/, SuspendingEventArgs^ /*e*/)
 {
-    (void) sender;  // Unused parameter
-
     auto deferral = e->SuspendingOperation->GetDeferral();
 
+    // Save application state and stop any background activity
     auto rootFrame = dynamic_cast<Frame^>(Window::Current->Content);
     if (rootFrame != nullptr)
     {
-        auto localSettings = Windows::Storage::ApplicationData::Current->LocalSettings;
-        localSettings->Values->Insert("NavigationState", rootFrame->GetNavigationState());
+        Windows::Storage::ApplicationData::Current->LocalSettings->Values->Insert("NavigationState", rootFrame->GetNavigationState());
 
         auto mainPage = dynamic_cast<MainPage^>(rootFrame->Content);
         if (mainPage != nullptr)
@@ -142,15 +146,21 @@ void App::OnSuspending(Object^ /*sender*/, SuspendingEventArgs^ /*e*/)
             auto innerFrame = mainPage->GetNavigationFrame();
             if (innerFrame != nullptr)
             {
-                localSettings->Values->Insert("InnerNavigationState", innerFrame->GetNavigationState());
+                Windows::Storage::ApplicationData::Current->LocalSettings->Values->Insert("InnerNavigationState", innerFrame->GetNavigationState());
             }
         }
     }
 
-    Opal::CastingService::Instance->StopListening();
-    Opal::CastingService::Instance->StopDiscovery();
+    CastingService::Instance->StopListening();
+    CastingService::Instance->StopDiscovery();
 
     deferral->Complete();
+}
+
+void App::OnResuming(Object^ sender, Object^ e)
+{
+    CastingService::Instance->StartListening();
+    CastingService::Instance->StartDiscovery();
 }
 
 void App::OnEnteredBackground(Object^ /*sender*/, EnteredBackgroundEventArgs^ /*e*/)

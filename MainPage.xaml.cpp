@@ -150,10 +150,14 @@ void MainPage::OnPageLoaded(Object^ sender, RoutedEventArgs^ e)
 {
     DebugLogger::Instance->Log("MainPage", "Page Loaded");
 
-    if (ApplicationData::Current->LocalSettings->Values->HasKey("InnerNavigationState")) {
-        Platform::String^ savedState = safe_cast<Platform::String^>(ApplicationData::Current->LocalSettings->Values->Lookup("InnerNavigationState"));
-        ContentFrame->SetNavigationState(savedState);
-        ApplicationData::Current->LocalSettings->Values->Remove("InnerNavigationState");
+    if (Windows::Storage::ApplicationData::Current->LocalSettings->Values->HasKey("InnerNavigationState"))
+    {
+        Platform::String^ state = dynamic_cast<Platform::String^>(Windows::Storage::ApplicationData::Current->LocalSettings->Values->Lookup("InnerNavigationState"));
+        if (state != nullptr)
+        {
+            ContentFrame->SetNavigationState(state);
+        }
+        Windows::Storage::ApplicationData::Current->LocalSettings->Values->Remove("InnerNavigationState");
     }
 
     UpdateSidebarPlaylists();
