@@ -73,5 +73,8 @@ namespace Opal
         Platform::String^ GetSessionToken(Platform::String^ password);
         Platform::String^ ComputeMd5Token(Platform::String^ input);
         Platform::String^ NormalizeUrl(Platform::String^ url);
+
+    internal:
+        static std::wstring NormalizeUrlNative(const std::wstring& url);
     };
 }
