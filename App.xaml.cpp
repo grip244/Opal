@@ -24,6 +24,7 @@ using namespace Windows::UI::Xaml::Input;
 using namespace Windows::UI::Xaml::Interop;
 using namespace Windows::UI::Xaml::Media;
 using namespace Windows::UI::Xaml::Navigation;
+using namespace Windows::Storage;
 
 CoreDispatcher^ App::_mainDispatcher = nullptr;
 CoreDispatcher^ App::MainDispatcher::get() { return _mainDispatcher; }
@@ -119,9 +120,31 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 void App::OnSuspending(Object^ sender, SuspendingEventArgs^ e)
 {
     (void) sender;  // Unused parameter
-    (void) e;   // Unused parameter
 
-    //TODO: Save application state and stop any background activity
+    auto deferral = e->SuspendingOperation->GetDeferral();
+
+    Opal::CastingService::Instance->StopListening();
+    Opal::CastingService::Instance->StopDiscovery();
+
+    auto rootFrame = dynamic_cast<Frame^>(Window::Current->Content);
+    if (rootFrame != nullptr)
+    {
+        auto navState = rootFrame->GetNavigationState();
+        ApplicationData::Current->LocalSettings->Values->Insert("NavigationState", navState);
+
+        auto mainPage = dynamic_cast<MainPage^>(rootFrame->Content);
+        if (mainPage != nullptr)
+        {
+            auto innerFrame = mainPage->GetNavigationFrame();
+            if (innerFrame != nullptr)
+            {
+                auto innerNavState = innerFrame->GetNavigationState();
+                ApplicationData::Current->LocalSettings->Values->Insert("InnerNavigationState", innerNavState);
+            }
+        }
+    }
+
+    deferral->Complete();
 }
 
 void App::OnEnteredBackground(Object^ sender, EnteredBackgroundEventArgs^ e)
