@@ -11,11 +11,18 @@ namespace Opal {
         void LogException(Platform::String^ functionName, Platform::Exception^ ex);
         void StartHttpServer(int port);
 
+        // Testing Support
+        void SetLogFolder(Windows::Storage::IStorageFolder^ folder);
+        Platform::String^ GetLastFileError();
+        void ResetLastError();
+
     internal:
         DebugLogger();
         
     private:
         static DebugLogger^ _instance;
+        Windows::Storage::IStorageFolder^ _logFolder;
+        Platform::String^ _lastFileError;
 
         Windows::Networking::Sockets::StreamSocketListener^ _listener;
 

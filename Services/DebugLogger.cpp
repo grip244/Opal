@@ -25,6 +25,20 @@ DebugLogger^ DebugLogger::Instance::get() {
 DebugLogger::DebugLogger() {
     _listener = ref new StreamSocketListener();
     _listener->ConnectionReceived += ref new Windows::Foundation::TypedEventHandler<StreamSocketListener^, StreamSocketListenerConnectionReceivedEventArgs^>(this, &DebugLogger::OnConnectionReceived);
+    _logFolder = Windows::Storage::ApplicationData::Current->LocalFolder;
+    _lastFileError = nullptr;
+}
+
+void DebugLogger::SetLogFolder(Windows::Storage::IStorageFolder^ folder) {
+    _logFolder = folder;
+}
+
+Platform::String^ DebugLogger::GetLastFileError() {
+    return _lastFileError;
+}
+
+void DebugLogger::ResetLastError() {
+    _lastFileError = nullptr;
 }
 
 static concurrency::task<void> g_lastWriteTask = concurrency::create_task([]{});
@@ -52,17 +66,29 @@ void DebugLogger::Log(String^ component, String^ message) {
     
     // Also write to file for guaranteed access (bypasses loopback isolation)
     try {
-        auto localFolder = Windows::Storage::ApplicationData::Current->LocalFolder;
-        g_lastWriteTask = g_lastWriteTask.then([localFolder, logStr]() {
-            return create_task(localFolder->CreateFileAsync("log.txt", Windows::Storage::CreationCollisionOption::OpenIfExists)).then([logStr](task<Windows::Storage::StorageFile^> t) {
+        auto currentFolder = _logFolder;
+        g_lastWriteTask = g_lastWriteTask.then([this, currentFolder, logStr]() {
+            if (currentFolder == nullptr) return create_task([] {});
+
+            return create_task(currentFolder->CreateFileAsync("log.txt", Windows::Storage::CreationCollisionOption::OpenIfExists)).then([this, logStr](task<Windows::Storage::StorageFile^> t) {
                 try {
                     auto file = t.get();
                     return create_task(Windows::Storage::FileIO::AppendTextAsync(file, ref new String((logStr + L"\r\n").c_str())));
+                } catch (Exception^ ex) {
+                    _lastFileError = ex->Message;
+                    return create_task([]{});
                 } catch (...) {
+                    _lastFileError = "Unknown error";
                     return create_task([]{});
                 }
-            }).then([](task<void> innerTask) {
-                try { innerTask.get(); } catch (...) {}
+            }).then([this](task<void> innerTask) {
+                try { 
+                    innerTask.get(); 
+                } catch (Exception^ ex) {
+                    _lastFileError = ex->Message;
+                } catch (...) {
+                    _lastFileError = "Unknown error";
+                }
             });
         });
     } catch (...) {}

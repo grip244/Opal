@@ -47,8 +47,8 @@ String^ NavidromeService::NormalizeUrl(String^ url)
     std::wstring s(url->Data());
     auto schemePos = s.find(L"://");
     if (schemePos == std::wstring::npos) {
-        s = L"http://" + s;
-        schemePos = 4;
+        s = L"https://" + s;
+        schemePos = 5;
     }
     size_t hostStart = schemePos + 3;
     size_t slashPos = s.find(L'/', hostStart);
