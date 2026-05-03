@@ -8,6 +8,12 @@
       <UniqueIdentifier>2b9bffcf-a8cd-4f8b-9865-d2714c06789b</UniqueIdentifier>
       <Extensions>bmp;fbx;gif;jpg;jpeg;tga;tiff;tif;png</Extensions>
     </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{a1b2c3d4-e5f6-4a5b-9c8d-7e6f5a4b3c2d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI\Controls">
+      <UniqueIdentifier>{b2c3d4e5-f6a7-4b6c-8d9e-0f1a2b3c4d5e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml" />
@@ -25,10 +31,12 @@
     <ClCompile Include="Services\CastingService.cpp" />
     <ClCompile Include="Services\DebugLogger.cpp" />
     <ClCompile Include="ViewModels\LibraryViewModel.cpp" />
-    <ClCompile Include="Services\ImageCacheService.cpp" />
     <ClCompile Include="Converters\ExplicitStatusConverter.cpp" />
     <ClCompile Include="Converters\RemoteSystemKindToIconConverter.cpp" />
     <ClCompile Include="Converters\BooleanToVisibilityConverter.cpp" />
+    <ClCompile Include="UI\Controls\ThumbnailView.xaml.cpp">
+      <Filter>UI\Controls</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -46,9 +54,11 @@
     <ClInclude Include="Services\CastingService.h" />
     <ClInclude Include="Services\DebugLogger.h" />
     <ClInclude Include="Converters\ExplicitStatusConverter.h" />
-    <ClInclude Include="Services\ImageCacheService.h" />
     <ClInclude Include="Converters\RemoteSystemKindToIconConverter.h" />
     <ClInclude Include="Converters\BooleanToVisibilityConverter.h" />
+    <ClInclude Include="UI\Controls\ThumbnailView.xaml.h">
+      <Filter>UI\Controls</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\LockScreenLogo.scale-200.png">
@@ -179,6 +189,9 @@
     <Page Include="SettingsPage.xaml" />
     <Page Include="UI\Templates\DeviceTemplates.xaml" />
     <Page Include="UI\Themes\ThemeResources.xaml" />
+    <Page Include="UI\Controls\ThumbnailView.xaml">
+      <Filter>UI\Controls</Filter>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <None Include="agents.md" />

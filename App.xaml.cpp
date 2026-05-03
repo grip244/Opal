@@ -122,6 +122,17 @@ void App::OnSuspending(Object^ sender, SuspendingEventArgs^ e)
     //TODO: Save application state and stop any background activity
 }
 
+void App::OnEnteredBackground(Object^ sender, EnteredBackgroundEventArgs^ e)
+{
+    // The app is now in the background. 
+    // We should minimize memory usage here if possible.
+}
+
+void App::OnLeavingBackground(Object^ sender, LeavingBackgroundEventArgs^ e)
+{
+    // The app is returning to the foreground.
+}
+
 /// <summary>
 /// Invoked when Navigation to a certain page fails
 /// </summary>

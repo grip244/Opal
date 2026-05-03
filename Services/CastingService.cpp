@@ -14,6 +14,23 @@ using namespace Windows::Data::Json;
 using namespace Windows::Foundation::Collections;
 using namespace concurrency;
 
+static String^ GetCachedLocalIp() {
+    static String^ cachedIp = nullptr;
+    if (cachedIp != nullptr) return cachedIp;
+    
+    cachedIp = "127.0.0.1";
+    try {
+        auto hostnames = Windows::Networking::Connectivity::NetworkInformation::GetHostNames();
+        for (auto h : hostnames) {
+            if (h->Type == Windows::Networking::HostNameType::Ipv4) {
+                cachedIp = h->CanonicalName;
+                break; 
+            }
+        }
+    } catch (...) {}
+    return cachedIp;
+}
+
 CastingService^ CastingService::_instance = nullptr;
 
 CastingService^ CastingService::Instance::get() {
@@ -84,14 +101,7 @@ void CastingService::SendDiscoveryBeacon() {
     auto deviceFamily = Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamily;
     String^ deviceName = deviceFamily == "Windows.Xbox" ? "Opal-Xbox" : "Opal-PC";
     
-    String^ localIp = "Unknown";
-    auto hostnames = Windows::Networking::Connectivity::NetworkInformation::GetHostNames();
-    for (auto h : hostnames) {
-        if (h->Type == Windows::Networking::HostNameType::Ipv4) {
-            localIp = h->CanonicalName;
-            break; 
-        }
-    }
+    String^ localIp = GetCachedLocalIp();
 
     String^ payload = "OPAL_BEACON|" + deviceName + "|" + localIp;
     
@@ -120,10 +130,7 @@ void CastingService::OnUdpMessageReceived(DatagramSocket^ sender, DatagramSocket
             String^ name = ref new String(msg.substr(firstPipe + 1, secondPipe - firstPipe - 1).c_str());
             String^ ip = ref new String(msg.substr(secondPipe + 1).c_str());
             
-            auto hostnames = Windows::Networking::Connectivity::NetworkInformation::GetHostNames();
-            bool isMe = false;
-            for (auto h : hostnames) { if (h->CanonicalName == ip) { isMe = true; break; } }
-            if (isMe) return;
+            if (GetCachedLocalIp() == ip) return;
 
             bool exists = false;
             for (auto d : _discoveredDevices) {
@@ -165,8 +172,7 @@ void CastingService::OnUdpMessageReceived(DatagramSocket^ sender, DatagramSocket
                     try {
                         String^ rawJson = ref new String(cmd->Data() + 6);
                         auto array = JsonArray::Parse(rawJson);
-                        pb->Queue->Clear();
-                        pb->CurrentIndex = 0;
+                        auto songs = ref new Platform::Collections::Vector<Song^>();
                         for (unsigned int i = 0; i < array->Size; i++) {
                             auto obj = array->GetObjectAt(i);
                             auto song = ref new Song();
@@ -179,8 +185,9 @@ void CastingService::OnUdpMessageReceived(DatagramSocket^ sender, DatagramSocket
                                 try { song->CoverArt = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(song->CoverUrl)); } catch(...) {}
                             }
                             song->StreamUrl = obj->GetNamedString("StreamUrl", "");
-                            pb->Queue->Append(song);
+                            songs->Append(song);
                         }
+                        pb->SetQueue(songs);
                         DebugLogger::Instance->Log("CastingService", "Inbound Queue Sync Received via CMD!");
                         QueueSynced(this, nullptr);
                     } catch (...) {}
@@ -213,8 +220,7 @@ void CastingService::OnUdpMessageReceived(DatagramSocket^ sender, DatagramSocket
                 try {
                     auto array = JsonArray::Parse(rawJson);
                     auto pb = PlaybackService::Instance;
-                    pb->Queue->Clear();
-                    
+                    auto songs = ref new Platform::Collections::Vector<Song^>();
                     for (unsigned int i = 0; i < array->Size; i++) {
                         auto obj = array->GetObjectAt(i);
                         auto song = ref new Song();
@@ -227,8 +233,9 @@ void CastingService::OnUdpMessageReceived(DatagramSocket^ sender, DatagramSocket
                             try { song->CoverArt = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(song->CoverUrl)); } catch (...) {}
                         }
                         song->StreamUrl = obj->GetNamedString("StreamUrl", "");
-                        pb->Queue->Append(song);
+                        songs->Append(song);
                     }
+                    pb->SetQueue(songs);
                     QueueSynced(this, nullptr);
                 } catch(...) {}
             }));
@@ -284,14 +291,7 @@ void CastingService::CastTrack(String^ ipAddress, TrackData^ track) {
     if (_udpSocket == nullptr) return;
     
     // Find local IP to replace 'localhost' if necessary
-    String^ localIp = "127.0.0.1";
-    auto hostnames = Windows::Networking::Connectivity::NetworkInformation::GetHostNames();
-    for (auto h : hostnames) {
-        if (h->Type == Windows::Networking::HostNameType::Ipv4) {
-            localIp = h->CanonicalName;
-            break; 
-        }
-    }
+    String^ localIp = GetCachedLocalIp();
 
     auto fixUrl = [localIp](String^ url) -> String^ {
         if (url == nullptr) return "";

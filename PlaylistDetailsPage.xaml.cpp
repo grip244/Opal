@@ -55,9 +55,14 @@ void PlaylistDetailsPage::LoadPlaylistTracks()
                             song->Title = entry->GetNamedString("title");
                             song->Artist = entry->HasKey("artist") ? entry->GetNamedString("artist") : "";
                             song->Album = entry->HasKey("album") ? entry->GetNamedString("album") : "";
-                            song->DurationInSeconds = entry->HasKey("duration") ? (int)entry->GetNamedNumber("duration") : 0;
-                            song->PlaylistIndex = i + 1; // 1-indexed for display
-                            self->_songs->Append(song);
+                             song->DurationInSeconds = entry->HasKey("duration") ? (int)entry->GetNamedNumber("duration") : 0;
+                             song->PlaylistIndex = i + 1; // 1-indexed for display
+
+                             song->StreamUrl = NavidromeService::Instance->GetStreamUrl(song->Id);
+                             Platform::String^ coverArtId = entry->HasKey("coverArt") ? entry->GetNamedString("coverArt") : song->Id;
+                             song->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(coverArtId, 500);
+
+                             self->_songs->Append(song);
                         }
                     }
 
@@ -88,6 +93,14 @@ void PlaylistDetailsPage::OnTrackClicked(Object^ sender, ItemClickEventArgs^ e)
         if (_songs->IndexOf(song, &index)) {
             PlaybackService::Instance->PlayQueue(_songs, index);
         }
+    }
+}
+
+void PlaylistDetailsPage::OnPlayAllClicked(Object^ sender, RoutedEventArgs^ e)
+{
+    if (_songs->Size > 0)
+    {
+        PlaybackService::Instance->PlayQueue(_songs, 0);
     }
 }
 
@@ -142,7 +155,7 @@ void PlaylistDetailsPage::OnAddQueueMenuClicked(Object^ sender, RoutedEventArgs^
     auto item = dynamic_cast<MenuFlyoutItem^>(sender);
     if (item != nullptr) {
         auto song = dynamic_cast<Song^>(item->DataContext);
-        if (song != nullptr) PlaybackService::Instance->Queue->Append(song);
+        if (song != nullptr) PlaybackService::Instance->AddToQueue(song);
     }
 }
 

@@ -7,6 +7,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:converters="using:Opal.Converters"
+    xmlns:controls="using:Opal.UI.Controls"
     mc:Ignorable="d"
     NavigationCacheMode="Required"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
@@ -63,9 +64,9 @@
                         <Setter Target="RecentlyReleasedGridView.ItemContainerStyle" Value="{StaticResource XboxAlbumItemStyle}" />
                         <Setter Target="SpotlightHero.Height" Value="180" />
                         <Setter Target="SpotlightHero.Margin" Value="-48,0,-48,12" />
-                        <Setter Target="LyricsListView.Width" Value="1000" />
-                        <Setter Target="LyricsOverlay.Padding" Value="40,20" />
-                        <Setter Target="QueuePanel.Margin" Value="12,24,40,24" />
+                        <Setter Target="LyricsListView.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="LyricsOverlay.Padding" Value="20" />
+                        <Setter Target="QueuePanel.Margin" Value="0,24,40,24" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -94,12 +95,12 @@
                                             <DataTemplate>
                                                 <Grid Tapped="OnSpotlightTapped" Tag="{Binding}" Background="#11FFFFFF" CornerRadius="12">
                                                     <!-- Stretched Background -->
-                                                    <Image Source="{Binding CoverArt}" Stretch="UniformToFill" Opacity="0.4" />
+                                                    <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" Opacity="0.4" />
                                                     <Grid Background="#77000000" /> <!-- Text protection overlay -->
 
                                                     <StackPanel Orientation="Horizontal" Padding="24" Spacing="24" VerticalAlignment="Center">
                                                         <Border CornerRadius="8" Width="150" Height="150" BorderThickness="1" BorderBrush="#22FFFFFF" Background="#11FFFFFF" Canvas.ZIndex="1">
-                                                            <Image Source="{Binding CoverArt}" Stretch="UniformToFill" />
+                                                            <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="150" />
                                                         </Border>
                                                         <StackPanel VerticalAlignment="Center" Spacing="4">
                                                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
@@ -175,7 +176,7 @@
                                             <DataTemplate>
                                                 <StackPanel Spacing="6">
                                                     <Border CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
-                                                        <Image Source="{Binding CoverArt}" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="200" />
                                                     </Border>
                                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                                         <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
@@ -209,7 +210,7 @@
                                             <DataTemplate>
                                                 <StackPanel Spacing="6">
                                                     <Border CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
-                                                        <Image Source="{Binding CoverArt}" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="200" />
                                                     </Border>
                                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                                         <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
@@ -244,7 +245,7 @@
                                             <DataTemplate>
                                                 <StackPanel Spacing="6">
                                                     <Border CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
-                                                        <Image Source="{Binding CoverArt}" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="200" />
                                                     </Border>
                                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                                         <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
@@ -280,7 +281,7 @@
                                             <DataTemplate>
                                                 <StackPanel Spacing="6">
                                                     <Border CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
-                                                        <Image Source="{Binding CoverArt}" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="200" />
                                                     </Border>
                                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                                         <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
@@ -316,11 +317,7 @@
                             </Button>
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="20">
-                                <Ellipse x:Name="ArtistImageEllipse" Width="100" Height="100" VerticalAlignment="Center" Visibility="Collapsed">
-                                    <Ellipse.Fill>
-                                        <ImageBrush x:Name="ArtistDetailImageBrush" Stretch="UniformToFill" />
-                                    </Ellipse.Fill>
-                                </Ellipse>
+                                <controls:ThumbnailView x:Name="ArtistDetailImage" Width="100" Height="100" ThumbnailCornerRadius="50" VerticalAlignment="Center" Visibility="Collapsed" DecodeWidth="200" />
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock x:Name="ArtistDetailType" Text="ARTIST" FontSize="12" FontWeight="SemiBold" Opacity="0.6" Foreground="{ThemeResource AppTextForegroundBrush}" />
                                     <TextBlock x:Name="ArtistDetailName" FontSize="48" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
@@ -333,7 +330,7 @@
                                 <DataTemplate>
                                     <StackPanel Width="150" Margin="12">
                                         <Border CornerRadius="8" Width="140" Height="140" Background="{ThemeResource AppControlBackgroundBrush}">
-                                            <Image Source="{Binding CoverArt}" Stretch="UniformToFill" />
+                                            <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="200" />
                                         </Border>
                                         <StackPanel Orientation="Vertical" Spacing="2" HorizontalAlignment="Center" Margin="0,8,0,0">
                                             <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextAlignment="Center" TextTrimming="CharacterEllipsis"/>
@@ -359,7 +356,7 @@
                         </Grid.RowDefinitions>
                         <StackPanel Orientation="Horizontal" Spacing="24" Margin="0,0,0,16">
                             <Border CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" Height="100" Width="100">
-                                <Image x:Name="AlbumDetailImage" Stretch="Uniform" />
+                                <controls:ThumbnailView x:Name="AlbumDetailImage" DecodeWidth="200" />
                             </Border>
                             <StackPanel VerticalAlignment="Center" Spacing="4">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
@@ -443,19 +440,19 @@
                         <StackPanel x:Name="AlbumArtView" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="32">
                             <Grid Width="360" Height="360">
                                 <Border CornerRadius="20" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Background="{ThemeResource AppControlBackgroundBrush}">
-                                    <Image x:Name="NowPlayingImage" Stretch="Uniform" Width="360" Height="360" />
+                                    <controls:ThumbnailView x:Name="NowPlayingImage" DecodeWidth="600" />
                                 </Border>
                             </Grid>
                         </StackPanel>
 
-                        <Grid x:Name="LyricsOverlay" Visibility="Collapsed" Padding="60,20">
+                        <Grid x:Name="LyricsOverlay" Visibility="Collapsed" Padding="40,20,20,20">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
                                 <TextBlock x:Name="LyricsOverlayTitle" Text="Lyrics" FontSize="20" FontWeight="Bold" Opacity="0.5" HorizontalAlignment="Center" Margin="0,0,0,24" />
-                                <ListView x:Name="LyricsListView" Grid.Row="1" SelectionMode="Single" ItemsSource="{x:Bind LyricsVM.Lines, Mode=OneTime}" SelectedIndex="{x:Bind LyricsVM.ActiveIndex, Mode=TwoWay}" IsItemClickEnabled="False" HorizontalAlignment="Center" Width="700">
+                                <ListView x:Name="LyricsListView" Grid.Row="1" SelectionMode="Single" ItemsSource="{x:Bind LyricsVM.Lines, Mode=OneTime}" SelectedIndex="{x:Bind LyricsVM.ActiveIndex, Mode=TwoWay}" IsItemClickEnabled="False" HorizontalAlignment="Stretch">
                                     <ListView.ItemTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding Text}" HorizontalAlignment="Center" TextAlignment="Center" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}" />
@@ -467,7 +464,7 @@
                     </Grid>
 
                     <!-- Queue -->
-                    <Border x:Name="QueuePanel" Grid.Column="1" Background="{ThemeResource AppControlBackgroundBrush}" CornerRadius="16" Padding="24" Margin="24,24,24,24">
+                    <Border x:Name="QueuePanel" Grid.Column="1" Background="{ThemeResource AppControlBackgroundBrush}" CornerRadius="16" Padding="24" Margin="0,24,24,24">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
@@ -493,7 +490,7 @@
                                             <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE700;" FontSize="12" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Column="0" Opacity="0.5" />
                                             
                                             <Border CornerRadius="6" Background="{ThemeResource AppControlBackgroundBrush}" Grid.Column="1" Width="45" Height="45">
-                                                <Image Source="{Binding CoverArt}" Stretch="UniformToFill" />
+                                                <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="100" />
                                             </Border>
                                             <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="16,0,0,0">
                                                 <StackPanel Orientation="Horizontal" Spacing="4">

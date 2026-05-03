@@ -8,48 +8,65 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid Padding="40">
-        <StackPanel Spacing="32" MaxWidth="800" HorizontalAlignment="Left">
-            <TextBlock Text="Settings" FontSize="36" FontWeight="Bold" Margin="0,0,0,12"/>
+    <Grid>
+        <ScrollViewer Padding="40" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="32" MaxWidth="800" HorizontalAlignment="Left">
+                <TextBlock Text="Settings" FontSize="36" FontWeight="Bold" Margin="0,0,0,12"/>
 
-            <StackPanel Spacing="16">
-                <TextBlock Text="Cache Management" FontSize="20" FontWeight="SemiBold"/>
-                <Border Background="#11FFFFFF" Padding="24" CornerRadius="8">
-                    <StackPanel Spacing="12">
-                        <TextBlock Text="Thumbnail Sync" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="Download all album cover art to local storage for faster browsing and offline access." 
-                                   FontSize="14" Opacity="0.7" TextWrapping="Wrap"/>
-                        <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,8,0,0">
-                            <Button x:Name="SyncButton" Content="Sync All Thumbnails" Click="OnSyncClicked" 
-                                    Style="{StaticResource AccentButtonStyle}" Padding="20,8"/>
-                            <Button Content="Clear Cache" Click="OnClearCacheClicked" Padding="20,8"/>
+
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Playback" FontSize="20" FontWeight="SemiBold"/>
+                    <Border Background="#11FFFFFF" Padding="24" CornerRadius="8">
+                        <StackPanel Spacing="12">
+                            <ToggleSwitch x:Name="AutoPlayToggle" Header="Auto-Play" 
+                                          Toggled="OnAutoPlayToggled" IsOn="True" UseSystemFocusVisuals="True"/>
+                            <TextBlock Text="Automatically fetch and play random songs when the current queue ends." 
+                                       FontSize="12" Opacity="0.5" TextWrapping="Wrap" Margin="0,-4,0,0"/>
                         </StackPanel>
-                        <TextBlock x:Name="StatusText" FontSize="12" Opacity="0.5" Margin="0,8,0,0"/>
-                    </StackPanel>
-                </Border>
-            </StackPanel>
+                    </Border>
+                </StackPanel>
 
-            <StackPanel Spacing="16">
-                <TextBlock Text="Playback" FontSize="20" FontWeight="SemiBold"/>
-                <Border Background="#11FFFFFF" Padding="24" CornerRadius="8">
-                    <StackPanel Spacing="12">
-                        <ToggleSwitch x:Name="AutoPlayToggle" Header="Auto-Play" 
-                                      Toggled="OnAutoPlayToggled" IsOn="True" UseSystemFocusVisuals="True"/>
-                        <TextBlock Text="Automatically fetch and play random songs when the current queue ends." 
-                                   FontSize="12" Opacity="0.5" TextWrapping="Wrap" Margin="0,-4,0,0"/>
-                    </StackPanel>
-                </Border>
-            </StackPanel>
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Account" FontSize="20" FontWeight="SemiBold" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                    <Border Background="{ThemeResource AppControlBackgroundBrush}" BorderBrush="{ThemeResource AppControlBorderBrush}" BorderThickness="1" Padding="24" CornerRadius="12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- User Avatar Icon -->
+                            <Border x:Name="AvatarContainer" Width="64" Height="64" CornerRadius="32" Background="{ThemeResource SystemAccentColor}" Margin="0,0,20,0">
+                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE77B;" FontSize="32" Foreground="White" />
+                            </Border>
 
-            <StackPanel Spacing="16">
-                <TextBlock Text="Account" FontSize="20" FontWeight="SemiBold"/>
-                <Border Background="#11FFFFFF" Padding="24" CornerRadius="8">
-                    <StackPanel Spacing="12">
-                        <TextBlock x:Name="ServerInfoText" FontSize="14" Opacity="0.7"/>
-                        <Button Content="Logout" Click="OnLogoutClicked" Foreground="#FFFF4444" Padding="20,8"/>
-                    </StackPanel>
-                </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock x:Name="AccountUserText" FontSize="22" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                <StackPanel Orientation="Horizontal" Spacing="6" Opacity="0.6">
+                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE83B;" FontSize="12" VerticalAlignment="Center" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                    <TextBlock x:Name="AccountServerText" FontSize="14" VerticalAlignment="Center" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <Button Grid.Column="2" Content="Logout" Click="OnLogoutClicked" 
+                                    Foreground="#FFFF4444" BorderBrush="#33FF4444" BorderThickness="1"
+                                    Background="Transparent" Padding="24,8" CornerRadius="20" 
+                                    VerticalAlignment="Center" UseSystemFocusVisuals="True"/>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Legal" FontSize="20" FontWeight="SemiBold"/>
+                    <Border Background="#11FFFFFF" Padding="24" CornerRadius="8">
+                        <StackPanel Orientation="Horizontal" Spacing="16">
+                            <HyperlinkButton Content="Privacy Policy" NavigateUri="https://darademsc.ddns.net/#privacy" Padding="0" UseSystemFocusVisuals="True"/>
+                            <HyperlinkButton Content="Terms of Service" NavigateUri="https://darademsc.ddns.net/#tos" Padding="0" UseSystemFocusVisuals="True"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
+        </ScrollViewer>
     </Grid>
 </Page>

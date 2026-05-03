@@ -49,6 +49,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
+    <PreprocessorDefinitions>DISABLE_XAML_GENERATED_BINDING_DEBUG_OUTPUT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -100,37 +101,38 @@
     <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <ClCompile>
+    <ClCompile><LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <ClCompile>
+    <ClCompile><LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
+    <ClCompile><LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <ClCompile>
+    <ClCompile><LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ClCompile>
+    <ClCompile><LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
+      <PreprocessorDefinitions>DISABLE_XAML_GENERATED_BINDING_DEBUG_OUTPUT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <ClCompile>
+    <ClCompile><LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
     </ClCompile>
@@ -175,11 +177,11 @@
     </ClInclude>
     <ClInclude Include="Services\PlaybackService.h" />
     <ClInclude Include="Services\CastingService.h" />
-    <ClInclude Include="Services\ImageCacheService.h" />
     <ClInclude Include="Services\DebugLogger.h" />
     <ClInclude Include="Converters\RemoteSystemKindToIconConverter.h" />
     <ClInclude Include="Converters\BooleanToVisibilityConverter.h" />
     <ClInclude Include="Converters\StringFormatConverter.h" />
+    <ClInclude Include="Converters\TimeSpanToStringConverter.h" />
     <ClInclude Include="PlaylistsPage.xaml.h">
       <DependentUpon>PlaylistsPage.xaml</DependentUpon>
     </ClInclude>
@@ -187,6 +189,9 @@
       <DependentUpon>PlaylistDetailsPage.xaml</DependentUpon>
     </ClInclude>
     <ClInclude Include="ViewModels\PlaylistsViewModel.h" />
+    <ClInclude Include="UI\Controls\ThumbnailView.xaml.h">
+      <DependentUpon>UI\Controls\ThumbnailView.xaml</DependentUpon>
+    </ClInclude>
     <ClInclude Include="Converters\NullToVisibilityConverter.h" />
   </ItemGroup>
   <ItemGroup>
@@ -221,6 +226,9 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="PlaylistDetailsPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Controls\ThumbnailView.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Include="UI\Templates\DeviceTemplates.xaml">
@@ -332,7 +340,6 @@
     <ClCompile Include="Services\PlaybackService.cpp" />
     <ClCompile Include="Services\CastingService.cpp" />
     <ClCompile Include="Services\DebugLogger.cpp" />
-    <ClCompile Include="Services\ImageCacheService.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -351,6 +358,7 @@
     <ClCompile Include="Converters\RemoteSystemKindToIconConverter.cpp" />
     <ClCompile Include="Converters\BooleanToVisibilityConverter.cpp" />
     <ClCompile Include="Converters\StringFormatConverter.cpp" />
+    <ClCompile Include="Converters\TimeSpanToStringConverter.cpp" />
     <ClCompile Include="PlaylistsPage.xaml.cpp">
       <DependentUpon>PlaylistsPage.xaml</DependentUpon>
     </ClCompile>
@@ -358,6 +366,9 @@
       <DependentUpon>PlaylistDetailsPage.xaml</DependentUpon>
     </ClCompile>
     <ClCompile Include="ViewModels\PlaylistsViewModel.cpp" />
+    <ClCompile Include="UI\Controls\ThumbnailView.xaml.cpp">
+      <DependentUpon>UI\Controls\ThumbnailView.xaml</DependentUpon>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="agents.md" />

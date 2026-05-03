@@ -40,6 +40,7 @@ namespace Opal
             }
 
             void LoadPlaylistsAsync();
+            void Clear();
             void CreatePlaylist(Platform::String^ name);
             void DeletePlaylist(Platform::String^ id);
             void AddSongToPlaylist(Platform::String^ playlistId, Platform::String^ songId);

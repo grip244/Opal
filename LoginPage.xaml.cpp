@@ -89,17 +89,52 @@ void LoginPage::OnConnectClicked(Object^ sender, RoutedEventArgs^ e)
                     this->OnLoginSuccess();
                 } else {
                     this->ConnectButton->IsEnabled = true;
-                    this->StatusText->Text = resultMsg;
+                    this->StatusText->Text = ""; // Clear status text as we show the toast
+
+                    String^ title = "Connection Error";
+                    String^ sub = "An unknown error occurred.";
+
+                    if (resultMsg == "ERR_INVALID_CREDENTIALS") {
+                        title = "Authentication Failed";
+                        sub = "The username or password you entered is incorrect. Please try again.";
+                    } else if (resultMsg == "ERR_UNAUTHORIZED") {
+                        title = "Unauthorized";
+                        sub = "Your account does not have permission to access this server.";
+                    } else if (resultMsg == "ERR_RATE_LIMIT") {
+                        title = "Too Many Attempts";
+                        sub = "Server rate limit exceeded. Please wait a few minutes and try again.";
+                    } else if (resultMsg == "ERR_NETWORK_FAILURE") {
+                        title = "Network Error";
+                        sub = "Could not reach the server. Please check your internet connection and server URL.";
+                    } else if (resultMsg == "ERR_EMPTY_CREDENTIALS") {
+                        title = "Missing Information";
+                        sub = "Please enter your server URL, username, and password.";
+                    } else if (resultMsg == "ERR_SERVER_CONNECTION") {
+                        title = "Server Error";
+                        sub = "The server returned an invalid response. Please verify the URL and try again.";
+                    }
+
+                    this->ShowErrorToast(title, sub);
                 }
             }));
         }
     });
 }
 
+void LoginPage::ShowErrorToast(String^ title, String^ message)
+{
+    ErrorToast->Title = title;
+    ErrorToast->Subtitle = message;
+    ErrorToast->IsOpen = true;
+}
+
 void LoginPage::OnLoginSuccess()
 {
     // Defer syncing thumbnails until after navigation/initial load is complete
-    // ViewModels::LibraryViewModel::Instance->SyncLibraryThumbnails();
+
+    // Clear stale data from previous server/session
+    ViewModels::LibraryViewModel::Instance->ClearAll();
+    ViewModels::PlaylistsViewModel::Instance->Clear();
 
     // Credentials already saved on background thread
     ViewModels::PlaylistsViewModel::Instance->LoadPlaylistsAsync();

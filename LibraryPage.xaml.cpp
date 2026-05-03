@@ -5,9 +5,9 @@
 #include "ViewModels/PlaylistsViewModel.h"
 #include <Windows.UI.Xaml.Media.h>
 #include "Services/LyricsService.h"
-#include "Services/ImageCacheService.h"
 #include "Services/CastingService.h"
 #include "Services/DebugLogger.h"
+#include "UI/Controls/ThumbnailView.xaml.h"
 #include "ViewModels/GenreViewModel.h"
 #include <sstream>
 #include <string>
@@ -60,13 +60,14 @@ LibraryPage::LibraryPage()
     InitializeComponent();
     
     _lastLyricIndex = -1;
+    _shouldShowPlayerOnLoad = false;
 
     this->Loaded += ref new RoutedEventHandler(this, &LibraryPage::OnPageLoaded);
 
     auto page = this;
     PlaybackService::Instance->SongChanged += ref new SongChangedHandler([page](PlaybackService^ sender, Song^ song) {
         page->Dispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([page, song]() {
-            page->NowPlayingImage->Source = song->CoverArt;
+            page->NowPlayingImage->SourceUrl = song->CoverUrl;
             page->LoadLyrics(song);
             page->UpdateUpcomingQueue();
         }));
@@ -108,6 +109,15 @@ void LibraryPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventAr
         {
             LoadAlbumPage(am->Id);
         }
+        else
+        {
+            auto s = dynamic_cast<Song^>(e->Parameter);
+            if (s != nullptr)
+            {
+                PlaybackService::Instance->PlaySong(s);
+                _shouldShowPlayerOnLoad = true;
+            }
+        }
     }
 }
 
@@ -117,11 +127,24 @@ void LibraryPage::OnPageLoaded(Object^ sender, RoutedEventArgs^ e)
     {
         VisualStateManager::GoToState(this, "XboxState", false);
     }
-    if (HomeGrid->Visibility == Windows::UI::Xaml::Visibility::Collapsed &&
+    if (_shouldShowPlayerOnLoad) {
+        ShowPlayer(false);
+        _shouldShowPlayerOnLoad = false;
+    }
+    else if (HomeGrid->Visibility == Windows::UI::Xaml::Visibility::Collapsed &&
         ArtistGrid->Visibility == Windows::UI::Xaml::Visibility::Collapsed &&
-        AlbumGrid->Visibility == Windows::UI::Xaml::Visibility::Collapsed)
+        AlbumGrid->Visibility == Windows::UI::Xaml::Visibility::Collapsed &&
+        FullPlayerGrid->Visibility == Windows::UI::Xaml::Visibility::Collapsed)
     {
         LoadHomePage();
+    }
+
+    // Initialize UI with current song if something is already playing
+    auto currentSong = PlaybackService::Instance->CurrentSong;
+    if (currentSong != nullptr) {
+        NowPlayingImage->SourceUrl = currentSong->CoverUrl;
+        LoadLyrics(currentSong);
+        UpdateUpcomingQueue();
     }
 
     auto self = this;
@@ -169,8 +192,8 @@ void LibraryPage::LoadGenreAlbums(Platform::String^ genre)
 
     ArtistDetailName->Text = genre;
     ArtistDetailType->Text = "GENRE";
-    ArtistImageEllipse->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
-    ArtistDetailImageBrush->ImageSource = nullptr;
+    ArtistDetailImage->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+    ArtistDetailImage->SourceUrl = nullptr;
 
     auto self = this;
     create_task(NavidromeService::Instance->GetAlbumListByGenreAsync(genre, 50, 0)).then([self](Platform::String^ jsonStr) {
@@ -198,9 +221,7 @@ void LibraryPage::LoadGenreAlbums(Platform::String^ genre)
                                 }
 
                                 auto coverId = albObj->HasKey("coverArt") ? albObj->GetNamedString("coverArt") : albObj->GetNamedString("id", "");
-                                auto url = NavidromeService::Instance->GetCoverArtUrl(coverId, 500);
-                                if (url != nullptr && url->Length() > 0)
-                                    am->CoverArt = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(url));
+                                am->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(coverId, 500);
                                 
                                 self->_albums->Append(am);
                             }
@@ -230,17 +251,8 @@ void LibraryPage::LoadArtistPage(Platform::String^ artistId)
                         JsonObject^ artistObj = root->GetNamedObject("artist");
                         self->ArtistDetailName->Text = artistObj->GetNamedString("name", "");
                         self->ArtistDetailType->Text = "ARTIST";
-                        self->ArtistImageEllipse->Visibility = Windows::UI::Xaml::Visibility::Visible;
-                        Platform::String^ coverUrlStr = NavidromeService::Instance->GetCoverArtUrl(artistObj->GetNamedString("id", ""), 500);
-                        auto disp = App::MainDispatcher;
-                        if (disp != nullptr) {
-                            disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([self, coverUrlStr]() {
-                                try {
-                                    if (coverUrlStr != nullptr && coverUrlStr->Length() > 0)
-                                        self->ArtistDetailImageBrush->ImageSource = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(coverUrlStr));
-                                } catch (...) {}
-                            }));
-                        }
+                        self->ArtistDetailImage->Visibility = Windows::UI::Xaml::Visibility::Visible;
+                        self->ArtistDetailImage->SourceUrl = NavidromeService::Instance->GetCoverArtUrl(artistObj->GetNamedString("id", ""), 500);
 
                         if (artistObj->HasKey("album")) {
                             JsonArray^ albumsArray = artistObj->GetNamedArray("album");
@@ -274,17 +286,8 @@ void LibraryPage::LoadArtistPage(Platform::String^ artistId)
                                     }
                                 }
                                 Platform::String^ cover = albObj->HasKey("coverArt") ? albObj->GetNamedString("coverArt") : albObj->GetNamedString("id", "");
-                                Platform::String^ url = NavidromeService::Instance->GetCoverArtUrl(cover, 500);
-                                auto disp = App::MainDispatcher;
-                                if (disp != nullptr) {
-                                    disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([self, am, url]() {
-                                        try {
-                                            if (url != nullptr && url->Length() > 0)
-                                                am->CoverArt = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(url));
-                                            self->_albums->Append(am);
-                                        } catch (...) {}
-                                    }));
-                                }
+                                am->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(cover, 500);
+                                self->_albums->Append(am);
                             }
                             auto disp = App::MainDispatcher;
                             if (disp != nullptr) {
@@ -330,11 +333,7 @@ void LibraryPage::LoadAlbumPage(Platform::String^ albumId)
                         self->AlbumDetailTitle->Text = parsedTitle;
                         self->AlbumExplicitBadge->Visibility = isExplicit ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
                         self->AlbumDetailArtist->Text = albumObj->GetNamedString("artist", "");
-                        Platform::String^ coverUrlStr = NavidromeService::Instance->GetCoverArtUrl(albumObj->HasKey("coverArt") ? albumObj->GetNamedString("coverArt") : albumObj->GetNamedString("id", ""), 500);
-                        try {
-                            if (coverUrlStr != nullptr && coverUrlStr->Length() > 0)
-                                self->AlbumDetailImage->Source = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(coverUrlStr));
-                        } catch (...) {}
+                        self->AlbumDetailImage->SourceUrl = NavidromeService::Instance->GetCoverArtUrl(albumObj->HasKey("coverArt") ? albumObj->GetNamedString("coverArt") : albumObj->GetNamedString("id", ""), 500);
 
                         if (albumObj->HasKey("song")) {
                             JsonArray^ songsArray = albumObj->GetNamedArray("song");
@@ -397,9 +396,8 @@ void LibraryPage::LoadAlbumPage(Platform::String^ albumId)
                                 }
 
                                 song->StreamUrl = NavidromeService::Instance->GetStreamUrl(song->Id);
-                                Platform::String^ coverArtId = songObj->HasKey("coverArt") ? songObj->GetNamedString("coverArt") : "";
+                                Platform::String^ coverArtId = songObj->HasKey("coverArt") ? songObj->GetNamedString("coverArt") : song->Id;
                                 song->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(coverArtId, 500);
-                                song->CoverArt = self->AlbumDetailImage->Source;
                                 
                                 if (songObj->HasKey("starred")) song->IsFavorite = true;
                                 else song->IsFavorite = false;
@@ -593,16 +591,8 @@ void LibraryPage::OnGenericAlbumClicked(Object^ sender, ItemClickEventArgs^ e)
                                 } else s->Year = y->Stringify();
                             }
                             s->StreamUrl = NavidromeService::Instance->GetStreamUrl(s->Id);
-                            s->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(songObj->HasKey("coverArt") ? songObj->GetNamedString("coverArt") : "", 500);
-                            auto disp = App::MainDispatcher;
-                            if (disp != nullptr) {
-                                disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([s, url = s->CoverUrl]() {
-                                    try {
-                                        if (url != nullptr && url->Length() > 0)
-                                            s->CoverArt = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(url));
-                                    } catch (...) {}
-                                }));
-                            }
+                            Platform::String^ coverArtId = songObj->HasKey("coverArt") ? songObj->GetNamedString("coverArt") : s->Id;
+                            s->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(coverArtId, 500);
                             
                             if (songObj->HasKey("starred")) s->IsFavorite = true;
                             else s->IsFavorite = false;
@@ -697,7 +687,7 @@ void LibraryPage::OnQueueDragItemsCompleted(ListViewBase^ sender, DragItemsCompl
 
             // Sync master queue with the captured new order
             while (pb->Queue->Size > masterStartIndex) {
-                pb->Queue->RemoveAt(masterStartIndex);
+                pb->RemoveFromQueue(masterStartIndex);
             }
             
             // Also sync our backing vector
@@ -705,7 +695,7 @@ void LibraryPage::OnQueueDragItemsCompleted(ListViewBase^ sender, DragItemsCompl
 
             for (unsigned int i = 0; i < newOrder->Size; i++) {
                 auto s = newOrder->GetAt(i);
-                pb->Queue->Append(s);
+                pb->AddToQueue(s);
                 _upcomingQueue->Append(s);
             }
             
@@ -739,7 +729,7 @@ void LibraryPage::OnClearQueueClick(Object^ sender, RoutedEventArgs^ e) {
     auto pb = PlaybackService::Instance;
     unsigned int masterStartIndex = pb->CurrentIndex + 1;
     while (pb->Queue->Size > masterStartIndex) {
-        pb->Queue->RemoveAt(masterStartIndex);
+        pb->RemoveFromQueue(masterStartIndex);
     }
     UpdateUpcomingQueue();
     SyncQueueToCastingTarget();
@@ -811,26 +801,7 @@ void LibraryPage::OnLyricsToggleClicked(Object^ sender, RoutedEventArgs^ e) {
         AlbumArtView->Visibility = Windows::UI::Xaml::Visibility::Visible; 
     }
 }
-void LibraryPage::OnSyncThumbnailsClicked(Object^ sender, RoutedEventArgs^ e) {
-    auto btn = dynamic_cast<Button^>(sender);
-    if (btn != nullptr) {
-        btn->IsEnabled = false;
-        auto originalContent = btn->Content;
-        btn->Content = "Syncing...";
-        
-        LibraryVM->SyncLibraryThumbnails();
-        
-        // Just a dummy delay to show it's working (the actual sync is fire and forget in VM)
-        auto timer = ref new DispatcherTimer();
-        TimeSpan ts; ts.Duration = 3000 * 10000LL;
-        timer->Interval = ts;
-        timer->Tick += ref new Windows::Foundation::EventHandler<Object^>([btn, originalContent, timer](Object^, Object^) {
-            btn->Content = "Synced!";
-            timer->Stop();
-        });
-        timer->Start();
-    }
-}
+
 void LibraryPage::OnDisconnectClicked(Object^ sender, RoutedEventArgs^ e) {
     auto playback = PlaybackService::Instance;
     playback->Player->Pause();
@@ -876,9 +847,9 @@ void LibraryPage::OnSpotlightTapped(Object^ sender, TappedRoutedEventArgs^ e)
         auto song = dynamic_cast<Song^>(grid->Tag);
         if (song != nullptr) {
             auto pb = PlaybackService::Instance;
-            pb->Queue->Clear();
-            pb->Queue->Append(song);
-            pb->PlaySong(song);
+            auto songs = ref new Platform::Collections::Vector<Song^>();
+            songs->Append(song);
+            pb->PlayQueue(songs, 0);
             
             // Switch to full player view
             FullPlayerGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
@@ -994,7 +965,7 @@ void LibraryPage::OnAddQueueMenuClicked(Object^ sender, RoutedEventArgs^ e) {
     auto grid = dynamic_cast<Grid^>(dynamic_cast<MenuFlyout^>(item->Parent)->Target);
     if (grid != nullptr) {
         auto song = dynamic_cast<Song^>(grid->DataContext);
-        if (song) PlaybackService::Instance->Queue->Append(song);
+        if (song) PlaybackService::Instance->AddToQueue(song);
     }
 }
 

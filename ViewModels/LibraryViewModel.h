@@ -43,8 +43,8 @@ namespace Opal
 
 
             void LoadAllCategories();
-            void SyncLibraryThumbnails();
-            void SyncLibraryBatch(int offset);
+            void ClearAll();
+
 
         private:
             LibraryViewModel();
