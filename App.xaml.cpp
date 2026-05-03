@@ -37,9 +37,7 @@ App::App()
 {
     InitializeComponent();
     Suspending += ref new SuspendingEventHandler(this, &App::OnSuspending);
-    EnteredBackground += ref new EnteredBackgroundEventHandler(this, &App::OnEnteredBackground);
-    LeavingBackground += ref new LeavingBackgroundEventHandler(this, &App::OnLeavingBackground);
-#ifdef _DEBUG
+#if _DEBUG
     DebugLogger::Instance->StartHttpServer(5555);
 #endif
 }
