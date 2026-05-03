@@ -146,9 +146,25 @@ MainPage::MainPage()
     timer->Start();
 }
 
+Windows::UI::Xaml::Controls::Frame^ MainPage::GetNavigationFrame()
+{
+    return ContentFrame;
+}
+
 void MainPage::OnPageLoaded(Object^ sender, RoutedEventArgs^ e)
 {
     DebugLogger::Instance->Log("MainPage", "Page Loaded");
+
+    if (Windows::Storage::ApplicationData::Current->LocalSettings->Values->HasKey("InnerNavigationState"))
+    {
+        Platform::String^ state = dynamic_cast<Platform::String^>(Windows::Storage::ApplicationData::Current->LocalSettings->Values->Lookup("InnerNavigationState"));
+        if (state != nullptr)
+        {
+            ContentFrame->SetNavigationState(state);
+        }
+        Windows::Storage::ApplicationData::Current->LocalSettings->Values->Remove("InnerNavigationState");
+    }
+
     UpdateSidebarPlaylists();
 
     auto timer = ref new DispatcherTimer();
@@ -192,14 +208,29 @@ void MainPage::OnPageLoaded(Object^ sender, RoutedEventArgs^ e)
     // Casting service is already initialized in App::OnLaunched
 
     // Initial routing logic
-    if (NavidromeService::Instance->IsAuthenticated())
+    auto localSettings = Windows::Storage::ApplicationData::Current->LocalSettings;
+    bool stateRestored = false;
+    if (localSettings->Values->HasKey("InnerNavigationState"))
     {
-
-        ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(LibraryPage::typeid));
+        Platform::String^ savedState = dynamic_cast<Platform::String^>(localSettings->Values->Lookup("InnerNavigationState"));
+        if (savedState != nullptr)
+        {
+            ContentFrame->SetNavigationState(savedState);
+            stateRestored = true;
+        }
+        localSettings->Values->Remove("InnerNavigationState");
     }
-    else
+
+    if (!stateRestored)
     {
-        ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(LoginPage::typeid));
+        if (NavidromeService::Instance->IsAuthenticated())
+        {
+            ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(LibraryPage::typeid));
+        }
+        else
+        {
+            ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(LoginPage::typeid));
+        }
     }
 
     UpdateMenuVisibility();
@@ -811,4 +842,9 @@ void MainPage::UpdateSidebarPlaylists()
             MainNavigationView->MenuItems->Append(item);
         }
     }));
+}
+
+Windows::UI::Xaml::Controls::Frame^ MainPage::GetNavigationFrame()
+{
+    return ContentFrame;
 }

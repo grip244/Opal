@@ -109,10 +109,11 @@ void PlaybackService::SetQueue(IVector<Song^>^ songs) {
     }
 }
 
+#include "QueueManipulator.h"
+
 void PlaybackService::AddToQueue(Song^ song) {
     if (song == nullptr) return;
-    _queue->Append(song);
-    _playbackList->Items->Append(CreatePlaybackItem(song));
+    Opal::Services::QueueManipulator::AddToQueue(_queue, _playbackList->Items, song, CreatePlaybackItem(song));
 }
 
 MediaPlaybackItem^ PlaybackService::CreatePlaybackItem(Song^ song) {
@@ -210,29 +211,13 @@ void PlaybackService::OnPositionChanged(MediaPlaybackSession^ sender, Object^ ar
 }
 
 void PlaybackService::RemoveFromQueue(unsigned int index) {
-    if (index >= _queue->Size) return;
-    
-    _queue->RemoveAt(index);
-    _playbackList->Items->RemoveAt(index);
-
-    if (_queue->Size == 0) {
+    Opal::Services::QueueManipulator::RemoveFromQueue(_queue, _playbackList->Items, index, [this]() {
         _currentSong = nullptr;
-    }
+    });
 }
 
 void PlaybackService::MoveInQueue(unsigned int fromIndex, unsigned int toIndex) {
-    if (fromIndex >= _queue->Size || toIndex >= _queue->Size) return;
-    if (fromIndex == toIndex) return;
-
-    Song^ song = _queue->GetAt(fromIndex);
-    auto item = _playbackList->Items->GetAt(fromIndex);
-    
-    _queue->RemoveAt(fromIndex);
-    _playbackList->Items->RemoveAt(fromIndex);
-
-    _queue->InsertAt(toIndex, song);
-    _playbackList->Items->InsertAt(toIndex, item);
-
+    Opal::Services::QueueManipulator::MoveInQueue(_queue, _playbackList->Items, fromIndex, toIndex);
     // CurrentIndex is updated implicitly by the MediaPlaybackList
 }
 

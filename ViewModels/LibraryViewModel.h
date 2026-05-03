@@ -55,6 +55,9 @@ namespace Opal
             Platform::Collections::Vector<AlbumID3^>^ _recentReleasedAlbums;
             Platform::Collections::Vector<AlbumID3^>^ _recentPlayedAlbums;
             Platform::Collections::Vector<Song^>^ _spotlightSongs;
+
+            void UpdateAlbumCollection(Platform::Collections::Vector<AlbumID3^>^ targetCollection, Platform::String^ jsonStr);
+            void UpdateSongCollection(Platform::Collections::Vector<Song^>^ targetCollection, Platform::String^ jsonStr);
         };
     }
 }
