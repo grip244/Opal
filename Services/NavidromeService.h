@@ -36,7 +36,7 @@ namespace Opal
         Windows::Foundation::IAsyncOperation<Platform::String^>^ GetArtistAsync(Platform::String^ id);
         Windows::Foundation::IAsyncOperation<Platform::String^>^ GetAlbumAsync(Platform::String^ id);
         Windows::Foundation::IAsyncOperation<Platform::String^>^ GetSongAsync(Platform::String^ id);
-        Windows::Foundation::IAsyncAction^ ScrobbleAsync(Platform::String^ id, bool submission);
+        Windows::Foundation::IAsyncAction^ ScrobbleAsync(Platform::String^ id, bool submission, long long time);
         Windows::Foundation::IAsyncAction^ ToggleFavoriteAsync(Platform::String^ id, bool isFavorite);
         Windows::Foundation::IAsyncAction^ SetRatingAsync(Platform::String^ id, int rating);
         Windows::Foundation::IAsyncOperation<Platform::String^>^ GetPlaylistsAsync();

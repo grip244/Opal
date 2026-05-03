@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "LibraryViewModel.h"
 #include "Services/NavidromeService.h"
-#include "Services/ImageCacheService.h"
 #include <ppltasks.h>
 #include <ctime>
 
@@ -38,6 +37,7 @@ LibraryViewModel::LibraryViewModel()
 
 void LibraryViewModel::LoadAllCategories()
 {
+    ClearAll();
     auto navService = NavidromeService::Instance;
     if (!navService->IsAuthenticated()) return;
 
@@ -80,7 +80,7 @@ void LibraryViewModel::LoadAllCategories()
                             auto coverId = alb->HasKey("coverArt") ? alb->GetNamedString("coverArt") : alb->GetNamedString("id", "");
                             auto url = NavidromeService::Instance->GetCoverArtUrl(coverId, 500);
                             am->CoverUrl = url;
-
+                            am->PopulateSearchTerms();
                             newAlbs->Append(am);
                         }
 
@@ -88,15 +88,7 @@ void LibraryViewModel::LoadAllCategories()
                         App::MainDispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([self, newAlbs]() {
                             self->_exploreAlbums->Clear();
                             for (unsigned int i = 0; i < newAlbs->Size; i++) {
-                                Opal::AlbumID3^ am = newAlbs->GetAt(i);
-                                try {
-                                    if (am->CoverUrl != nullptr && am->CoverUrl->Length() > 0) {
-                                        auto bi = ref new BitmapImage(ref new Windows::Foundation::Uri(am->CoverUrl));
-                                        bi->DecodePixelWidth = 200;
-                                        am->CoverArt = bi;
-                                    }
-                                } catch (...) {}
-                                self->_exploreAlbums->Append(am);
+                                self->_exploreAlbums->Append(newAlbs->GetAt(i));
                             }
                         }));
                     }
@@ -141,6 +133,7 @@ void LibraryViewModel::LoadAllCategories()
                             auto coverId = alb->HasKey("coverArt") ? alb->GetNamedString("coverArt") : alb->GetNamedString("id", "");
                             auto url = NavidromeService::Instance->GetCoverArtUrl(coverId, 500);
                             am->CoverUrl = url;
+                            am->PopulateSearchTerms();
                             newAlbs->Append(am);
                         }
 
@@ -148,15 +141,7 @@ void LibraryViewModel::LoadAllCategories()
                         App::MainDispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([self, newAlbs]() {
                             self->_newestAlbums->Clear();
                             for (unsigned int i = 0; i < newAlbs->Size; i++) {
-                                Opal::AlbumID3^ am = newAlbs->GetAt(i);
-                                try {
-                                    if (am->CoverUrl != nullptr && am->CoverUrl->Length() > 0) {
-                                        auto bi = ref new BitmapImage(ref new Windows::Foundation::Uri(am->CoverUrl));
-                                        bi->DecodePixelWidth = 200;
-                                        am->CoverArt = bi;
-                                    }
-                                } catch (...) {}
-                                self->_newestAlbums->Append(am);
+                                self->_newestAlbums->Append(newAlbs->GetAt(i));
                             }
                         }));
                     }
@@ -198,6 +183,7 @@ void LibraryViewModel::LoadAllCategories()
                             auto coverId = alb->HasKey("coverArt") ? alb->GetNamedString("coverArt") : alb->GetNamedString("id", "");
                             auto url = NavidromeService::Instance->GetCoverArtUrl(coverId, 500);
                             am->CoverUrl = url;
+                            am->PopulateSearchTerms();
                             newAlbs->Append(am);
                         }
 
@@ -205,15 +191,7 @@ void LibraryViewModel::LoadAllCategories()
                         App::MainDispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([self, newAlbs]() {
                             self->_recentPlayedAlbums->Clear();
                             for (unsigned int i = 0; i < newAlbs->Size; i++) {
-                                Opal::AlbumID3^ am = newAlbs->GetAt(i);
-                                try {
-                                    if (am->CoverUrl != nullptr && am->CoverUrl->Length() > 0) {
-                                        auto bi = ref new BitmapImage(ref new Windows::Foundation::Uri(am->CoverUrl));
-                                        bi->DecodePixelWidth = 200;
-                                        am->CoverArt = bi;
-                                    }
-                                } catch (...) {}
-                                self->_recentPlayedAlbums->Append(am);
+                                self->_recentPlayedAlbums->Append(newAlbs->GetAt(i));
                             }
                         }));
                     }
@@ -262,6 +240,7 @@ void LibraryViewModel::LoadAllCategories()
                             auto coverId = alb->HasKey("coverArt") ? alb->GetNamedString("coverArt") : alb->GetNamedString("id", "");
                             auto url = NavidromeService::Instance->GetCoverArtUrl(coverId, 500);
                             am->CoverUrl = url;
+                            am->PopulateSearchTerms();
                             newAlbs->Append(am);
                         }
 
@@ -269,15 +248,7 @@ void LibraryViewModel::LoadAllCategories()
                         App::MainDispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([self, newAlbs]() {
                             self->_recentReleasedAlbums->Clear();
                             for (unsigned int i = 0; i < newAlbs->Size; i++) {
-                                Opal::AlbumID3^ am = newAlbs->GetAt(i);
-                                try {
-                                    if (am->CoverUrl != nullptr && am->CoverUrl->Length() > 0) {
-                                        auto bi = ref new BitmapImage(ref new Windows::Foundation::Uri(am->CoverUrl));
-                                        bi->DecodePixelWidth = 200;
-                                        am->CoverArt = bi;
-                                    }
-                                } catch (...) {}
-                                self->_recentReleasedAlbums->Append(am);
+                                self->_recentReleasedAlbums->Append(newAlbs->GetAt(i));
                             }
                         }));
                     }
@@ -326,20 +297,13 @@ void LibraryViewModel::LoadAllCategories()
                             }
                             sm->IsFavorite = s->HasKey("starred");
                             sm->Rating = s->HasKey("userRating") ? (int)s->GetNamedNumber("userRating") : 0;
-
+                            sm->PopulateSearchTerms();
                             newSongs->Append(sm);
                         }
 
                         App::MainDispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([this, newSongs]() {
                             this->_spotlightSongs->Clear();
                             for (auto sm : newSongs) {
-                                try {
-                                    if (sm->CoverUrl != nullptr && sm->CoverUrl->Length() > 0) {
-                                        auto bi = ref new BitmapImage(ref new Uri(sm->CoverUrl));
-                                        bi->DecodePixelWidth = 400; // Spotlight is larger
-                                        sm->CoverArt = bi;
-                                    }
-                                } catch (...) {}
                                 this->_spotlightSongs->Append(sm);
                             }
                         }));
@@ -351,38 +315,11 @@ void LibraryViewModel::LoadAllCategories()
 
 }
 
-void LibraryViewModel::SyncLibraryThumbnails()
+void LibraryViewModel::ClearAll()
 {
-    create_task(Opal::Services::ImageCacheService::Instance->EnsureInitializedAsync()).then([this]() {
-        SyncLibraryBatch(0);
-    });
-}
-
-void LibraryViewModel::SyncLibraryBatch(int offset)
-{
-    if (offset >= 5000) return;
-
-    auto navService = NavidromeService::Instance;
-    if (!navService->IsAuthenticated()) return;
-
-    create_task(navService->GetAlbumListAsync("newest", 500, offset)).then([this, offset](Platform::String^ jsonStr) {
-        if (jsonStr == nullptr) return;
-        try {
-            JsonObject^ root = JsonObject::Parse(jsonStr)->GetNamedObject("subsonic-response", nullptr);
-            if (root != nullptr && root->HasKey("albumList2")) {
-                JsonObject^ listObj = root->GetNamedObject("albumList2");
-                if (listObj->HasKey("album")) {
-                    JsonArray^ albums = listObj->GetNamedArray("album");
-                    for (unsigned int i = 0; i < albums->Size; i++) {
-                        auto alb = albums->GetObjectAt(i);
-                        auto url = NavidromeService::Instance->GetCoverArtUrl(alb->HasKey("coverArt") ? alb->GetNamedString("coverArt") : alb->GetNamedString("id", ""), 500);
-                        Opal::Services::ImageCacheService::Instance->PreCacheImageAsync(url);
-                    }
-                }
-            }
-            
-            // Proceed to next batch after a small delay to let I/O breathe
-            SyncLibraryBatch(offset + 500);
-        } catch (...) {}
-    });
+    _exploreAlbums->Clear();
+    _newestAlbums->Clear();
+    _recentReleasedAlbums->Clear();
+    _recentPlayedAlbums->Clear();
+    _spotlightSongs->Clear();
 }

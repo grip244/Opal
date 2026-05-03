@@ -26,6 +26,17 @@
                 <TextBlock x:Name="PlaylistTitle" Style="{StaticResource HeaderTextBlockStyle}" Text="Playlist Name" />
                 <TextBlock x:Name="PlaylistDetails" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}" Text="0 Songs · 0:00" />
             </StackPanel>
+
+            <Button x:Name="PlayAllButton" 
+                    Click="OnPlayAllClicked" 
+                    Margin="24,0,0,0"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource AccentButtonStyle}">
+                <StackPanel Orientation="Horizontal">
+                    <SymbolIcon Symbol="Play" Margin="0,0,8,0" />
+                    <TextBlock Text="Play All" />
+                </StackPanel>
+            </Button>
         </StackPanel>
 
         <!-- Song List -->

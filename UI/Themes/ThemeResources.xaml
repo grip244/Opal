@@ -16,6 +16,16 @@
             <SolidColorBrush x:Key="AppControlBorderBrush" Color="White" Opacity="0.2" />
             
             <SolidColorBrush x:Key="OverlayBackgroundBrush" Color="Black" Opacity="0.82" />
+            
+            <!-- Shimmer Effect Colors -->
+            <Color x:Key="ShimmerBaseColor">#1A1A2E</Color>
+            <Color x:Key="ShimmerHighlightColor">#2A2A48</Color>
+            
+            <LinearGradientBrush x:Key="ShimmerBrush" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="{StaticResource ShimmerBaseColor}" Offset="0" x:Name="Stop1" />
+                <GradientStop Color="{StaticResource ShimmerHighlightColor}" Offset="0.5" x:Name="Stop2" />
+                <GradientStop Color="{StaticResource ShimmerBaseColor}" Offset="1" x:Name="Stop3" />
+            </LinearGradientBrush>
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Light">
@@ -33,6 +43,16 @@
 
 
             <SolidColorBrush x:Key="OverlayBackgroundBrush" Color="White" Opacity="0.9" />
+
+            <!-- Shimmer Effect Colors -->
+            <Color x:Key="ShimmerBaseColor">#E0E0E6</Color>
+            <Color x:Key="ShimmerHighlightColor">#EDEDF5</Color>
+
+            <LinearGradientBrush x:Key="ShimmerBrush" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="{StaticResource ShimmerBaseColor}" Offset="0" />
+                <GradientStop Color="{StaticResource ShimmerHighlightColor}" Offset="0.5" />
+                <GradientStop Color="{StaticResource ShimmerBaseColor}" Offset="1" />
+            </LinearGradientBrush>
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="HighContrast">

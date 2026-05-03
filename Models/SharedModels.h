@@ -26,6 +26,7 @@ namespace Opal
         property int DurationInSeconds;
         property int PlaylistIndex;
         property Platform::String^ ExplicitStatus;
+        property Platform::String^ SearchTerms;
         
         property Platform::String^ DurationStr {
             Platform::String^ get() {
@@ -81,6 +82,18 @@ namespace Opal
             StreamUrl = "";
             ExplicitStatus = "";
         }
+
+        void PopulateSearchTerms() {
+            std::wstring s = L"";
+            if (Title != nullptr) s += Title->Data();
+            s += L" ";
+            if (Artist != nullptr) s += Artist->Data();
+            s += L" ";
+            if (Album != nullptr) s += Album->Data();
+            
+            for (auto& c : s) c = towlower(c);
+            SearchTerms = ref new Platform::String(s.c_str());
+        }
     };
 
     [Windows::UI::Xaml::Data::Bindable]
@@ -93,6 +106,7 @@ namespace Opal
         virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged;
         property Platform::String^ Id;
         property Platform::String^ Name;
+        property Platform::String^ SearchTerms;
         property Windows::UI::Xaml::Media::ImageSource^ CoverArt {
             Windows::UI::Xaml::Media::ImageSource^ get() { return _coverArt; }
             void set(Windows::UI::Xaml::Media::ImageSource^ value) {
@@ -116,6 +130,13 @@ namespace Opal
         }
 
         ArtistModel() {}
+
+        void PopulateSearchTerms() {
+            std::wstring s = L"";
+            if (Name != nullptr) s += Name->Data();
+            for (auto& c : s) c = towlower(c);
+            SearchTerms = ref new Platform::String(s.c_str());
+        }
     };
 
     [Windows::UI::Xaml::Data::Bindable]
@@ -144,6 +165,7 @@ namespace Opal
         property Platform::String^ Version;
         property Platform::String^ ExplicitStatus; // "explicit", "clean", or "" (default)
         property Platform::String^ SortName;
+        property Platform::String^ SearchTerms;
         property Platform::String^ CoverUrl;
         
         void NotifyPropertyChanged(Platform::String^ prop) {
@@ -159,6 +181,15 @@ namespace Opal
         }
 
         AlbumID3() {}
+
+        void PopulateSearchTerms() {
+            std::wstring s = L"";
+            if (Title != nullptr) s += Title->Data();
+            s += L" ";
+            if (Artist != nullptr) s += Artist->Data();
+            for (auto& c : s) c = towlower(c);
+            SearchTerms = ref new Platform::String(s.c_str());
+        }
     };
 
     [Windows::UI::Xaml::Data::Bindable]
@@ -182,6 +213,7 @@ namespace Opal
         property Platform::String^ Subtitle;
         property Platform::String^ Icon;
         property Windows::UI::Xaml::Media::ImageSource^ Image;
+        property Platform::String^ ImageUrl;
         SearchResultModel() {}
     };
 
@@ -269,6 +301,7 @@ namespace Opal
         property Platform::String^ Owner;
         property Platform::String^ Comment;
         property bool IsPublic;
+        property Platform::String^ SearchTerms;
         property Windows::UI::Xaml::Media::ImageSource^ CoverArt {
             Windows::UI::Xaml::Media::ImageSource^ get() { return _coverArt; }
             void set(Windows::UI::Xaml::Media::ImageSource^ value) {
@@ -278,11 +311,19 @@ namespace Opal
                 }
             }
         }
+        property Platform::String^ CoverUrl;
         
         void NotifyPropertyChanged(Platform::String^ prop) {
             PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
         }
 
         PlaylistModel() {}
+
+        void PopulateSearchTerms() {
+            std::wstring s = L"";
+            if (Name != nullptr) s += Name->Data();
+            for (auto& c : s) c = towlower(c);
+            SearchTerms = ref new Platform::String(s.c_str());
+        }
     };
 }

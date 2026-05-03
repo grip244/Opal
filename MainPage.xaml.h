@@ -30,7 +30,7 @@ namespace Opal
         void OnPlayPauseClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnNextClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnPreviousClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-        void OnShuffleClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+
         void OnVolumeChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
         void OnLyricsToggleClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnProgressSeek(Platform::Object^ sender, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ e);

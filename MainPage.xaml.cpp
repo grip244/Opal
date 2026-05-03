@@ -9,12 +9,12 @@
 #include "GenresPage.xaml.h"
 #include "PlaylistsPage.xaml.h"
 #include "PlaylistDetailsPage.xaml.h"
+#include "UI/Controls/ThumbnailView.xaml.h"
 #include "ViewModels/LibraryViewModel.h"
 #include "ViewModels/PlaylistsViewModel.h"
 #include "Services/NavidromeService.h"
 #include "Services/PlaybackService.h"
 #include "Services/CastingService.h"
-#include "Services/ImageCacheService.h"
 #include "Services/DebugLogger.h"
 #include "Models/SharedModels.h"
 #include <ppltasks.h>
@@ -45,7 +45,7 @@ MainPage::MainPage()
             self->NowPlayingTitle->Text = song->Title;
             self->PlayerExplicitBadge->Visibility = song->ExplicitStatus == "explicit" ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
             self->NowPlayingArtist->Text = song->Artist;
-            self->MiniThumbnail->Source = song->CoverArt;
+            self->MiniThumbnail->SourceUrl = song->CoverUrl;
             self->GlobalPlayerBar->Visibility = Windows::UI::Xaml::Visibility::Visible;
             self->FavoriteBtn->IsChecked = song->IsFavorite;
             self->FavoriteIcon->Glyph = song->IsFavorite ? ref new Platform::String(L"\uEB52") : ref new Platform::String(L"\uEB51");
@@ -73,10 +73,7 @@ MainPage::MainPage()
             
             if (track->CoverUrl != nullptr && !track->CoverUrl->IsEmpty()) {
                 DebugLogger::Instance->Log("CastingService", "Loading Remote Thumbnail: " + track->CoverUrl);
-                try {
-                    song->CoverArt = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(track->CoverUrl));
-                    self->MiniThumbnail->Source = song->CoverArt;
-                } catch (...) {}
+                self->MiniThumbnail->SourceUrl = track->CoverUrl;
             }
             
             // Remote Playback Logic: Start playing the stream if received
@@ -134,7 +131,7 @@ MainPage::MainPage()
                 self->NowPlayingTitle->Text = song->Title;
                 self->PlayerExplicitBadge->Visibility = song->ExplicitStatus == "explicit" ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
                 self->NowPlayingArtist->Text = song->Artist;
-                if (self->MiniThumbnail->Source != song->CoverArt) self->MiniThumbnail->Source = song->CoverArt;
+                if (self->MiniThumbnail->SourceUrl != song->CoverUrl) self->MiniThumbnail->SourceUrl = song->CoverUrl;
             }
             
             if (session->PlaybackState == Windows::Media::Playback::MediaPlaybackState::Playing) self->PlayPauseIcon->Symbol = Symbol::Pause;
@@ -192,7 +189,7 @@ void MainPage::OnPageLoaded(Object^ sender, RoutedEventArgs^ e)
     // Initial routing logic
     if (NavidromeService::Instance->IsAuthenticated())
     {
-        ViewModels::LibraryViewModel::Instance->SyncLibraryThumbnails();
+
         ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(LibraryPage::typeid));
     }
     else
@@ -285,7 +282,7 @@ void MainPage::OnPreviousClicked(Object^ sender, RoutedEventArgs^ e) {
     PlaybackService::Instance->PreviousSong(); 
 }
 
-void MainPage::OnShuffleClicked(Object^ sender, RoutedEventArgs^ e) { PlaybackService::Instance->Shuffle(); }
+
 void MainPage::OnVolumeChanged(Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e) { 
     PlaybackService::Instance->Player->Volume = e->NewValue / 100.0; 
 }
@@ -549,17 +546,7 @@ void MainPage::OnSearchTextChanged(AutoSuggestBox^ sender, AutoSuggestBoxTextCha
                             model->Title = obj->GetNamedString("name");
                             model->Subtitle = "Artist";
                             model->Icon = L"\uE716"; // Contact
-                            String^ coverId = obj->GetNamedString("id");
-                            String^ url = NavidromeService::Instance->GetCoverArtUrl(coverId, 100);
-                            auto disp = App::MainDispatcher;
-                            if (disp != nullptr) {
-                                disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([model, url]() {
-                                    try {
-                                        if (url != nullptr && url->Length() > 0)
-                                            model->Image = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(url));
-                                    } catch (...) {}
-                                }));
-                            }
+                            model->ImageUrl = NavidromeService::Instance->GetCoverArtUrl(obj->GetNamedString("id"), 100);
                             suggestions->Append(model);
                         }
                     }
@@ -576,16 +563,7 @@ void MainPage::OnSearchTextChanged(AutoSuggestBox^ sender, AutoSuggestBoxTextCha
                             model->Title = obj->HasKey("name") ? obj->GetNamedString("name") : obj->GetNamedString("title", "Unknown Album");
                             model->Subtitle = obj->GetNamedString("artist", "Unknown Artist");
                             String^ coverId = obj->HasKey("coverArt") ? obj->GetNamedString("coverArt") : obj->GetNamedString("id");
-                            String^ url = NavidromeService::Instance->GetCoverArtUrl(coverId, 100);
-                            auto disp = App::MainDispatcher;
-                            if (disp != nullptr) {
-                                disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([model, url]() {
-                                    try {
-                                        if (url != nullptr && url->Length() > 0)
-                                            model->Image = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(url));
-                                    } catch (...) {}
-                                }));
-                            }
+                            model->ImageUrl = NavidromeService::Instance->GetCoverArtUrl(coverId, 100);
                             suggestions->Append(model);
                         }
                     }
@@ -603,16 +581,7 @@ void MainPage::OnSearchTextChanged(AutoSuggestBox^ sender, AutoSuggestBoxTextCha
                             model->Icon = L"\uE8D6"; // Audio
                             String^ coverId = obj->HasKey("coverArt") ? obj->GetNamedString("coverArt") : "";
                             if (coverId->Length() > 0) {
-                                String^ url = NavidromeService::Instance->GetCoverArtUrl(coverId, 100);
-                                auto disp = App::MainDispatcher;
-                                if (disp != nullptr) {
-                                    disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([model, url]() {
-                                        try {
-                                            if (url != nullptr && url->Length() > 0)
-                                                model->Image = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(url));
-                                        } catch (...) {}
-                                    }));
-                                }
+                                model->ImageUrl = NavidromeService::Instance->GetCoverArtUrl(coverId, 100);
                             }
                             suggestions->Append(model);
                         }
@@ -673,21 +642,18 @@ void MainPage::OnSearchEntered(AutoSuggestBox^ sender, AutoSuggestBoxQuerySubmit
                             s->Artist = songObj->GetNamedString("artist");
                             s->Album = songObj->GetNamedString("album");
                             s->StreamUrl = NavidromeService::Instance->GetStreamUrl(s->Id);
-                            s->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(songObj->HasKey("coverArt") ? songObj->GetNamedString("coverArt") : "", 500);
-                            try {
-                                if (s->CoverUrl != nullptr && s->CoverUrl->Length() > 0)
-                                    s->CoverArt = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(s->CoverUrl));
-                            } catch (...) {}
+                            s->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(songObj->HasKey("coverArt") ? songObj->GetNamedString("coverArt") : s->Id, 500);
                             
                             PlaybackService::Instance->PlaySong(s);
                             
-                            // Navigate to library player if not there
+                            // Navigate to library player and pass the song
                             auto targetType = Windows::UI::Xaml::Interop::TypeName(LibraryPage::typeid);
                             if (self->ContentFrame->CurrentSourcePageType.Name != targetType.Name) {
-                                self->ContentFrame->Navigate(targetType);
+                                self->ContentFrame->Navigate(targetType, s);
+                            } else {
+                                auto page = dynamic_cast<LibraryPage^>(self->ContentFrame->Content);
+                                if (page != nullptr) page->ShowPlayer(false);
                             }
-                            auto page = dynamic_cast<LibraryPage^>(self->ContentFrame->Content);
-                            if (page != nullptr) page->ShowPlayer(false);
                         } catch (...) {}
                     }));
                 }
@@ -805,12 +771,17 @@ void MainPage::OnNewPlaylistClick(Object^ sender, Windows::UI::Xaml::RoutedEvent
 
 void MainPage::UpdateSidebarPlaylists()
 {
-    this->Dispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([this]() {
-        // Find the "Playlists" item to insert after
+    static bool _updateQueued = false;
+    if (_updateQueued) return;
+    _updateQueued = true;
+
+    this->Dispatcher->RunAsync(CoreDispatcherPriority::Low, ref new DispatchedHandler([this]() {
+        _updateQueued = false;
+        // Find the "NewPlaylist" item to insert after
         int startIndex = -1;
         for (unsigned int i = 0; i < MainNavigationView->MenuItems->Size; i++) {
             auto item = dynamic_cast<Microsoft::UI::Xaml::Controls::NavigationViewItem^>(MainNavigationView->MenuItems->GetAt(i));
-            if (item != nullptr && item->Tag != nullptr && item->Tag->ToString() == "Playlists") {
+            if (item != nullptr && item->Tag != nullptr && item->Tag->ToString() == "NewPlaylist") {
                 startIndex = (int)i;
                 break;
             }
@@ -818,7 +789,7 @@ void MainPage::UpdateSidebarPlaylists()
 
         if (startIndex == -1) return;
 
-        // Remove existing dynamic items (all items after "Playlists")
+        // Remove existing dynamic items (all items after "NewPlaylist")
         while (MainNavigationView->MenuItems->Size > (unsigned int)(startIndex + 1)) {
             MainNavigationView->MenuItems->RemoveAt(startIndex + 1);
         }

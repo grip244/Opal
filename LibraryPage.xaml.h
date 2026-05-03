@@ -37,7 +37,7 @@ namespace Opal
         void LoadHomePage();
         void ToggleFullPlayer();
         void ShowPlayer(bool showLyrics);
-        void OnSyncThumbnailsClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+
         void Search(Platform::String^ query);
 
         property bool IsFullPlayerActive {
@@ -73,6 +73,7 @@ namespace Opal
 
     private:
         int _lastLyricIndex;
+        bool _shouldShowPlayerOnLoad;
         void UpdateLyricsHighlight();
         void UpdateUpcomingQueue();
 

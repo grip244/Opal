@@ -25,10 +25,6 @@ NavidromeService^ NavidromeService::Instance::get()
 NavidromeService::NavidromeService()
 {
     _filter = ref new Windows::Web::Http::Filters::HttpBaseProtocolFilter();
-    _filter->IgnorableServerCertificateErrors->Append(Windows::Security::Cryptography::Certificates::ChainValidationResult::Untrusted);
-    _filter->IgnorableServerCertificateErrors->Append(Windows::Security::Cryptography::Certificates::ChainValidationResult::InvalidName);
-    _filter->IgnorableServerCertificateErrors->Append(Windows::Security::Cryptography::Certificates::ChainValidationResult::Expired);
-
     _httpClient = ref new HttpClient(_filter);
     _httpClient->DefaultRequestHeaders->UserAgent->TryParseAdd("Opal/1.0 (Windows/Xbox)");
 }
@@ -73,6 +69,9 @@ String^ NavidromeService::GenerateSalt()
 
 String^ NavidromeService::ComputeMd5Token(String^ input)
 {
+    // NOTE: MD5 is used here specifically because it is required by the Subsonic API protocol (v1.16.1)
+    // for token-based authentication (t= and s= parameters). Use of stronger algorithms like SHA256 
+    // would result in authentication failure with all Subsonic-compliant servers (like Navidrome).
     auto alg = HashAlgorithmProvider::OpenAlgorithm("MD5");
     auto buffer = CryptographicBuffer::ConvertStringToBinary(input, BinaryStringEncoding::Utf8);
     auto hash = alg->HashData(buffer);
@@ -81,7 +80,7 @@ String^ NavidromeService::ComputeMd5Token(String^ input)
 
 IAsyncOperation<String^>^ NavidromeService::LoginAsync(String^ serverUrl, String^ username, String^ password)
 {
-    if (serverUrl == nullptr || username == nullptr || password == nullptr) return create_async([]() -> String^ { return "Credentials cannot be empty."; });
+    if (serverUrl == nullptr || username == nullptr || password == nullptr) return create_async([]() -> String^ { return "ERR_EMPTY_CREDENTIALS"; });
 
     return create_async([=]() -> String^ {
         try
@@ -102,24 +101,34 @@ IAsyncOperation<String^>^ NavidromeService::LoginAsync(String^ serverUrl, String
             auto uri = ref new Uri(ref new String(fullUrl.c_str()));
             auto response = create_task(_httpClient->GetAsync(uri)).get();
             
-            if (response != nullptr && response->IsSuccessStatusCode && response->Content != nullptr)
+            if (response != nullptr && response->Content != nullptr)
             {
                 auto str = create_task(response->Content->ReadAsStringAsync()).get();
                 if (str != nullptr) {
                     std::wstring ws(str->Data());
-                    if (ws.find(L"ok") != std::wstring::npos || ws.find(L"status\":\"ok\"") != std::wstring::npos)
+                    
+                    // Specific check for success status
+                    if (ws.find(L"\"status\":\"ok\"") != std::wstring::npos || ws.find(L"\"status\": \"ok\"") != std::wstring::npos)
                     {
                         SetCredentials(serverUrl, username, password);
                         return "SUCCESS";
                     }
+                    
+                    // Check for specific Subsonic error codes
+                    if (ws.find(L"\"code\":40") != std::wstring::npos) return "ERR_INVALID_CREDENTIALS";
+                    if (ws.find(L"\"code\":50") != std::wstring::npos || response->StatusCode == Windows::Web::Http::HttpStatusCode::TooManyRequests) return "ERR_RATE_LIMIT";
                 }
             }
-            return "Error: Could not connect to the server.";
+            
+            if (response != nullptr && response->StatusCode == Windows::Web::Http::HttpStatusCode::Unauthorized)
+                return "ERR_UNAUTHORIZED";
+
+            return "ERR_SERVER_CONNECTION";
         }
         catch (Exception^ ex)
         {
             DebugLogger::Instance->LogException("LoginAsync", ex);
-            return "Connection failed: " + ex->Message;
+            return "ERR_NETWORK_FAILURE";
         }
     });
 }
@@ -225,7 +234,7 @@ String^ NavidromeService::GetCoverArtUrl(String^ id, int size)
         L"&t=" + std::wstring(token->Data()) +
         L"&s=" + std::wstring(salt->Data()) +
         L"&v=1.16.1&c=Opal[Xbox/Windows]&id=" + std::wstring(id->Data()) +
-        L"&size=" + std::to_wstring(size);
+        L"&size=" + std::to_wstring(size) + L"&c=true";
 
     std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
     if (fullUrl.back() != L'/') fullUrl += L'/';
@@ -396,7 +405,7 @@ IAsyncOperation<String^>^ NavidromeService::GetSongAsync(String^ id)
     });
 }
 
-Windows::Foundation::IAsyncAction^ NavidromeService::ScrobbleAsync(String^ id, bool submission)
+Windows::Foundation::IAsyncAction^ NavidromeService::ScrobbleAsync(String^ id, bool submission, long long time)
 {
     if (!IsAuthenticated()) return create_async([]() {});
     return create_async([=]() {
@@ -412,6 +421,10 @@ Windows::Foundation::IAsyncAction^ NavidromeService::ScrobbleAsync(String^ id, b
                 L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json" +
                 L"&id=" + std::wstring(id->Data()) +
                 L"&submission=" + (submission ? L"true" : L"false");
+
+            if (time > 0) {
+                rel += L"&time=" + std::to_wstring(time);
+            }
 
             std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
             if (fullUrl.back() != L'/') fullUrl += L'/';

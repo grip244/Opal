@@ -5,6 +5,7 @@
 #include "DebugLogger.h"
 #include "CastingService.h"
 #include "SettingsService.h"
+#include <chrono>
 
 using namespace Opal;
 using namespace Platform;
@@ -63,12 +64,55 @@ void PlaybackService::PlaySong(Song^ song) {
     }
 
     if (index != -1) {
+        // Safety check: ensure _playbackList matches _queue
+        if (_playbackList->Items->Size != _queue->Size) {
+            SetQueue(_queue);
+        }
+
         if (_playbackList->CurrentItemIndex != (unsigned int)index) {
-            _playbackList->MoveTo((unsigned int)index);
+            try {
+                _playbackList->MoveTo((unsigned int)index);
+            } catch (Exception^ ex) {
+                DebugLogger::Instance->LogException("PlaySong (MoveTo)", ex);
+                // Fallback: full reset if MoveTo still fails
+                SetQueue(_queue);
+                _playbackList->MoveTo((unsigned int)index);
+            }
         } else if (_mediaPlayer->PlaybackSession->PlaybackState != MediaPlaybackState::Playing) {
              _mediaPlayer->Play();
         }
+    } else {
+        // Add to queue and play
+        _queue->Append(song);
+        _playbackList->Items->Append(CreatePlaybackItem(song));
+        _playbackList->MoveTo(_queue->Size - 1);
+        _mediaPlayer->Play();
     }
+}
+
+void PlaybackService::SetQueue(IVector<Song^>^ songs) {
+    if (songs == nullptr) return;
+    
+    _playbackList->Items->Clear();
+    
+    if (songs == _queue) {
+        // Sync operation: Rebuild playback list from current queue
+        for (auto s : _queue) {
+            _playbackList->Items->Append(CreatePlaybackItem(s));
+        }
+    } else {
+        _queue->Clear();
+        for (auto s : songs) {
+            _queue->Append(s);
+            _playbackList->Items->Append(CreatePlaybackItem(s));
+        }
+    }
+}
+
+void PlaybackService::AddToQueue(Song^ song) {
+    if (song == nullptr) return;
+    _queue->Append(song);
+    _playbackList->Items->Append(CreatePlaybackItem(song));
 }
 
 MediaPlaybackItem^ PlaybackService::CreatePlaybackItem(Song^ song) {
@@ -93,13 +137,7 @@ MediaPlaybackItem^ PlaybackService::CreatePlaybackItem(Song^ song) {
 }
 
 void PlaybackService::PlayQueue(IVector<Song^>^ songs, unsigned int startIndex) {
-    _playbackList->Items->Clear();
-    _queue->Clear();
-
-    for (auto s : songs) {
-        _queue->Append(s);
-        _playbackList->Items->Append(CreatePlaybackItem(s));
-    }
+    SetQueue(songs);
 
     _playbackList->AutoRepeatEnabled = false; // Re-enforce no-looping
     _currentIndex = startIndex;
@@ -140,8 +178,11 @@ void PlaybackService::OnCurrentItemChanged(MediaPlaybackList^ sender, CurrentMed
     _hasScrobbledCurrentSong = false;
     _playedIds.insert(std::wstring(_currentSong->Id->Data()));
 
+    _currentSongStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+
     // Notify Navidrome (Now Playing)
-    NavidromeService::Instance->ScrobbleAsync(_currentSong->Id, false);
+    NavidromeService::Instance->ScrobbleAsync(_currentSong->Id, false, 0);
 
     // Auto Play Proactive Fetch: If we are on the last song, fetch more now for gapless transition
     if (_currentIndex == _queue->Size - 1 && Opal::SettingsService::Instance->IsAutoPlayEnabled) {
@@ -163,7 +204,7 @@ void PlaybackService::OnPositionChanged(MediaPlaybackSession^ sender, Object^ ar
         auto pos = sender->Position.Duration;
         if (dur > 0 && pos >= dur / 2) {
             _hasScrobbledCurrentSong = true;
-            NavidromeService::Instance->ScrobbleAsync(_currentSong->Id, true);
+            NavidromeService::Instance->ScrobbleAsync(_currentSong->Id, true, _currentSongStartTime);
         }
     }
 }

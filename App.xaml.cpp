@@ -37,7 +37,11 @@ App::App()
 {
     InitializeComponent();
     Suspending += ref new SuspendingEventHandler(this, &App::OnSuspending);
+    EnteredBackground += ref new EnteredBackgroundEventHandler(this, &App::OnEnteredBackground);
+    LeavingBackground += ref new LeavingBackgroundEventHandler(this, &App::OnLeavingBackground);
+#ifdef _DEBUG
     DebugLogger::Instance->StartHttpServer(5555);
+#endif
 }
 
 /// <summary>
@@ -118,6 +122,17 @@ void App::OnSuspending(Object^ sender, SuspendingEventArgs^ e)
     (void) e;   // Unused parameter
 
     //TODO: Save application state and stop any background activity
+}
+
+void App::OnEnteredBackground(Object^ sender, EnteredBackgroundEventArgs^ e)
+{
+    // The app is now in the background. 
+    // We should minimize memory usage here if possible.
+}
+
+void App::OnLeavingBackground(Object^ sender, LeavingBackgroundEventArgs^ e)
+{
+    // The app is returning to the foreground.
 }
 
 /// <summary>
