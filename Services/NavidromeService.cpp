@@ -118,7 +118,7 @@ IAsyncOperation<String^>^ NavidromeService::LoginAsync(String^ serverUrl, String
             auto token = ComputeMd5Token(password + salt);
             auto normalizedServerUrl = NormalizeUrl(serverUrl);
 
-            std::wstring rel = L"rest/ping.view?u=" + std::wstring(username->Data()) +
+            std::wstring rel = L"rest/ping.view?u=" + std::wstring(Uri::EscapeComponent(username)->Data()) +
                 L"&t=" + std::wstring(token->Data()) +
                 L"&s=" + std::wstring(salt->Data()) +
                 L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json";
@@ -177,7 +177,7 @@ IAsyncOperation<String^>^ NavidromeService::GetAlbumListAsync(String^ type, int 
                 L"&t=" + std::wstring(token->Data()) +
                 L"&s=" + std::wstring(salt->Data()) +
                 L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json" +
-                L"&type=" + std::wstring(type->Data()) +
+                L"&type=" + std::wstring(Uri::EscapeComponent(type)->Data()) +
                 L"&size=" + std::to_wstring(size) +
                 L"&offset=" + std::to_wstring(offset);
 
@@ -266,7 +266,7 @@ String^ NavidromeService::GetCoverArtUrl(String^ id, int size)
     std::wstring rel = L"rest/getCoverArt.view?u=" + std::wstring(_username->Data()) +
         L"&t=" + std::wstring(token->Data()) +
         L"&s=" + std::wstring(salt->Data()) +
-        L"&v=1.16.1&c=Opal[Xbox/Windows]&id=" + std::wstring(id->Data()) +
+        L"&v=1.16.1&c=Opal[Xbox/Windows]&id=" + std::wstring(Uri::EscapeComponent(id)->Data()) +
         L"&size=" + std::to_wstring(size) + L"&c=true";
 
     std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
@@ -286,7 +286,7 @@ String^ NavidromeService::GetStreamUrl(String^ id)
     std::wstring rel = L"rest/stream.view?u=" + std::wstring(_username->Data()) +
         L"&t=" + std::wstring(token->Data()) +
         L"&s=" + std::wstring(salt->Data()) +
-        L"&v=1.16.1&c=Opal[Xbox/Windows]&id=" + std::wstring(id->Data());
+        L"&v=1.16.1&c=Opal[Xbox/Windows]&id=" + std::wstring(Uri::EscapeComponent(id)->Data());
 
     std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
     if (fullUrl.back() != L'/') fullUrl += L'/';
@@ -340,7 +340,7 @@ IAsyncOperation<String^>^ NavidromeService::GetLyricsBySongIdAsync(String^ songI
                 L"&t=" + std::wstring(token->Data()) +
                 L"&s=" + std::wstring(salt->Data()) +
                 L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json" +
-                L"&enhanced=true&id=" + std::wstring(songId->Data());
+                L"&enhanced=true&id=" + std::wstring(Uri::EscapeComponent(songId)->Data());
 
             std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
             if (fullUrl.back() != L'/') fullUrl += L'/';
@@ -403,7 +403,7 @@ IAsyncOperation<String^>^ NavidromeService::GetArtistAsync(String^ id)
         auto token = GetSessionToken(_password);
         auto salt = GenerateSalt();
         auto normalizedServerUrl = NormalizeUrl(_serverUrl);
-        std::wstring rel = L"rest/getArtist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&id=" + std::wstring(id->Data());
+        std::wstring rel = L"rest/getArtist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&id=" + std::wstring(Uri::EscapeComponent(id)->Data());
         std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
         if (fullUrl.back() != L'/') fullUrl += L'/';
         return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).then([](HttpResponseMessage^ resp) {
@@ -419,7 +419,7 @@ IAsyncOperation<String^>^ NavidromeService::GetAlbumAsync(String^ id)
         auto token = GetSessionToken(_password);
         auto salt = GenerateSalt();
         auto normalizedServerUrl = NormalizeUrl(_serverUrl);
-        std::wstring rel = L"rest/getAlbum.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&id=" + std::wstring(id->Data());
+        std::wstring rel = L"rest/getAlbum.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&id=" + std::wstring(Uri::EscapeComponent(id)->Data());
         std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
         if (fullUrl.back() != L'/') fullUrl += L'/';
         return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).then([](HttpResponseMessage^ resp) {
@@ -435,7 +435,7 @@ IAsyncOperation<String^>^ NavidromeService::GetSongAsync(String^ id)
         auto token = GetSessionToken(_password);
         auto salt = GenerateSalt();
         auto normalizedServerUrl = NormalizeUrl(_serverUrl);
-        std::wstring rel = L"rest/getSong.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&id=" + std::wstring(id->Data());
+        std::wstring rel = L"rest/getSong.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&id=" + std::wstring(Uri::EscapeComponent(id)->Data());
         std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
         if (fullUrl.back() != L'/') fullUrl += L'/';
         return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).then([](HttpResponseMessage^ resp) {
@@ -458,7 +458,7 @@ Windows::Foundation::IAsyncAction^ NavidromeService::ScrobbleAsync(String^ id, b
                 L"&t=" + std::wstring(token->Data()) +
                 L"&s=" + std::wstring(salt->Data()) +
                 L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json" +
-                L"&id=" + std::wstring(id->Data()) +
+                L"&id=" + std::wstring(Uri::EscapeComponent(id)->Data()) +
                 L"&submission=" + (submission ? L"true" : L"false");
 
             if (time > 0) {
@@ -490,7 +490,7 @@ Windows::Foundation::IAsyncAction^ NavidromeService::ToggleFavoriteAsync(String^
                 L"&t=" + std::wstring(token->Data()) +
                 L"&s=" + std::wstring(salt->Data()) +
                 L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json" +
-                L"&id=" + std::wstring(id->Data());
+                L"&id=" + std::wstring(Uri::EscapeComponent(id)->Data());
 
             std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
             if (fullUrl.back() != L'/') fullUrl += L'/';
@@ -516,7 +516,7 @@ Windows::Foundation::IAsyncAction^ NavidromeService::SetRatingAsync(String^ id, 
                 L"&t=" + std::wstring(token->Data()) +
                 L"&s=" + std::wstring(salt->Data()) +
                 L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json" +
-                L"&id=" + std::wstring(id->Data()) +
+                L"&id=" + std::wstring(Uri::EscapeComponent(id)->Data()) +
                 L"&rating=" + std::to_wstring(rating);
 
             std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
@@ -541,7 +541,7 @@ IAsyncOperation<String^>^ NavidromeService::GetPlaylistAsync(String^ id)
         auto token = GetSessionToken(_password);
         auto salt = GenerateSalt();
         auto normalizedServerUrl = NormalizeUrl(_serverUrl);
-        std::wstring rel = L"rest/getPlaylist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&id=" + std::wstring(id->Data());
+        std::wstring rel = L"rest/getPlaylist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&id=" + std::wstring(Uri::EscapeComponent(id)->Data());
         std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
         if (fullUrl.back() != L'/') fullUrl += L'/';
         return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).then([](HttpResponseMessage^ resp) {
@@ -614,7 +614,7 @@ IAsyncAction^ NavidromeService::UpdatePlaylistNameAsync(String^ playlistId, Stri
         auto token = GetSessionToken(_password);
         auto salt = GenerateSalt();
         auto normalizedServerUrl = NormalizeUrl(_serverUrl);
-        std::wstring rel = L"rest/updatePlaylist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&playlistId=" + std::wstring(playlistId->Data()) + L"&name=" + std::wstring(newName->Data());
+        std::wstring rel = L"rest/updatePlaylist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&playlistId=" + std::wstring(Uri::EscapeComponent(playlistId)->Data()) + L"&name=" + std::wstring(Uri::EscapeComponent(newName)->Data());
         std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
         if (fullUrl.back() != L'/') fullUrl += L'/';
         create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).get();
