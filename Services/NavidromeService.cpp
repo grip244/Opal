@@ -685,6 +685,9 @@ IAsyncAction^ NavidromeService::ReorderPlaylistAsync(String^ playlistId, Windows
                 L"&s=" + std::wstring(salt->Data()) +
                 L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&playlistId=" + std::wstring(escapedPid->Data());
 
+            // Pre-reserve buffer to reduce reallocations for large playlists
+            // Each param is ~45 chars: "&songId=" (8) + escaped UUID (~36) + margin
+            rel.reserve(rel.size() + songIds->Size * 50);
             for (auto sid : songIds) {
                 rel += L"&songId=" + std::wstring(Windows::Foundation::Uri::EscapeComponent(sid)->Data());
             }
