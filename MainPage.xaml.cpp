@@ -18,6 +18,7 @@
 #include "Services/DebugLogger.h"
 #include "Models/SharedModels.h"
 #include <ppltasks.h>
+#include "Services/GamepadService.h"
 
 using namespace Opal;
 using namespace Platform;
@@ -55,6 +56,21 @@ MainPage::MainPage()
             self->FavoriteBtn->IsChecked = song->IsFavorite;
             self->FavoriteIcon->Glyph = song->IsFavorite ? ref new Platform::String(L"\uEB52") : ref new Platform::String(L"\uEB51");
             self->GlobalRatingControl->Value = song->Rating;
+
+            // Cast-forwarding: when casting is active, send the new song to the remote target
+            if (CastingService::Instance->IsCastingActive && !AnalyticsInfo::VersionInfo->DeviceFamily->Equals("Windows.Xbox")) {
+                DebugLogger::Instance->Log("MainPage", "Handover - Auto-casting next song: " + song->Title);
+                auto track = ref new TrackData();
+                track->Id = song->Id;
+                track->Title = song->Title;
+                track->Artist = song->Artist;
+                track->Album = song->Album;
+                track->CoverUrl = song->CoverUrl;
+                track->StreamUrl = song->StreamUrl;
+                track->ExplicitStatus = song->ExplicitStatus;
+                CastingService::Instance->CastTrack(CastingService::Instance->TargetDeviceIp, track);
+                self->SyncQueue();
+            }
         }));
     });
 
@@ -146,10 +162,6 @@ MainPage::MainPage()
     timer->Start();
 }
 
-Windows::UI::Xaml::Controls::Frame^ MainPage::GetNavigationFrame()
-{
-    return ContentFrame;
-}
 
 void MainPage::OnPageLoaded(Object^ sender, RoutedEventArgs^ e)
 {
@@ -179,26 +191,11 @@ void MainPage::OnPageLoaded(Object^ sender, RoutedEventArgs^ e)
 
     CastingService::Instance->Dispatcher = this->Dispatcher;
 
-    // Remove redundant auto self = this;
-    PlaybackService::Instance->SongChanged += ref new SongChangedHandler([self](PlaybackService^ sender, Song^ song) {
-         if (CastingService::Instance->IsCastingActive && !AnalyticsInfo::VersionInfo->DeviceFamily->Equals("Windows.Xbox")) {
-             DebugLogger::Instance->Log("MainPage", "Handover - Auto-casting next song: " + song->Title);
-             
-             auto track = ref new TrackData();
-             track->Id = song->Id;
-             track->Title = song->Title;
-             track->Artist = song->Artist;
-             track->Album = song->Album;
-             track->CoverUrl = song->CoverUrl;
-             track->StreamUrl = song->StreamUrl;
-             track->ExplicitStatus = song->ExplicitStatus;
-             
-             CastingService::Instance->CastTrack(CastingService::Instance->TargetDeviceIp, track);
-             
-             // Sync the new queue window too
-             self->SyncQueue();
-         }
-    });
+    // 3.1: Initialize GamepadService with this page's CoreWindow, ContentFrame, and SearchBox
+    auto coreWindow = Windows::UI::Core::CoreWindow::GetForCurrentThread();
+    Opal::Services::GamepadService::Instance->Initialize(coreWindow, ContentFrame, SearchBox);
+
+    // Cast-forwarding is now handled inside the constructor's SongChanged subscription (fix 2.2)
 
     if (AnalyticsInfo::VersionInfo->DeviceFamily == "Windows.Xbox")
     {
@@ -253,7 +250,9 @@ void MainPage::OnMenuItemInvoked(Microsoft::UI::Xaml::Controls::NavigationView^ 
     }
     else
     {
-        auto tag = args->InvokedItemContainer->Tag->ToString();
+        auto tagObj = args->InvokedItemContainer->Tag;
+        if (tagObj == nullptr) return;
+        auto tag = tagObj->ToString();
         if (tag == "Library")
         {
             auto currentType = ContentFrame->CurrentSourcePageType;
@@ -283,10 +282,6 @@ void MainPage::OnMenuItemInvoked(Microsoft::UI::Xaml::Controls::NavigationView^ 
         else if (tag == "Genres")
         {
             ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(GenresPage::typeid));
-        }
-        else if (tag == "Playlists")
-        {
-            ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(PlaylistsPage::typeid));
         }
         else if (tag == "NewPlaylist")
         {
@@ -462,50 +457,56 @@ void MainPage::OnDeviceSelected(Object^ sender, SelectionChangedEventArgs^ e) {
 
 void MainPage::OnNavigated(Object^ sender, NavigationEventArgs^ e)
 {
-    // Update NavigationView selection based on current page
-    auto name = e->SourcePageType.Name;
-    if (name == Windows::UI::Xaml::Interop::TypeName(LibraryPage::typeid).Name)
-    {
-        MainNavigationView->SelectedItem = MainNavigationView->MenuItems->GetAt(0);
-    }
-    else if (name == Windows::UI::Xaml::Interop::TypeName(ArtistsPage::typeid).Name)
-    {
-        MainNavigationView->SelectedItem = MainNavigationView->MenuItems->GetAt(1);
-    }
-    else if (name == Windows::UI::Xaml::Interop::TypeName(AlbumsPage::typeid).Name)
-    {
-        MainNavigationView->SelectedItem = MainNavigationView->MenuItems->GetAt(2);
-    }
-    else if (name == Windows::UI::Xaml::Interop::TypeName(TracksPage::typeid).Name)
-    {
-        MainNavigationView->SelectedItem = MainNavigationView->MenuItems->GetAt(3);
-    }
-    else if (name == Windows::UI::Xaml::Interop::TypeName(GenresPage::typeid).Name)
-    {
-        MainNavigationView->SelectedItem = MainNavigationView->MenuItems->GetAt(4);
-    }
-    else if (name == Windows::UI::Xaml::Interop::TypeName(PlaylistDetailsPage::typeid).Name)
-    {
-        auto param = dynamic_cast<Platform::String^>(e->Parameter);
-        if (param != nullptr) {
+    try {
+        // Update NavigationView selection based on current page
+        auto name = e->SourcePageType.Name;
+        if (name == Windows::UI::Xaml::Interop::TypeName(LibraryPage::typeid).Name)
+        {
+            MainNavigationView->SelectedItem = MainNavigationView->MenuItems->GetAt(0);
+        }
+        else if (name == Windows::UI::Xaml::Interop::TypeName(ArtistsPage::typeid).Name)
+        {
+            MainNavigationView->SelectedItem = MainNavigationView->MenuItems->GetAt(1);
+        }
+        else if (name == Windows::UI::Xaml::Interop::TypeName(AlbumsPage::typeid).Name)
+        {
+            MainNavigationView->SelectedItem = MainNavigationView->MenuItems->GetAt(2);
+        }
+        else if (name == Windows::UI::Xaml::Interop::TypeName(TracksPage::typeid).Name)
+        {
+            MainNavigationView->SelectedItem = MainNavigationView->MenuItems->GetAt(3);
+        }
+        else if (name == Windows::UI::Xaml::Interop::TypeName(GenresPage::typeid).Name)
+        {
+            MainNavigationView->SelectedItem = MainNavigationView->MenuItems->GetAt(4);
+        }
+        else if (name == Windows::UI::Xaml::Interop::TypeName(PlaylistDetailsPage::typeid).Name)
+        {
+            auto param = dynamic_cast<Platform::String^>(e->Parameter);
+            if (param != nullptr) {
+                for (unsigned int i = 0; i < MainNavigationView->MenuItems->Size; i++) {
+                    auto item = dynamic_cast<Microsoft::UI::Xaml::Controls::NavigationViewItem^>(MainNavigationView->MenuItems->GetAt(i));
+                    if (item != nullptr && item->Tag != nullptr && item->Tag->ToString() == param) {
+                        MainNavigationView->SelectedItem = item;
+                        break;
+                    }
+                }
+            }
+        }
+        else if (name == Windows::UI::Xaml::Interop::TypeName(PlaylistsPage::typeid).Name)
+        {
             for (unsigned int i = 0; i < MainNavigationView->MenuItems->Size; i++) {
                 auto item = dynamic_cast<Microsoft::UI::Xaml::Controls::NavigationViewItem^>(MainNavigationView->MenuItems->GetAt(i));
-                if (item != nullptr && item->Tag != nullptr && item->Tag->ToString() == param) {
+                if (item != nullptr && item->Tag != nullptr && item->Tag->ToString() == "Playlists") {
                     MainNavigationView->SelectedItem = item;
                     break;
                 }
             }
         }
     }
-    else if (name == Windows::UI::Xaml::Interop::TypeName(PlaylistsPage::typeid).Name)
-    {
-        for (unsigned int i = 0; i < MainNavigationView->MenuItems->Size; i++) {
-            auto item = dynamic_cast<Microsoft::UI::Xaml::Controls::NavigationViewItem^>(MainNavigationView->MenuItems->GetAt(i));
-            if (item != nullptr && item->Tag != nullptr && item->Tag->ToString() == "Playlists") {
-                MainNavigationView->SelectedItem = item;
-                break;
-            }
-        }
+    catch (...) {
+        // Guard against ItemsRepeater BringIntoView exceptions during initial layout
+        DebugLogger::Instance->Log("MainPage", "Navigation selection recovered from layout exception");
     }
 
     UpdateMenuVisibility();
@@ -560,7 +561,7 @@ void MainPage::OnSearchTextChanged(AutoSuggestBox^ sender, AutoSuggestBoxTextCha
         }
 
     auto self = this;
-    create_task(NavidromeService::Instance->SearchAsync(query, 10)).then([self, sender](String^ jsonStr) {
+    create_task(NavidromeService::Instance->SearchAsync(query, 10, 0)).then([self, sender](String^ jsonStr) {
         if (jsonStr == nullptr) return;
 
         self->Dispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([self, sender, jsonStr]() {
@@ -805,46 +806,239 @@ void MainPage::OnNewPlaylistClick(Object^ sender, Windows::UI::Xaml::RoutedEvent
     });
 }
 
+void MainPage::OnViewPlaylistsClick(Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+    ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(PlaylistsPage::typeid));
+}
+
 void MainPage::UpdateSidebarPlaylists()
 {
     static bool _updateQueued = false;
     if (_updateQueued) return;
     _updateQueued = true;
 
-    this->Dispatcher->RunAsync(CoreDispatcherPriority::Low, ref new DispatchedHandler([this]() {
+    this->Dispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([this]() {
         _updateQueued = false;
-        // Find the "NewPlaylist" item to insert after
-        int startIndex = -1;
-        for (unsigned int i = 0; i < MainNavigationView->MenuItems->Size; i++) {
-            auto item = dynamic_cast<Microsoft::UI::Xaml::Controls::NavigationViewItem^>(MainNavigationView->MenuItems->GetAt(i));
-            if (item != nullptr && item->Tag != nullptr && item->Tag->ToString() == "NewPlaylist") {
-                startIndex = (int)i;
-                break;
+
+        try {
+            auto savedSelection = MainNavigationView->SelectedItem;
+            bool selectionWasDynamic = false;
+            Platform::String^ savedTag = nullptr;
+
+            // Check if current selection is one of the playlist sub-items
+            if (savedSelection != nullptr) {
+                auto navItem = dynamic_cast<Microsoft::UI::Xaml::Controls::NavigationViewItem^>(savedSelection);
+                if (navItem != nullptr && navItem->Tag != nullptr) {
+                    for (unsigned int i = 0; i < PlaylistsNavItem->MenuItems->Size; i++) {
+                        if (PlaylistsNavItem->MenuItems->GetAt(i) == savedSelection) {
+                            selectionWasDynamic = true;
+                            savedTag = navItem->Tag->ToString();
+                            break;
+                        }
+                    }
+                }
             }
+
+            // Clear orphaned top-level playlist items that were added after PlaylistsNavItem in previous versions
+            while (MainNavigationView->MenuItems->Size > 7) {
+                MainNavigationView->MenuItems->RemoveAt(7);
+            }
+
+            auto vm = ViewModels::PlaylistsViewModel::Instance;
+            auto newItems = ref new Platform::Collections::Vector<Platform::Object^>();
+            Platform::Object^ newSelectionMatch = nullptr;
+
+            for (unsigned int i = 0; i < vm->Playlists->Size; i++)
+            {
+                auto p = vm->Playlists->GetAt(i);
+                auto item = ref new Microsoft::UI::Xaml::Controls::NavigationViewItem();
+                item->Tag = p->Id;
+
+                // Layout: [Thumbnail] [Text Stack]
+                auto rootGrid = ref new Grid();
+                rootGrid->Margin = Thickness(-28, 4, 0, 4); // Remove hierarchical indentation
+                auto col1 = ref new ColumnDefinition();
+                col1->Width = GridLengthHelper::FromPixels(52);
+                auto col2 = ref new ColumnDefinition();
+                col2->Width = { 1.0, GridUnitType::Star };
+                rootGrid->ColumnDefinitions->Append(col1);
+                rootGrid->ColumnDefinitions->Append(col2);
+
+                auto thumbBorder = ref new Border();
+                thumbBorder->Width = 40;
+                thumbBorder->Height = 40;
+                thumbBorder->CornerRadius = CornerRadiusHelper::FromUniformRadius(6);
+                thumbBorder->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
+                thumbBorder->Background = dynamic_cast<Windows::UI::Xaml::Media::Brush^>(Windows::UI::Xaml::Application::Current->Resources->Lookup("AppControlBackgroundBrush"));
+
+                auto thumb = ref new Opal::UI::Controls::ThumbnailView();
+                thumb->SourceUrl = p->CoverUrl;
+                thumb->DecodeWidth = 80;
+                thumb->ThumbnailCornerRadius = CornerRadiusHelper::FromUniformRadius(6);
+                thumbBorder->Child = thumb;
+                
+                rootGrid->Children->Append(thumbBorder);
+                Grid::SetColumn(thumbBorder, 0);
+
+                auto stack = ref new StackPanel();
+                stack->Spacing = 0;
+                stack->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
+
+                auto title = ref new TextBlock();
+                title->Text = p->Name;
+                title->FontSize = 14;
+                title->FontWeight = Windows::UI::Text::FontWeights::SemiBold;
+                stack->Children->Append(title);
+
+                auto info = ref new StackPanel();
+                info->Orientation = Orientation::Horizontal;
+                info->Spacing = 4;
+                info->Opacity = 0.5;
+
+                auto noteIcon = ref new FontIcon();
+                noteIcon->FontFamily = ref new Windows::UI::Xaml::Media::FontFamily("Segoe MDL2 Assets");
+                noteIcon->Glyph = L"\uE8D6"; // Music Note
+                noteIcon->FontSize = 10;
+                noteIcon->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
+                info->Children->Append(noteIcon);
+
+                auto count = ref new TextBlock();
+                count->Text = p->SongCount.ToString();
+                count->FontSize = 11;
+                count->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
+                info->Children->Append(count);
+
+                auto clockIcon = ref new FontIcon();
+                clockIcon->FontFamily = ref new Windows::UI::Xaml::Media::FontFamily("Segoe MDL2 Assets");
+                clockIcon->Glyph = L"\uE916"; // Clock
+                clockIcon->FontSize = 10;
+                clockIcon->Margin = Thickness(4, 0, 0, 0);
+                clockIcon->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
+                info->Children->Append(clockIcon);
+
+                auto duration = ref new TextBlock();
+                duration->Text = p->Duration;
+                duration->FontSize = 11;
+                duration->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
+                info->Children->Append(duration);
+
+                stack->Children->Append(info);
+                rootGrid->Children->Append(stack);
+                Grid::SetColumn(stack, 1);
+
+                item->Content = rootGrid;
+                item->Icon = nullptr; // Using custom thumbnail instead of icon
+
+                newItems->Append(item);
+
+                // Track if this newly created item matches the old selection
+                if (savedTag != nullptr && p->Id == savedTag) {
+                    newSelectionMatch = item;
+                }
+            }
+
+            PlaylistsNavItem->MenuItemsSource = newItems;
+
+            // Restore selection
+            if (newSelectionMatch != nullptr) {
+                MainNavigationView->SelectedItem = newSelectionMatch;
+            } else if (savedSelection != nullptr) {
+                MainNavigationView->SelectedItem = savedSelection;
+            }
+
+            // Force a layout refresh for hierarchical items by toggling expansion
+            // This fixes a known WinUI 2 bug where items don't appear in an already-expanded parent
+            PlaylistsNavItem->IsExpanded = false;
+            PlaylistsNavItem->IsExpanded = true;
         }
-
-        if (startIndex == -1) return;
-
-        // Remove existing dynamic items (all items after "NewPlaylist")
-        while (MainNavigationView->MenuItems->Size > (unsigned int)(startIndex + 1)) {
-            MainNavigationView->MenuItems->RemoveAt(startIndex + 1);
-        }
-
-        auto vm = ViewModels::PlaylistsViewModel::Instance;
-        for (unsigned int i = 0; i < vm->Playlists->Size; i++)
-        {
-            auto p = vm->Playlists->GetAt(i);
-            auto item = ref new Microsoft::UI::Xaml::Controls::NavigationViewItem();
-            item->Content = p->Name;
-            item->Tag = p->Id;
-            item->Icon = ref new SymbolIcon(Symbol::MusicInfo);
-            item->Margin = Thickness(12, 0, 0, 0); // Indent to look like sub-items
-            MainNavigationView->MenuItems->Append(item);
+        catch (...) {
+            DebugLogger::Instance->Log("MainPage", "Sidebar update recovered from layout exception");
         }
     }));
 }
 
-Windows::UI::Xaml::Controls::Frame^ MainPage::GetNavigationFrame()
-{
-    return ContentFrame;
+// 3.2: Shuffle Toggle
+void MainPage::OnShuffleClicked(Object^ sender, RoutedEventArgs^ e) {
+    auto pb = PlaybackService::Instance;
+    bool newState = !pb->IsShuffleEnabled;
+    pb->IsShuffleEnabled = newState;
+    if (newState) pb->Shuffle(); // immediately reorder the current queue
+
+    // Visual feedback
+    auto accentBrush = dynamic_cast<Windows::UI::Xaml::Media::Brush^>(
+        Windows::UI::Xaml::Application::Current->Resources->Lookup("SystemControlHighlightAccentBrush"));
+    auto dimBrush = dynamic_cast<Windows::UI::Xaml::Media::Brush^>(
+        Windows::UI::Xaml::Application::Current->Resources->Lookup("AppTextForegroundBrush"));
+    ShuffleIcon->Foreground = newState ? accentBrush : dimBrush;
+    ShuffleIcon->Opacity = newState ? 1.0 : 0.5;
 }
+
+// 3.2: Repeat Cycle (Off → All → One → Off)
+void MainPage::OnRepeatClicked(Object^ sender, RoutedEventArgs^ e) {
+    auto pb = PlaybackService::Instance;
+    int next = (pb->RepeatMode + 1) % 3;
+    pb->RepeatMode = next;
+
+    // Glyph: &#xE8EE; = Repeat, &#xE8ED; = RepeatOne
+    auto accentBrush = dynamic_cast<Windows::UI::Xaml::Media::Brush^>(
+        Windows::UI::Xaml::Application::Current->Resources->Lookup("SystemControlHighlightAccentBrush"));
+    auto dimBrush = dynamic_cast<Windows::UI::Xaml::Media::Brush^>(
+        Windows::UI::Xaml::Application::Current->Resources->Lookup("AppTextForegroundBrush"));
+
+    if (next == 0) {
+        RepeatIcon->Glyph = L"\uE8EE";
+        RepeatIcon->Foreground = dimBrush;
+        RepeatIcon->Opacity = 0.5;
+    } else if (next == 1) {
+        RepeatIcon->Glyph = L"\uE8EE";
+        RepeatIcon->Foreground = accentBrush;
+        RepeatIcon->Opacity = 1.0;
+    } else {
+        RepeatIcon->Glyph = L"\uE8ED";
+        RepeatIcon->Foreground = accentBrush;
+        RepeatIcon->Opacity = 1.0;
+    }
+}
+
+// 3.4: Sleep Timer — start countdown
+void MainPage::OnSleepTimerClicked(Object^ sender, RoutedEventArgs^ e) {
+    auto item = dynamic_cast<Windows::UI::Xaml::Controls::MenuFlyoutItem^>(sender);
+    if (item == nullptr) return;
+    int minutes = _wtoi(item->Tag->ToString()->Data());
+    _sleepRemainingSeconds = minutes * 60;
+
+    if (_sleepTimer != nullptr) _sleepTimer->Stop();
+    _sleepTimer = ref new Windows::UI::Xaml::DispatcherTimer();
+    TimeSpan ts; ts.Duration = 1 * 10000000LL; // 1 second
+    _sleepTimer->Interval = ts;
+    auto self = this;
+    _sleepTimer->Tick += ref new Windows::Foundation::EventHandler<Object^>([self](Object^, Object^) {
+        self->_sleepRemainingSeconds--;
+        self->UpdateSleepTimerLabel();
+        if (self->_sleepRemainingSeconds <= 0) {
+            self->_sleepTimer->Stop();
+            PlaybackService::Instance->Player->Pause();
+            self->SleepTimerIcon->Glyph = L"\uE708";
+            ToolTipService::SetToolTip(self->SleepTimerBtn, "Sleep Timer");
+        }
+    });
+    _sleepTimer->Start();
+    UpdateSleepTimerLabel();
+}
+
+void MainPage::UpdateSleepTimerLabel() {
+    int m = _sleepRemainingSeconds / 60;
+    wchar_t buf[32];
+    swprintf_s(buf, L"\uE708 %dm", m > 0 ? m : 1);
+    SleepTimerIcon->Glyph = L"\uE708";
+    ToolTipService::SetToolTip(SleepTimerBtn, ref new Platform::String(buf));
+}
+
+// 3.4: Cancel sleep timer
+void MainPage::OnSleepTimerCancelClicked(Object^ sender, RoutedEventArgs^ e) {
+    if (_sleepTimer != nullptr) { _sleepTimer->Stop(); _sleepTimer = nullptr; }
+    _sleepRemainingSeconds = 0;
+    SleepTimerIcon->Glyph = L"\uE708";
+    ToolTipService::SetToolTip(SleepTimerBtn, "Sleep Timer");
+}
+

@@ -101,7 +101,7 @@ void DebugLogger::Log(String^ component, String^ message) {
 
 void DebugLogger::LogException(String^ functionName, Exception^ ex) {
     if (ex == nullptr) return;
-    Log("Error", "Error in " + functionName + ": " + ex->HResult.ToString());
+    Log("Error", "Error in " + functionName + ": " + ex->HResult.ToString() + " \u2014 " + ex->Message);
 }
 
 void DebugLogger::StartHttpServer(int port) {

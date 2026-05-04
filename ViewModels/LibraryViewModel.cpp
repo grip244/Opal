@@ -66,7 +66,7 @@ void LibraryViewModel::LoadAllCategories()
     });
     
     // Load Spotlight (random songs)
-    create_task(navService->GetSongListAsync("getRandomSongs", 5)).then([this](Platform::String^ jsonStr) {
+    create_task(navService->GetSongListAsync("getRandomSongs", 5, 0)).then([this](Platform::String^ jsonStr) {
         UpdateSongCollection(_spotlightSongs, jsonStr);
     });
 }
@@ -166,6 +166,9 @@ void LibraryViewModel::UpdateSongCollection(Platform::Collections::Vector<Song^>
                             sm->Year = ref new Platform::String(yBuf);
                         } else sm->Year = y->Stringify();
                     }
+                    if (s->HasKey("genre")) {
+                        sm->Genre = s->GetNamedString("genre", "");
+                    }
                     sm->IsFavorite = s->HasKey("starred");
                     sm->Rating = s->HasKey("userRating") ? (int)s->GetNamedNumber("userRating") : 0;
                     sm->PopulateSearchTerms();
@@ -174,7 +177,7 @@ void LibraryViewModel::UpdateSongCollection(Platform::Collections::Vector<Song^>
 
                 App::MainDispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([targetCollection, newSongs]() {
                     targetCollection->Clear();
-                    for (auto sm : newSongs) {
+                    for each (auto sm in newSongs) {
                         targetCollection->Append(sm);
                     }
                 }));

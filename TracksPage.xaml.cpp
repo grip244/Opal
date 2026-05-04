@@ -8,6 +8,7 @@
 #include <ppltasks.h>
 #include <collection.h>
 #include <algorithm>
+#include <utility>
 #include <vector>
 #include <cwctype>
 
@@ -26,7 +27,10 @@ using namespace Windows::UI::Xaml::Navigation;
 TracksPage::TracksPage()
 {
     _allTracks = ref new Platform::Collections::Vector<Song^>();
-    _tracks = ref new Platform::Collections::Vector<Song^>();
+    _offset = 0;
+    _totalCount = 0;
+    _isLoadingMore = false;
+    _showFavoritesOnly = false;
     InitializeComponent();
 }
 
@@ -44,69 +48,107 @@ void TracksPage::OnNavigatedTo(NavigationEventArgs^ e)
 
 void TracksPage::LoadTracks()
 {
-    create_task(NavidromeService::Instance->GetSongListAsync("getRandomSongs", 500)).then([this](Platform::String^ jsonStr) {
+    if (_isLoadingMore) return;
+    _isLoadingMore = true;
+
+    if (_offset == 0 && LoadingIndicator != nullptr) LoadingIndicator->Visibility = Windows::UI::Xaml::Visibility::Visible;
+
+    create_task(NavidromeService::Instance->SearchAsync("*", 2000, _offset)).then([this](Platform::String^ jsonStr) {
         if (jsonStr != nullptr) {
             this->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([this, jsonStr]() {
+                bool hasMoreInPage = false;
                 try {
                     JsonObject^ rootRaw = JsonObject::Parse(jsonStr);
                     JsonObject^ root = rootRaw->GetNamedObject("subsonic-response", nullptr);
                     if (root != nullptr) {
-                        JsonObject^ randomSongsObj = root->GetNamedObject("randomSongs", nullptr);
-                        if (randomSongsObj != nullptr) {
-                            JsonArray^ songArray = randomSongsObj->GetNamedArray("song", nullptr);
-                            std::vector<Song^> tracks;
-                            tracks.reserve(songArray->Size);
-                            for (unsigned int i = 0; i < songArray->Size; i++) {
-                                JsonObject^ songObj = songArray->GetObjectAt(i);
-                                auto song = ref new Song();
-                                song->Id = songObj->GetNamedString("id", "");
-                                song->Title = songObj->HasKey("title") ? songObj->GetNamedString("title") : "Unknown Track";
-                                song->Artist = songObj->HasKey("artist") ? songObj->GetNamedString("artist") : "Unknown Artist";
-                                song->Album = songObj->HasKey("album") ? songObj->GetNamedString("album") : "Unknown Album";
-                                
-                                if (songObj->HasKey("explicitStatus")) {
-                                    auto val = songObj->GetNamedValue("explicitStatus");
-                                    if (val != nullptr && val->ValueType == JsonValueType::String) {
-                                        song->ExplicitStatus = val->GetString();
-                                    } else { song->ExplicitStatus = L""; }
-                                } else { song->ExplicitStatus = L""; }
-                                
-                                if (songObj->HasKey("duration")) {
-                                    int totalSeconds = (int)songObj->GetNamedNumber("duration");
-                                    song->DurationInSeconds = totalSeconds;
-                                    wchar_t buf[16]; swprintf_s(buf, L"%d:%02d", totalSeconds / 60, totalSeconds % 60);
-                                    song->Duration = ref new Platform::String(buf);
-                                } else { song->Duration = "--:--"; song->DurationInSeconds = 0; }
-
-                                if (songObj->HasKey("year")) {
-                                    auto y = songObj->GetNamedValue("year");
-                                    if (y->ValueType == JsonValueType::Number) {
-                                        wchar_t yBuf[16]; swprintf_s(yBuf, L"%d", (int)y->GetNumber());
-                                        song->Year = ref new Platform::String(yBuf);
-                                    } else song->Year = y->Stringify();
-                                }
-
-                                song->StreamUrl = NavidromeService::Instance->GetStreamUrl(song->Id);
-                                Platform::String^ coverArtId = songObj->HasKey("coverArt") ? songObj->GetNamedString("coverArt") : song->Id;
-                                song->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(coverArtId, 500);
-                                
-                                if (songObj->HasKey("starred")) song->IsFavorite = true;
-                                else song->IsFavorite = false;
-                                
-                                if (songObj->HasKey("userRating")) song->Rating = songObj->GetNamedNumber("userRating");
-                                else song->Rating = 0.0;
-                                
-                                tracks.push_back(song);
+                        JsonObject^ result3 = root->GetNamedObject("searchResult3", nullptr);
+                        if (result3 != nullptr) {
+                            if (_offset == 0 && result3->HasKey("songCount")) {
+                                _totalCount = (int)result3->GetNamedNumber("songCount");
                             }
-                            _tracks->Clear();
-                            _allTracks = ref new Platform::Collections::Vector<Song^>(std::move(tracks));
-                            this->OnFilterOrSortChanged(nullptr, nullptr);
+
+                            if (result3->HasKey("song")) {
+                                JsonArray^ songArray = result3->GetNamedArray("song");
+                                hasMoreInPage = (songArray->Size >= 2000);
+                                for (unsigned int i = 0; i < songArray->Size; i++) {
+                                    JsonObject^ songObj = songArray->GetObjectAt(i);
+                                    auto song = ref new Song();
+                                    song->Id = songObj->GetNamedString("id", "");
+                                    song->Title = songObj->HasKey("title") ? songObj->GetNamedString("title") : "Unknown Track";
+                                    song->Artist = songObj->HasKey("artist") ? songObj->GetNamedString("artist") : "Unknown Artist";
+                                    song->Album = songObj->HasKey("album") ? songObj->GetNamedString("album") : "Unknown Album";
+
+                                    if (songObj->HasKey("explicitStatus")) {
+                                        auto val = songObj->GetNamedValue("explicitStatus");
+                                        if (val != nullptr && val->ValueType == JsonValueType::String) {
+                                            song->ExplicitStatus = val->GetString();
+                                        } else { song->ExplicitStatus = L""; }
+                                    } else { song->ExplicitStatus = L""; }
+
+                                    if (songObj->HasKey("duration")) {
+                                        int totalSeconds = (int)songObj->GetNamedNumber("duration");
+                                        song->DurationInSeconds = totalSeconds;
+                                        wchar_t buf[16]; swprintf_s(buf, L"%d:%02d", totalSeconds / 60, totalSeconds % 60);
+                                        song->Duration = ref new Platform::String(buf);
+                                    } else { song->Duration = "--:--"; song->DurationInSeconds = 0; }
+
+                                    if (songObj->HasKey("year")) {
+                                        auto y = songObj->GetNamedValue("year");
+                                        if (y->ValueType == JsonValueType::Number) {
+                                            wchar_t yBuf[16]; swprintf_s(yBuf, L"%d", (int)y->GetNumber());
+                                            song->Year = ref new Platform::String(yBuf);
+                                        } else song->Year = y->Stringify();
+                                    }
+
+                                    song->StreamUrl = NavidromeService::Instance->GetStreamUrl(song->Id);
+                                    Platform::String^ coverArtId = songObj->HasKey("coverArt") ? songObj->GetNamedString("coverArt") : song->Id;
+                                    song->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(coverArtId, 500);
+
+                                    if (songObj->HasKey("starred")) song->IsFavorite = true;
+                                    else song->IsFavorite = false;
+
+                                    if (songObj->HasKey("userRating")) song->Rating = songObj->GetNamedNumber("userRating");
+                                    else song->Rating = 0.0;
+
+                                    song->PopulateSearchTerms();
+                                    _allTracks->Append(song);
+                                }
+                                
+                                _offset += songArray->Size;
+                            }
                         }
                     }
                 } catch (...) {}
+                
+                _isLoadingMore = false;
+                if (LoadingIndicator != nullptr) LoadingIndicator->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+                
+                // Update counter with filtered count
+                if (_totalCount > 0) {
+                    TotalTracksCounter->Text = "Total Tracks: (" + _totalCount.ToString() + ")";
+                } else {
+                    TotalTracksCounter->Text = "Total Tracks: (" + _allTracks->Size.ToString() + ")";
+                }
+                PageTitle->Text = "Tracks";
+
+                // Trigger filter/sort update
+                this->OnFilterOrSortChanged(nullptr, nullptr);
+
+                // Auto-load next batch if we think there are more
+                if (_totalCount > (int)_allTracks->Size || hasMoreInPage) {
+                    LoadTracks(); 
+                }
             }));
+        } else {
+            _isLoadingMore = false;
+            if (LoadingIndicator != nullptr) LoadingIndicator->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
         }
     });
+}
+
+void TracksPage::OnLoadMoreClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+    LoadTracks();
 }
 
 void TracksPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
@@ -122,23 +164,42 @@ void TracksPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
     result.reserve(_allTracks->Size);
     for (unsigned int i = 0; i < _allTracks->Size; i++) {
         Song^ song = _allTracks->GetAt(i);
+
+        // 3.3: Favorites filter
+        if (_showFavoritesOnly && !song->IsFavorite) continue;
+
         bool textMatch = true;
         if (wQuery.length() > 0) {
-            std::wstring wTerms(song->SearchTerms->Data());
-            textMatch = (wTerms.find(wQuery) != std::wstring::npos);
+            if (song->SearchTerms != nullptr) {
+                std::wstring wTerms(song->SearchTerms->Data());
+                textMatch = (wTerms.find(wQuery) != std::wstring::npos);
+            } else {
+                textMatch = false;
+            }
         }
 
         if (textMatch) result.push_back(song);
     }
 
+    // Update counter with filtered count
+    wchar_t cBuf[64];
+    if (_showFavoritesOnly) {
+        swprintf_s(cBuf, L"Liked Tracks: (%d)", (int)result.size());
+    } else if (_totalCount > 0) {
+        swprintf_s(cBuf, L"Total Tracks: (%d)", _totalCount);
+    } else {
+        swprintf_s(cBuf, L"Total Tracks: (%d)", (int)_allTracks->Size);
+    }
+    TotalTracksCounter->Text = ref new Platform::String(cBuf);
+
     // 2. Sort
     int sortIdx = (SortByCombo != nullptr) ? SortByCombo->SelectedIndex : 0;
     std::sort(result.begin(), result.end(), [sortIdx](Song^ a, Song^ b) {
         if (sortIdx == 0) { // Title
-            return std::wstring(a->Title->Data()) < std::wstring(b->Title->Data());
+            return _wcsicmp(a->Title->Data(), b->Title->Data()) < 0;
         }
         else if (sortIdx == 1) { // Artist
-            return std::wstring(a->Artist->Data()) < std::wstring(b->Artist->Data());
+            return _wcsicmp(a->Artist->Data(), b->Artist->Data()) < 0;
         }
         else { // Duration
             return a->DurationInSeconds > b->DurationInSeconds; // Longest first
@@ -257,6 +318,14 @@ void TracksPage::OnAddQueueMenuClicked(Object^ sender, RoutedEventArgs^ e) {
 }
 
 void TracksPage::OnRemoveFromPlaylistClicked(Object^ sender, RoutedEventArgs^ e) {}
+
+void TracksPage::OnFavoritesFilterToggled(Object^ sender, RoutedEventArgs^ e) {
+    auto btn = dynamic_cast<Windows::UI::Xaml::Controls::Primitives::ToggleButton^>(sender);
+    if (btn != nullptr) {
+        _showFavoritesOnly = (btn->IsChecked != nullptr && btn->IsChecked->Value);
+        OnFilterOrSortChanged(nullptr, nullptr);
+    }
+}
 
 
 void TracksPage::OnMoreButtonClicked(Object^ sender, RoutedEventArgs^ e)

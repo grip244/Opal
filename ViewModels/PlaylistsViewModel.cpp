@@ -2,6 +2,8 @@
 #include "PlaylistsViewModel.h"
 #include "Services/NavidromeService.h"
 #include "Services/DebugLogger.h"
+#include <utility>
+#include <vector>
 
 using namespace Opal;
 using namespace Opal::ViewModels;
@@ -47,8 +49,12 @@ void PlaylistsViewModel::LoadPlaylistsAsync()
                             pm->IsPublic = pObj->HasKey("public") ? pObj->GetNamedBoolean("public", false) : false;
                             
                             int duration = (int)pObj->GetNamedNumber("duration", 0);
+                            int h = duration / 3600;
+                            int m = (duration % 3600) / 60;
+                            int s = duration % 60;
                             wchar_t buf[32];
-                            swprintf_s(buf, L"%d songs \x00b7 %d:%02d", pm->SongCount, duration / 60, duration % 60);
+                            if (h > 0) swprintf_s(buf, L"%d:%02d:%02d", h, m, s);
+                            else swprintf_s(buf, L"%d:%02d", m, s);
                             pm->Duration = ref new String(buf);
 
                             String^ coverId = pObj->HasKey("coverArt") ? pObj->GetNamedString("coverArt") : "";
@@ -64,7 +70,11 @@ void PlaylistsViewModel::LoadPlaylistsAsync()
                     if (disp != nullptr) {
                         auto finalPlaylists = ref new Vector<PlaylistModel^>(std::move(newPlaylists));
                         disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([self, finalPlaylists]() {
-                            self->_playlists = finalPlaylists;
+                            // Do NOT replace _playlists — clear+append keeps VectorChanged subscribers alive
+                            self->_playlists->Clear();
+                            for (unsigned int i = 0; i < finalPlaylists->Size; i++) {
+                                self->_playlists->Append(finalPlaylists->GetAt(i));
+                            }
                             self->NotifyPropertyChanged("Playlists");
                             self->IsLoading = false;
                         }));
@@ -82,7 +92,7 @@ void PlaylistsViewModel::LoadPlaylistsAsync()
 
 void PlaylistsViewModel::NotifyPropertyChanged(String^ prop)
 {
-    PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
+    _propertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
 }
 
 void PlaylistsViewModel::CreatePlaylist(String^ name)

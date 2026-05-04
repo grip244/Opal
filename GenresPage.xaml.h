@@ -1,5 +1,5 @@
 #pragma once
-#include "GenresPage.g.h"
+#include "Generated Files/GenresPage.g.h"
 #include "ViewModels/GenreViewModel.h"
 
 namespace Opal {

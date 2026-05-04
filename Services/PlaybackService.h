@@ -38,6 +38,17 @@ namespace Opal {
             void Shuffle();
             void StartAutoPlayback();
             void SetQueue(Windows::Foundation::Collections::IVector<Song^>^ songs);
+
+            // Shuffle & Repeat (3.2)
+            property bool IsShuffleEnabled {
+                bool get() { return _isShuffleEnabled; }
+                void set(bool v) { _isShuffleEnabled = v; _playbackList->ShuffleEnabled = v; }
+            }
+            // 0=Off, 1=RepeatAll, 2=RepeatOne
+            property int RepeatMode {
+                int get() { return _repeatMode; }
+                void set(int v);
+            }
             void AddToQueue(Song^ song);
             void RemoveFromQueue(unsigned int index);
             void MoveInQueue(unsigned int fromIndex, unsigned int toIndex);
@@ -56,6 +67,9 @@ namespace Opal {
             long long _currentSongStartTime;
             std::set<std::wstring> _playedIds;
             bool _hasScrobbledCurrentSong;
+            bool _autoPlayRetryPending;
+            bool _isShuffleEnabled;
+            int _repeatMode; // 0=Off,1=All,2=One
 
             void OnMediaEnded(Windows::Media::Playback::MediaPlayer^ sender, Platform::Object^ args);
             void OnCurrentItemChanged(Windows::Media::Playback::MediaPlaybackList^ sender, Windows::Media::Playback::CurrentMediaPlaybackItemChangedEventArgs^ args);

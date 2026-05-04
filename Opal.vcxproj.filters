@@ -30,6 +30,7 @@
     <ClCompile Include="Services\PlaybackService.cpp" />
     <ClCompile Include="Services\CastingService.cpp" />
     <ClCompile Include="Services\DebugLogger.cpp" />
+    <ClCompile Include="Services\GamepadService.cpp" />
     <ClCompile Include="ViewModels\LibraryViewModel.cpp" />
     <ClCompile Include="Converters\ExplicitStatusConverter.cpp" />
     <ClCompile Include="Converters\RemoteSystemKindToIconConverter.cpp" />
@@ -53,6 +54,7 @@
     <ClInclude Include="Services\PlaybackService.h" />
     <ClInclude Include="Services\CastingService.h" />
     <ClInclude Include="Services\DebugLogger.h" />
+    <ClInclude Include="Services\GamepadService.h" />
     <ClInclude Include="Converters\ExplicitStatusConverter.h" />
     <ClInclude Include="Converters\RemoteSystemKindToIconConverter.h" />
     <ClInclude Include="Converters\BooleanToVisibilityConverter.h" />

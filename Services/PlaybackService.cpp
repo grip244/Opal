@@ -49,6 +49,9 @@ PlaybackService::PlaybackService() {
     _queue = ref new Vector<Song^>();
     _currentIndex = 0;
     _currentSong = nullptr;
+    _autoPlayRetryPending = false;
+    _isShuffleEnabled = false;
+    _repeatMode = 0;
 }
 
 void PlaybackService::PlaySong(Song^ song) {
@@ -157,12 +160,61 @@ void PlaybackService::PreviousSong() {
 }
 
 void PlaybackService::Shuffle() {
-    StartAutoPlayback();
+    // Fisher-Yates shuffle of _queue, keeping current song at front
+    unsigned int size = _queue->Size;
+    if (size < 2) { StartAutoPlayback(); return; }
+
+    // Build a std::vector copy, pull out current song
+    std::vector<Song^> songs;
+    songs.reserve(size);
+    Song^ current = _currentSong;
+    for (unsigned int i = 0; i < size; i++) {
+        auto s = _queue->GetAt(i);
+        if (current == nullptr || s->Id != current->Id) songs.push_back(s);
+    }
+
+    // Fisher-Yates
+    for (int i = (int)songs.size() - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        std::swap(songs[i], songs[j]);
+    }
+
+    // Rebuild queue: current song first, shuffled rest after
+    _playbackList->Items->Clear();
+    _queue->Clear();
+    if (current != nullptr) {
+        _queue->Append(current);
+        _playbackList->Items->Append(CreatePlaybackItem(current));
+    }
+    for (auto s : songs) {
+        _queue->Append(s);
+        _playbackList->Items->Append(CreatePlaybackItem(s));
+    }
+    if (_queue->Size > 0) {
+        _playbackList->MoveTo(0);
+        _mediaPlayer->Play();
+    }
+}
+
+void PlaybackService::RepeatMode::set(int v) {
+    _repeatMode = v;
+    if (v == 0) {
+        _playbackList->AutoRepeatEnabled = false;
+        _mediaPlayer->IsLoopingEnabled = false;
+    } else if (v == 1) {
+        // Repeat All
+        _playbackList->AutoRepeatEnabled = true;
+        _mediaPlayer->IsLoopingEnabled = false;
+    } else if (v == 2) {
+        // Repeat One — loop the single item
+        _playbackList->AutoRepeatEnabled = false;
+        _mediaPlayer->IsLoopingEnabled = true;
+    }
 }
 
 void PlaybackService::OnMediaEnded(MediaPlayer^ sender, Object^ args) {
-    // If at the end of the list and autoplay is enabled, fetch more
-    if (_currentIndex == _queue->Size - 1 && Opal::SettingsService::Instance->IsAutoPlayEnabled) {
+    // Guard against unsigned underflow when queue is empty
+    if (_queue->Size > 0 && _currentIndex == _queue->Size - 1 && Opal::SettingsService::Instance->IsAutoPlayEnabled) {
         StartAutoPlayback();
     }
 }
@@ -186,7 +238,7 @@ void PlaybackService::OnCurrentItemChanged(MediaPlaybackList^ sender, CurrentMed
     NavidromeService::Instance->ScrobbleAsync(_currentSong->Id, false, 0);
 
     // Auto Play Proactive Fetch: If we are on the last song, fetch more now for gapless transition
-    if (_currentIndex == _queue->Size - 1 && Opal::SettingsService::Instance->IsAutoPlayEnabled) {
+    if (_queue->Size > 0 && _currentIndex == _queue->Size - 1 && Opal::SettingsService::Instance->IsAutoPlayEnabled) {
         StartAutoPlayback();
     }
 
@@ -223,7 +275,7 @@ void PlaybackService::MoveInQueue(unsigned int fromIndex, unsigned int toIndex) 
 
 void PlaybackService::StartAutoPlayback() {
     unsigned int oldSize = _queue->Size;
-    create_task(NavidromeService::Instance->GetSongListAsync("getRandomSongs", 200)).then([this, oldSize](Platform::String^ jsonStr) {
+    create_task(NavidromeService::Instance->GetSongListAsync("getRandomSongs", 200, 0)).then([this, oldSize](Platform::String^ jsonStr) {
         if (jsonStr != nullptr) {
             try {
                 auto rootRaw = Windows::Data::Json::JsonObject::Parse(jsonStr);
@@ -265,9 +317,14 @@ void PlaybackService::StartAutoPlayback() {
                             }
                             
                             if (_queue->Size == oldSize && songsArray->Size > 0) { 
-                                // If everything was a duplicate, clear history and try one more time
-                                _playedIds.clear(); 
-                                StartAutoPlayback(); 
+                                // If everything was a duplicate, clear history and try ONE more time
+                                if (!_autoPlayRetryPending) {
+                                    _autoPlayRetryPending = true;
+                                    _playedIds.clear();
+                                    StartAutoPlayback();
+                                }
+                            } else {
+                                _autoPlayRetryPending = false;
                             }
                     }));
                     }

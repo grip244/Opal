@@ -131,7 +131,7 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 /// </summary>
 /// <param name="sender">The source of the suspend request.</param>
 /// <param name="e">Details about the suspend request.</param>
-void App::OnSuspending(Object^ /*sender*/, SuspendingEventArgs^ /*e*/)
+void App::OnSuspending(Object^ sender, SuspendingEventArgs^ e)
 {
     (void) sender;  // Unused parameter
 
@@ -161,15 +161,26 @@ void App::OnSuspending(Object^ /*sender*/, SuspendingEventArgs^ /*e*/)
     deferral->Complete();
 }
 
-void App::OnEnteredBackground(Object^ /*sender*/, EnteredBackgroundEventArgs^ /*e*/)
+void App::OnResuming(Object^ sender, Object^ e)
+{
+    (void)sender; // Unused parameter
+    (void)e;      // Unused parameter
+
+    Opal::CastingService::Instance->StartListening();
+    Opal::CastingService::Instance->StartDiscovery();
+}
+
+void App::OnEnteredBackground(Object^ sender, EnteredBackgroundEventArgs^ e)
 {
     // The app is now in the background. 
     // We should minimize memory usage here if possible.
+    BeginExtendedExecution();
 }
 
-void App::OnLeavingBackground(Object^ /*sender*/, LeavingBackgroundEventArgs^ /*e*/)
+void App::OnLeavingBackground(Object^ sender, LeavingBackgroundEventArgs^ e)
 {
     // The app is returning to the foreground.
+    ClearExtendedExecutionSession();
 }
 
 /// <summary>
@@ -177,7 +188,56 @@ void App::OnLeavingBackground(Object^ /*sender*/, LeavingBackgroundEventArgs^ /*
 /// </summary>
 /// <param name="sender">The Frame which failed navigation</param>
 /// <param name="e">Details about the navigation failure</param>
-void App::OnNavigationFailed(Platform::Object^ /*sender*/, Windows::UI::Xaml::Navigation::NavigationFailedEventArgs^ e)
+void App::OnNavigationFailed(Platform::Object^ sender, Windows::UI::Xaml::Navigation::NavigationFailedEventArgs^ e)
 {
     throw ref new FailureException("Failed to load Page " + e->SourcePageType.Name);
 }
+
+void App::BeginExtendedExecution()
+{
+    ClearExtendedExecutionSession();
+
+    _extendedExecutionSession = ref new Windows::ApplicationModel::ExtendedExecution::ExtendedExecutionSession();
+    _extendedExecutionSession->Reason = Windows::ApplicationModel::ExtendedExecution::ExtendedExecutionReason::Unspecified;
+    _extendedExecutionSession->Description = "Opal Background Service";
+
+    _extendedExecutionSession->Revoked += ref new Windows::Foundation::TypedEventHandler<Platform::Object^, Windows::ApplicationModel::ExtendedExecution::ExtendedExecutionRevokedEventArgs^>(
+        [this](Platform::Object^ sender, Windows::ApplicationModel::ExtendedExecution::ExtendedExecutionRevokedEventArgs^ args)
+        {
+            DebugLogger::Instance->Log("App", "Extended execution session revoked");
+            ClearExtendedExecutionSession();
+        });
+
+    auto requestOp = _extendedExecutionSession->RequestExtensionAsync();
+    requestOp->Completed = ref new Windows::Foundation::AsyncOperationCompletedHandler<Windows::ApplicationModel::ExtendedExecution::ExtendedExecutionResult>(
+        [this](Windows::Foundation::IAsyncOperation<Windows::ApplicationModel::ExtendedExecution::ExtendedExecutionResult>^ operation, Windows::Foundation::AsyncStatus status)
+        {
+            if (status == Windows::Foundation::AsyncStatus::Completed)
+            {
+                auto result = operation->GetResults();
+                if (result == Windows::ApplicationModel::ExtendedExecution::ExtendedExecutionResult::Allowed)
+                {
+                    DebugLogger::Instance->Log("App", "Extended execution session allowed");
+                }
+                else
+                {
+                    DebugLogger::Instance->Log("App", "Extended execution session denied");
+                    ClearExtendedExecutionSession();
+                }
+            }
+            else
+            {
+                DebugLogger::Instance->Log("App", "Extended execution session failed");
+                ClearExtendedExecutionSession();
+            }
+        });
+}
+
+void App::ClearExtendedExecutionSession()
+{
+    if (_extendedExecutionSession != nullptr)
+    {
+        delete _extendedExecutionSession;
+        _extendedExecutionSession = nullptr;
+    }
+}

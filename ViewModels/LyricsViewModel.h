@@ -9,8 +9,13 @@ namespace Opal {
     namespace ViewModels {
         [Windows::UI::Xaml::Data::Bindable]
         public ref class LyricsViewModel sealed : Windows::UI::Xaml::Data::INotifyPropertyChanged {
+        private:
+            event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ _propertyChanged;
         public:
-            virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged;
+            virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged {
+                Windows::Foundation::EventRegistrationToken add(Windows::UI::Xaml::Data::PropertyChangedEventHandler^ h) { return _propertyChanged += h; }
+                void remove(Windows::Foundation::EventRegistrationToken t) { _propertyChanged -= t; }
+            }
 
             static property LyricsViewModel^ Instance
             {

@@ -57,12 +57,59 @@
                     </Border>
                 </StackPanel>
 
+                <!-- 3.1: Controller Reference Card -->
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Controller" FontSize="20" FontWeight="SemiBold" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                    <Border Background="{ThemeResource AppControlBackgroundBrush}" BorderBrush="{ThemeResource AppControlBorderBrush}" BorderThickness="1" Padding="24" CornerRadius="12">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Xbox Button Mappings" FontSize="14" FontWeight="SemiBold" Opacity="0.8" Margin="0,0,0,8" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <!-- Row headers -->
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="LB" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="Previous Track" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="RB" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="Next Track" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="X" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="Play / Pause" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Y" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="Focus Search Box" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="View (⧉)" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="4" Grid.Column="1" Text="Toggle Now Playing" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="5" Grid.Column="0" Text="LT" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="5" Grid.Column="1" Text="Volume Down" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="6" Grid.Column="0" Text="RT" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="6" Grid.Column="1" Text="Volume Up" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="7" Grid.Column="0" Text="Menu (≡)" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="7" Grid.Column="1" Text="Advance Field / Submit" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                            </Grid>
+                            <TextBlock Text="Button remapping coming in v1.2.0." FontSize="11" Opacity="0.4" Margin="0,8,0,0" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
                 <StackPanel Spacing="16">
                     <TextBlock Text="Legal" FontSize="20" FontWeight="SemiBold"/>
                     <Border Background="#11FFFFFF" Padding="24" CornerRadius="8">
-                        <StackPanel Orientation="Horizontal" Spacing="16">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
                             <HyperlinkButton Content="Privacy Policy" NavigateUri="https://darademsc.ddns.net/#privacy" Padding="0" UseSystemFocusVisuals="True"/>
+                            <TextBlock Text="•" VerticalAlignment="Center" Opacity="0.4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
                             <HyperlinkButton Content="Terms of Service" NavigateUri="https://darademsc.ddns.net/#tos" Padding="0" UseSystemFocusVisuals="True"/>
+                            <TextBlock Text="•" VerticalAlignment="Center" Opacity="0.4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                            <HyperlinkButton Content="GitHub Repository" NavigateUri="https://github.com/grip244/Opal" Padding="0" UseSystemFocusVisuals="True"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>

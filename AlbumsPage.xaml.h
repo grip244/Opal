@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AlbumsPage.g.h"
+#include "Generated Files/AlbumsPage.g.h"
 #include "Models/SharedModels.h"
 
 namespace Opal

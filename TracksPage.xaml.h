@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TracksPage.g.h"
+#include "Generated Files/TracksPage.g.h"
 #include "Models/SharedModels.h"
 
 namespace Opal
@@ -20,6 +20,8 @@ namespace Opal
         void OnAddQueueMenuClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnRemoveFromPlaylistClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnMoreButtonClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnLoadMoreClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnFavoritesFilterToggled(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e); // 3.3
 
     protected:
         virtual void OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) override;
@@ -28,6 +30,9 @@ namespace Opal
         void LoadTracks();
 
         Platform::Collections::Vector<Song^>^ _allTracks;
-        Platform::Collections::Vector<Song^>^ _tracks;
+        int _offset;
+        int _totalCount;
+        bool _isLoadingMore;
+        bool _showFavoritesOnly; // 3.3
     };
 }

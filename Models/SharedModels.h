@@ -9,22 +9,36 @@ namespace Opal
     private:
         bool _isFavorite;
         double _rating;
+        int _playlistIndex;
+        event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ _propertyChanged;
         
     public:
-        virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged;
+        virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged {
+            Windows::Foundation::EventRegistrationToken add(Windows::UI::Xaml::Data::PropertyChangedEventHandler^ h) { return _propertyChanged += h; }
+            void remove(Windows::Foundation::EventRegistrationToken t) { _propertyChanged -= t; }
+        }
         property Platform::String^ Id;
         property Platform::String^ Title;
         property Platform::String^ Artist;
         property Platform::String^ Album;
         property Platform::String^ TrackNumber;
         property Platform::String^ Year;
+        property Platform::String^ Genre;
         property Platform::String^ Duration;
         property Windows::UI::Xaml::Media::ImageSource^ CoverArt;
         property Platform::String^ CoverUrl;
         property Platform::String^ StreamUrl;
         property int DiscNumber;
         property int DurationInSeconds;
-        property int PlaylistIndex;
+        property int PlaylistIndex {
+            int get() { return _playlistIndex; }
+            void set(int value) {
+                if (_playlistIndex != value) {
+                    _playlistIndex = value;
+                    NotifyPropertyChanged("PlaylistIndex");
+                }
+            }
+        }
         property Platform::String^ ExplicitStatus;
         property Platform::String^ SearchTerms;
         
@@ -60,10 +74,10 @@ namespace Opal
             auto disp = App::MainDispatcher;
             if (disp == nullptr) return;
             if (disp->HasThreadAccess) {
-                PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
+                _propertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
             } else {
                 disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([this, prop]() {
-                    PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
+                    _propertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
                 }));
             }
         }
@@ -77,10 +91,12 @@ namespace Opal
             Album = "";
             TrackNumber = "";
             Year = "";
+            Genre = "";
             Duration = "";
             CoverUrl = "";
             StreamUrl = "";
             ExplicitStatus = "";
+            SearchTerms = "";
         }
 
         void PopulateSearchTerms() {
@@ -101,9 +117,13 @@ namespace Opal
     {
     private:
         Windows::UI::Xaml::Media::ImageSource^ _coverArt;
+        event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ _propertyChanged;
 
     public:
-        virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged;
+        virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged {
+            Windows::Foundation::EventRegistrationToken add(Windows::UI::Xaml::Data::PropertyChangedEventHandler^ h) { return _propertyChanged += h; }
+            void remove(Windows::Foundation::EventRegistrationToken t) { _propertyChanged -= t; }
+        }
         property Platform::String^ Id;
         property Platform::String^ Name;
         property Platform::String^ SearchTerms;
@@ -121,10 +141,10 @@ namespace Opal
             auto disp = App::MainDispatcher;
             if (disp == nullptr) return;
             if (disp->HasThreadAccess) {
-                PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
+                _propertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
             } else {
                 disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([this, prop]() {
-                    PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
+                    _propertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
                 }));
             }
         }
@@ -144,9 +164,13 @@ namespace Opal
     {
     private:
         Windows::UI::Xaml::Media::ImageSource^ _coverArt;
+        event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ _propertyChanged;
 
     public:
-        virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged;
+        virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged {
+            Windows::Foundation::EventRegistrationToken add(Windows::UI::Xaml::Data::PropertyChangedEventHandler^ h) { return _propertyChanged += h; }
+            void remove(Windows::Foundation::EventRegistrationToken t) { _propertyChanged -= t; }
+        }
         property Platform::String^ Id;
         property Platform::String^ Title;
         property Platform::String^ Artist;
@@ -172,10 +196,10 @@ namespace Opal
             auto disp = App::MainDispatcher;
             if (disp == nullptr) return;
             if (disp->HasThreadAccess) {
-                PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
+                _propertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
             } else {
                 disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([this, prop]() {
-                    PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
+                    _propertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
                 }));
             }
         }
@@ -220,8 +244,13 @@ namespace Opal
     [Windows::UI::Xaml::Data::Bindable]
     public ref class GenreModel sealed : Windows::UI::Xaml::Data::INotifyPropertyChanged
     {
+    private:
+        event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ _propertyChanged;
     public:
-        virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged;
+        virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged {
+            Windows::Foundation::EventRegistrationToken add(Windows::UI::Xaml::Data::PropertyChangedEventHandler^ h) { return _propertyChanged += h; }
+            void remove(Windows::Foundation::EventRegistrationToken t) { _propertyChanged -= t; }
+        }
         property Platform::String^ Name;
         property int AlbumCount;
         property int SongCount;
@@ -231,10 +260,10 @@ namespace Opal
             auto disp = App::MainDispatcher;
             if (disp == nullptr) return;
             if (disp->HasThreadAccess) {
-                PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
+                _propertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
             } else {
                 disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([this, prop]() {
-                    PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
+                    _propertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
                 }));
             }
         }
@@ -291,9 +320,13 @@ namespace Opal
     {
     private:
         Windows::UI::Xaml::Media::ImageSource^ _coverArt;
+        event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ _propertyChanged;
 
     public:
-        virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged;
+        virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged {
+            Windows::Foundation::EventRegistrationToken add(Windows::UI::Xaml::Data::PropertyChangedEventHandler^ h) { return _propertyChanged += h; }
+            void remove(Windows::Foundation::EventRegistrationToken t) { _propertyChanged -= t; }
+        }
         property Platform::String^ Id;
         property Platform::String^ Name;
         property int SongCount;
@@ -314,7 +347,15 @@ namespace Opal
         property Platform::String^ CoverUrl;
         
         void NotifyPropertyChanged(Platform::String^ prop) {
-            PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
+            auto disp = App::MainDispatcher;
+            if (disp == nullptr) return;
+            if (disp->HasThreadAccess) {
+                _propertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
+            } else {
+                disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([this, prop]() {
+                    _propertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs(prop));
+                }));
+            }
         }
 
         PlaylistModel() {}

@@ -142,12 +142,4 @@ void LoginPage::OnLoginSuccess()
     this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(LibraryPage::typeid));
 }
 
-void Opal::LoginPage::TextBlock_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
-{
 
-}
-
-void Opal::LoginPage::ServerTextBox_TextChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::TextChangedEventArgs^ e)
-{
-
-}

@@ -5,6 +5,7 @@
     xmlns:local="using:Opal.UI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     mc:Ignorable="d"
     d:DesignHeight="300"
     d:DesignWidth="300">
@@ -13,25 +14,20 @@
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="LoadingStates">
                 <VisualState x:Name="Loading">
-                    <VisualState.Setters>
-                        <Setter Target="Placeholder.Visibility" Value="Visible" />
-                        <Setter Target="MainImage.Opacity" Value="0" />
-                        <Setter Target="ErrorIcon.Visibility" Value="Collapsed" />
-                    </VisualState.Setters>
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetName="Placeholder" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                        <DoubleAnimation Storyboard.TargetName="ContentGrid" Storyboard.TargetProperty="Opacity" To="0" Duration="0" />
+                    </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Loaded">
                     <Storyboard>
-                        <DoubleAnimation Storyboard.TargetName="MainImage" Storyboard.TargetProperty="Opacity"
-                                         To="1" Duration="0:0:0.3" EnableDependentAnimation="True" />
-                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Placeholder" Storyboard.TargetProperty="Visibility">
-                            <DiscreteObjectKeyFrame KeyTime="0:0:0.3" Value="Collapsed" />
-                        </ObjectAnimationUsingKeyFrames>
+                        <DoubleAnimation Storyboard.TargetName="Placeholder" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.4" />
+                        <DoubleAnimation Storyboard.TargetName="ContentGrid" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.4" />
                     </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Error">
                     <VisualState.Setters>
                         <Setter Target="Placeholder.Visibility" Value="Collapsed" />
-                        <Setter Target="MainImage.Opacity" Value="0" />
                         <Setter Target="ErrorIcon.Visibility" Value="Visible" />
                     </VisualState.Setters>
                 </VisualState>
@@ -49,9 +45,9 @@
             </Rectangle.Resources>
             <Rectangle.Fill>
                 <LinearGradientBrush x:Name="ShimmerGradient" StartPoint="0,0.5" EndPoint="1,0.5">
-                    <GradientStop Color="{ThemeResource ShimmerBaseColor}" Offset="0" />
-                    <GradientStop Color="{ThemeResource ShimmerHighlightColor}" Offset="0.5" />
-                    <GradientStop Color="{ThemeResource ShimmerBaseColor}" Offset="1" />
+                    <GradientStop Color="#11FFFFFF" Offset="0" />
+                    <GradientStop Color="#22FFFFFF" Offset="0.5" />
+                    <GradientStop Color="#11FFFFFF" Offset="1" />
                     <LinearGradientBrush.RelativeTransform>
                         <CompositeTransform x:Name="ShimmerTransform" />
                     </LinearGradientBrush.RelativeTransform>
@@ -61,20 +57,16 @@
 
         <!-- Fallback Icon -->
         <Viewbox x:Name="ErrorIcon" Visibility="Collapsed" Width="48" Height="48" Opacity="0.3">
-            <SymbolIcon Symbol="Pictures" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}" />
+            <SymbolIcon Symbol="Pictures" Foreground="White" />
         </Viewbox>
 
-        <!-- The actual Image -->
-        <Grid>
-            <!-- Background "Blurred" fill -->
-            <Image x:Name="BackgroundImage" 
-                   Stretch="UniformToFill" 
-                   Opacity="0.4" />
-            
-            <!-- Foreground focused image -->
+        <!-- Hardware Accelerated Melted Background -->
+        <Canvas x:Name="BackgroundCanvas" Opacity="1.0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+
+        <!-- Foreground Content -->
+        <Grid x:Name="ContentGrid" Opacity="0">
             <Image x:Name="MainImage" 
                    Stretch="UniformToFill" 
-                   Opacity="0"
                    ImageOpened="OnImageOpened"
                    ImageFailed="OnImageFailed" />
         </Grid>

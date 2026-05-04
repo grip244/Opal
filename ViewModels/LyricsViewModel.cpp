@@ -36,10 +36,10 @@ void LyricsViewModel::OnPropertyChanged(String^ propertyName) {
     auto disp = App::MainDispatcher;
     if (disp == nullptr) return;
     if (disp->HasThreadAccess) {
-        PropertyChanged(this, ref new PropertyChangedEventArgs(propertyName));
+        _propertyChanged(this, ref new PropertyChangedEventArgs(propertyName));
     } else {
         disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([this, propertyName]() {
-            PropertyChanged(this, ref new PropertyChangedEventArgs(propertyName));
+            _propertyChanged(this, ref new PropertyChangedEventArgs(propertyName));
         }));
     }
 }

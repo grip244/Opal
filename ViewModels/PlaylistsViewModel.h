@@ -14,9 +14,13 @@ namespace Opal
             static PlaylistsViewModel^ _instance;
             Windows::Foundation::Collections::IObservableVector<PlaylistModel^>^ _playlists;
             bool _isLoading;
+            event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ _propertyChanged;
 
         public:
-            virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged;
+            virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged {
+                Windows::Foundation::EventRegistrationToken add(Windows::UI::Xaml::Data::PropertyChangedEventHandler^ h) { return _propertyChanged += h; }
+                void remove(Windows::Foundation::EventRegistrationToken t) { _propertyChanged -= t; }
+            }
 
             static property PlaylistsViewModel^ Instance {
                 PlaylistsViewModel^ get() {

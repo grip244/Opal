@@ -1,5 +1,5 @@
 #pragma once
-#include "PlaylistsPage.g.h"
+#include "Generated Files/PlaylistsPage.g.h"
 #include "ViewModels/PlaylistsViewModel.h"
 #include "Converters/NullToVisibilityConverter.h"
 

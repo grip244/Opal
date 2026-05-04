@@ -2,6 +2,7 @@
 #include "PlaylistDetailsPage.xaml.h"
 #include "Services/NavidromeService.h"
 #include "Services/PlaybackService.h"
+#include "UI/Controls/ThumbnailView.xaml.h"
 #include <ppltasks.h>
 
 using namespace Opal;
@@ -46,6 +47,11 @@ void PlaylistDetailsPage::LoadPlaylistTracks()
                     auto playlistObj = response->GetNamedObject("playlist");
                     self->PlaylistTitle->Text = playlistObj->GetNamedString("name");
                     
+                    if (playlistObj->HasKey("coverArt")) {
+                        String^ cid = playlistObj->GetNamedString("coverArt");
+                        self->PlaylistCover->SourceUrl = NavidromeService::Instance->GetCoverArtUrl(cid, 300);
+                    }
+
                     if (playlistObj->HasKey("entry")) {
                         auto entries = playlistObj->GetNamedArray("entry");
                         for (unsigned int i = 0; i < entries->Size; i++) {
@@ -55,29 +61,42 @@ void PlaylistDetailsPage::LoadPlaylistTracks()
                             song->Title = entry->GetNamedString("title");
                             song->Artist = entry->HasKey("artist") ? entry->GetNamedString("artist") : "";
                             song->Album = entry->HasKey("album") ? entry->GetNamedString("album") : "";
-                             song->DurationInSeconds = entry->HasKey("duration") ? (int)entry->GetNamedNumber("duration") : 0;
-                             song->PlaylistIndex = i + 1; // 1-indexed for display
+                            song->Genre = entry->HasKey("genre") ? entry->GetNamedString("genre") : "";
+                            song->Year = entry->HasKey("year") ? ((int)entry->GetNamedNumber("year")).ToString() : "";
+                            song->DurationInSeconds = entry->HasKey("duration") ? (int)entry->GetNamedNumber("duration") : 0;
+                            song->PlaylistIndex = i + 1; // 1-indexed for display
 
-                             song->StreamUrl = NavidromeService::Instance->GetStreamUrl(song->Id);
-                             Platform::String^ coverArtId = entry->HasKey("coverArt") ? entry->GetNamedString("coverArt") : song->Id;
-                             song->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(coverArtId, 500);
-
-                             self->_songs->Append(song);
+                            song->StreamUrl = NavidromeService::Instance->GetStreamUrl(song->Id);
+                            Platform::String^ coverArtId = entry->HasKey("coverArt") ? entry->GetNamedString("coverArt") : song->Id;
+                            song->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(coverArtId, 500);
+                            song->PopulateSearchTerms();
+                            self->_songs->Append(song);
                         }
                     }
 
                     int songCount = self->_songs->Size;
                     int totalSeconds = 0;
-                    for (auto s : self->_songs) totalSeconds += s->DurationInSeconds;
+                    for each (auto s in self->_songs) totalSeconds += s->DurationInSeconds;
                     
                     int mins = totalSeconds / 60;
                     int secs = totalSeconds % 60;
-                    self->PlaylistDetails->Text = songCount.ToString() + " Songs \x00b7 " + mins.ToString() + ":" + (secs < 10 ? "0" : "") + secs.ToString();
                 }
             } catch (...) {}
             self->LoadingRing->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
         }));
     });
+}
+
+void PlaylistDetailsPage::OnFavoriteClicked(Object^ sender, RoutedEventArgs^ e)
+{
+    auto btn = dynamic_cast<Windows::UI::Xaml::Controls::Primitives::ToggleButton^>(sender);
+    auto song = dynamic_cast<Song^>(btn->DataContext);
+    if (song != nullptr)
+    {
+        bool isFav = btn->IsChecked->Value;
+        song->IsFavorite = isFav;
+        NavidromeService::Instance->ToggleFavoriteAsync(song->Id, isFav);
+    }
 }
 
 void PlaylistDetailsPage::OnBackClicked(Object^ sender, RoutedEventArgs^ e)

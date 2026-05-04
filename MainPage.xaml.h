@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MainPage.g.h"
+#include "Generated Files/MainPage.g.h"
 
 namespace Opal
 {
@@ -10,6 +10,7 @@ namespace Opal
     {
     public:
         MainPage();
+        Windows::UI::Xaml::Controls::Frame^ GetNavigationFrame();
         
         property bool IsFullPlayerActive {
             bool get();
@@ -21,6 +22,7 @@ namespace Opal
         }
 
         void OnNewPlaylistClick(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnViewPlaylistsClick(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnMenuItemInvoked(Microsoft::UI::Xaml::Controls::NavigationView^ sender, Microsoft::UI::Xaml::Controls::NavigationViewItemInvokedEventArgs^ args);
         void OnFavoriteClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnGlobalRatingChanged(Microsoft::UI::Xaml::Controls::RatingControl^ sender, Platform::Object^ args);
@@ -42,8 +44,6 @@ namespace Opal
         void OnDisconnectClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnDeviceSelected(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
 
-    internal:
-        Windows::UI::Xaml::Controls::Frame^ GetNavigationFrame();
 
     private:
         void OnNavigated(Platform::Object^ sender, Windows::UI::Xaml::Navigation::NavigationEventArgs^ e);
@@ -52,7 +52,16 @@ namespace Opal
         void SyncQueue();
         void UpdateMenuVisibility();
 
-    internal:
-        Windows::UI::Xaml::Controls::Frame^ GetNavigationFrame();
+        // 3.2 Shuffle / Repeat
+        void OnShuffleClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnRepeatClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+
+        // 3.4 Sleep Timer
+        void OnSleepTimerClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnSleepTimerCancelClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void UpdateSleepTimerLabel();
+        Windows::UI::Xaml::DispatcherTimer^ _sleepTimer;
+        int _sleepRemainingSeconds;
+
     };
 }

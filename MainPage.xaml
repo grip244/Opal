@@ -89,8 +89,26 @@
                 <muxc:NavigationViewItem Content="Tracks" Tag="Tracks" Icon="Audio" />
                 <muxc:NavigationViewItem Content="Genres" Tag="Genres" Icon="Tag" />
                 <muxc:NavigationViewItemSeparator />
-                <muxc:NavigationViewItem Content="Playlists" Tag="Playlists" Icon="List" />
-                <muxc:NavigationViewItem Content="Create Playlist" Tag="NewPlaylist" Icon="Add" />
+                <muxc:NavigationViewItem x:Name="PlaylistsNavItem" SelectsOnInvoked="False" IsExpanded="True">
+                    <muxc:NavigationViewItem.Content>
+                        <Grid HorizontalAlignment="Stretch" Margin="0,0,-4,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Playlists" VerticalAlignment="Center" FontWeight="SemiBold" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                <Button Click="OnNewPlaylistClick" Background="Transparent" BorderThickness="0" Width="32" Height="32" Padding="0">
+                                    <SymbolIcon Symbol="Add" />
+                                </Button>
+                                <Button Click="OnViewPlaylistsClick" Background="Transparent" BorderThickness="0" Width="32" Height="32" Padding="0">
+                                    <SymbolIcon Symbol="List" />
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </muxc:NavigationViewItem.Content>
+                </muxc:NavigationViewItem>
                 <!-- Dynamic playlists will be inserted after this item -->
             </muxc:NavigationView.MenuItems>
             
@@ -149,6 +167,14 @@
                     </Grid>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="24">
+                        <!-- 3.2: Shuffle Toggle -->
+                        <ToggleButton x:Name="ShuffleBtn" Click="OnShuffleClicked"
+                                      Background="Transparent" Padding="10"
+                                      ToolTipService.ToolTip="Shuffle"
+                                      UseSystemFocusVisuals="True"
+                                      XYFocusRight="{x:Bind PrevButton}">
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8B1;" FontSize="16" Foreground="{ThemeResource AppTextForegroundBrush}" x:Name="ShuffleIcon" />
+                        </ToggleButton>
                         <Button x:Name="PrevButton" Click="OnPreviousClicked" Background="Transparent" Padding="12" UseSystemFocusVisuals="True">
                             <SymbolIcon Symbol="Previous" Foreground="{ThemeResource AppTextForegroundBrush}" />
                         </Button>
@@ -157,6 +183,14 @@
                         </Button>
                         <Button x:Name="NextButton" Click="OnNextClicked" Background="Transparent" Padding="12" UseSystemFocusVisuals="True">
                             <SymbolIcon Symbol="Next" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                        </Button>
+                        <!-- 3.2: Repeat Toggle -->
+                        <Button x:Name="RepeatBtn" Click="OnRepeatClicked"
+                                Background="Transparent" Padding="10"
+                                ToolTipService.ToolTip="Repeat"
+                                UseSystemFocusVisuals="True"
+                                XYFocusLeft="{x:Bind NextButton}">
+                            <FontIcon x:Name="RepeatIcon" FontFamily="Segoe MDL2 Assets" Glyph="&#xE8EE;" FontSize="16" Foreground="{ThemeResource AppTextForegroundBrush}" />
                         </Button>
                         <Button x:Name="LyricsButton" Click="OnLyricsToggleClicked" Background="Transparent" Padding="12" ToolTipService.ToolTip="Lyrics Toggle" UseSystemFocusVisuals="True">
                             <SymbolIcon Symbol="Comment" Foreground="{ThemeResource AppTextForegroundBrush}" />
@@ -189,6 +223,22 @@
                                         </StackPanel>
                                     </StackPanel>
                                 </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <!-- 3.4: Sleep Timer -->
+                        <Button x:Name="SleepTimerBtn" Background="Transparent" Padding="10"
+                                ToolTipService.ToolTip="Sleep Timer"
+                                UseSystemFocusVisuals="True">
+                            <FontIcon x:Name="SleepTimerIcon" FontFamily="Segoe MDL2 Assets" Glyph="&#xE708;" FontSize="16" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                            <Button.Flyout>
+                                <MenuFlyout x:Name="SleepTimerFlyout">
+                                    <MenuFlyoutItem x:Name="Sleep15" Text="Sleep in 15 min" Click="OnSleepTimerClicked" Tag="15" />
+                                    <MenuFlyoutItem x:Name="Sleep30" Text="Sleep in 30 min" Click="OnSleepTimerClicked" Tag="30" />
+                                    <MenuFlyoutItem x:Name="Sleep60" Text="Sleep in 60 min" Click="OnSleepTimerClicked" Tag="60" />
+                                    <MenuFlyoutItem x:Name="Sleep90" Text="Sleep in 90 min" Click="OnSleepTimerClicked" Tag="90" />
+                                    <MenuFlyoutSeparator />
+                                    <MenuFlyoutItem x:Name="SleepCancel" Text="Cancel" Click="OnSleepTimerCancelClicked" />
+                                </MenuFlyout>
                             </Button.Flyout>
                         </Button>
                         <Slider x:Name="VolumeSlider" Width="150" Minimum="0" Maximum="100" Value="100" ValueChanged="OnVolumeChanged" VerticalAlignment="Center" Margin="16,0,0,0" UseSystemFocusVisuals="True" />

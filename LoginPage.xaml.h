@@ -1,6 +1,6 @@
 #pragma once
 
-#include "LoginPage.g.h"
+#include "Generated Files/LoginPage.g.h"
 #include "Services/NavidromeService.h"
 #include "Services/SettingsService.h"
 
@@ -20,7 +20,5 @@ namespace Opal
         void OnPageLoaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 
 
-        void TextBlock_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-        void ServerTextBox_TextChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::TextChangedEventArgs^ e);
     };
 }

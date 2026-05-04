@@ -70,8 +70,9 @@ void CastingService::StartDiscovery() {
             _discoveryTimer = ref new Windows::UI::Xaml::DispatcherTimer();
             Windows::Foundation::TimeSpan ts; ts.Duration = 5 * 10000000LL; // 5 seconds
             _discoveryTimer->Interval = ts;
-            _discoveryTimer->Tick += ref new Windows::Foundation::EventHandler<Object^>([this](Object^, Object^) {
-                SendDiscoveryBeacon();
+            auto self = this;
+            _discoveryTimer->Tick += ref new Windows::Foundation::EventHandler<Object^>([self](Object^, Object^) {
+                self->SendDiscoveryBeacon();
             });
             _discoveryTimer->Start();
             
@@ -266,12 +267,13 @@ void CastingService::ProcessMessage(String^ rawJson) {
             stateTimer = ref new Windows::UI::Xaml::DispatcherTimer();
             Windows::Foundation::TimeSpan ts; ts.Duration = 10000000LL; // 1 second
             stateTimer->Interval = ts;
-            stateTimer->Tick += ref new Windows::Foundation::EventHandler<Object^>([this](Object^, Object^) {
+            auto self = this;
+            stateTimer->Tick += ref new Windows::Foundation::EventHandler<Object^>([self](Object^, Object^) {
                 if (PlaybackService::Instance->Player->PlaybackSession->PlaybackState == Windows::Media::Playback::MediaPlaybackState::Playing) {
                     long long ticks = PlaybackService::Instance->Player->PlaybackSession->Position.Duration;
                     String^ payload = "OPAL_STATE|" + ticks.ToString();
-                    if (_udpSocket != nullptr) {
-                        create_task(_udpSocket->GetOutputStreamAsync(ref new Windows::Networking::HostName("239.0.0.222"), "9888")).then([payload](IOutputStream^ stream) {
+                    if (self->_udpSocket != nullptr) {
+                        create_task(self->_udpSocket->GetOutputStreamAsync(ref new Windows::Networking::HostName("239.0.0.222"), "9888")).then([payload](IOutputStream^ stream) {
                             auto writer = ref new DataWriter(stream);
                             writer->WriteString(payload);
                             create_task(writer->StoreAsync()).then([writer](unsigned int) { delete writer; });

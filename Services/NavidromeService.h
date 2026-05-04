@@ -29,9 +29,9 @@ namespace Opal
         Windows::Foundation::IAsyncOperation<Platform::String^>^ GetAlbumListByYearAsync(int fromYear, int toYear, int size, int offset);
         Platform::String^ GetCoverArtUrl(Platform::String^ id, int size);
         Platform::String^ GetStreamUrl(Platform::String^ id);
-        Windows::Foundation::IAsyncOperation<Platform::String^>^ GetSongListAsync(Platform::String^ endpoint, int size);
+        Windows::Foundation::IAsyncOperation<Platform::String^>^ GetSongListAsync(Platform::String^ endpoint, int size, int offset);
         Windows::Foundation::IAsyncOperation<Platform::String^>^ GetLyricsBySongIdAsync(Platform::String^ songId);
-        Windows::Foundation::IAsyncOperation<Platform::String^>^ SearchAsync(Platform::String^ query, int size);
+        Windows::Foundation::IAsyncOperation<Platform::String^>^ SearchAsync(Platform::String^ query, int size, int offset);
         Windows::Foundation::IAsyncOperation<Platform::String^>^ GetArtistsAsync();
         Windows::Foundation::IAsyncOperation<Platform::String^>^ GetGenresAsync();
         Windows::Foundation::IAsyncOperation<Platform::String^>^ GetArtistAsync(Platform::String^ id);
@@ -73,6 +73,7 @@ namespace Opal
         Platform::String^ GetSessionToken(Platform::String^ password);
         Platform::String^ ComputeMd5Token(Platform::String^ input);
         Platform::String^ NormalizeUrl(Platform::String^ url);
+        Windows::Web::Http::HttpClient^ CreateRequestClient();
 
     internal:
         static std::wstring NormalizeUrlNative(const std::wstring& url);

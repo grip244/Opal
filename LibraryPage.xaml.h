@@ -2,7 +2,7 @@
 
 #include <set>
 #include <string>
-#include "LibraryPage.g.h"
+#include "Generated Files/LibraryPage.g.h"
 #include "Models/SharedModels.h"
 #include "ViewModels/LibraryViewModel.h"
 #include "ViewModels/LyricsViewModel.h"
@@ -70,10 +70,12 @@ namespace Opal
 
     protected:
         virtual void OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) override;
+        virtual void OnNavigatedFrom(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) override;
 
     private:
         int _lastLyricIndex;
         bool _shouldShowPlayerOnLoad;
+        Windows::Foundation::EventRegistrationToken _backRequestedToken; // 2.1
         void UpdateLyricsHighlight();
         void UpdateUpcomingQueue();
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SettingsPage.g.h"
+#include "Generated Files/SettingsPage.g.h"
 
 namespace Opal
 {

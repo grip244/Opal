@@ -130,9 +130,23 @@ void PlaylistsPage::OnDeletePlaylistClick(Object^ sender, RoutedEventArgs^ e)
     auto item = dynamic_cast<MenuFlyoutItem^>(sender);
     if (item == nullptr) return;
     auto playlist = dynamic_cast<PlaylistModel^>(item->DataContext);
-    if (playlist != nullptr) {
-        PlaylistsVM->DeletePlaylist(playlist->Id);
-    }
+    if (playlist == nullptr) return;
+
+    // 4.1: Confirmation dialog before delete
+    auto dialog = ref new ContentDialog();
+    dialog->Title = "Delete Playlist";
+    dialog->Content = "Are you sure you want to delete \"" + playlist->Name + "\"? This cannot be undone.";
+    dialog->PrimaryButtonText = "Delete";
+    dialog->CloseButtonText = "Cancel";
+    dialog->DefaultButton = ContentDialogButton::Close;
+
+    auto vm = PlaylistsVM;
+    auto id = playlist->Id;
+    create_task(dialog->ShowAsync()).then([vm, id](ContentDialogResult result) {
+        if (result == ContentDialogResult::Primary) {
+            vm->DeletePlaylist(id);
+        }
+    });
 }
 
 void PlaylistsPage::OnMoreButtonClicked(Object^ sender, RoutedEventArgs^ e)

@@ -29,6 +29,7 @@ using namespace Windows::Media;
 using namespace Windows::UI::Xaml::Interop;
 using namespace Windows::UI::Xaml::Data;
 using namespace Windows::UI::Xaml::Input;
+using namespace Windows::Foundation;
 using namespace Windows::UI::Xaml::Controls::Primitives;
 using namespace Windows::UI::Xaml::Media;
 using namespace Windows::System::Profile;
@@ -92,6 +93,29 @@ LibraryPage::LibraryPage()
 
 void LibraryPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e)
 {
+    // 2.1: Register BackRequested here so it is paired with OnNavigatedFrom unregistration
+    auto self = this;
+    _backRequestedToken = SystemNavigationManager::GetForCurrentView()->BackRequested +=
+        ref new EventHandler<BackRequestedEventArgs^>([self](Object^ sender, BackRequestedEventArgs^ args) {
+            if (self->FullPlayerGrid->Visibility == Windows::UI::Xaml::Visibility::Visible) {
+                self->FullPlayerGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+                self->BrowseGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+                args->Handled = true;
+            }
+            else if (self->AlbumGrid->Visibility == Windows::UI::Xaml::Visibility::Visible) {
+                if (self->ArtistDetailName->Text->Length() > 0) {
+                    self->AlbumGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+                    self->ArtistGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+                } else self->LoadHomePage();
+                args->Handled = true;
+            }
+            else if (self->HomeGrid->Visibility == Windows::UI::Xaml::Visibility::Collapsed) {
+                self->LoadHomePage();
+                args->Handled = true;
+            }
+            else args->Handled = true;
+        });
+
     auto paramStr = dynamic_cast<Platform::String^>(e->Parameter);
     if (paramStr != nullptr && paramStr->Length() > 6 && std::wstring(paramStr->Data()).substr(0, 6) == L"GENRE:")
     {
@@ -147,27 +171,8 @@ void LibraryPage::OnPageLoaded(Object^ sender, RoutedEventArgs^ e)
         UpdateUpcomingQueue();
     }
 
-    auto self = this;
-    SystemNavigationManager::GetForCurrentView()->BackRequested += ref new EventHandler<BackRequestedEventArgs^>(
-        [self](Object^ sender, BackRequestedEventArgs^ args) {
-            if (self->FullPlayerGrid->Visibility == Windows::UI::Xaml::Visibility::Visible) {
-                self->FullPlayerGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
-                self->BrowseGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
-                args->Handled = true;
-            }
-            else if (self->AlbumGrid->Visibility == Windows::UI::Xaml::Visibility::Visible) {
-                if (self->ArtistDetailName->Text->Length() > 0) {
-                    self->AlbumGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
-                    self->ArtistGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
-                } else self->LoadHomePage();
-                args->Handled = true;
-            }
-            else if (self->HomeGrid->Visibility == Windows::UI::Xaml::Visibility::Collapsed) {
-                self->LoadHomePage();
-                args->Handled = true;
-            }
-            else args->Handled = true;
-        });
+    // 2.1: BackRequested registration moved to OnNavigatedTo/OnNavigatedFrom
+    // to prevent handler accumulation on each page load
 }
 
 void LibraryPage::LoadHomePage()
@@ -494,7 +499,7 @@ void LibraryPage::UpdateLyricsHighlight()
 void LibraryPage::Search(String^ query)
 {
     auto self = this;
-    create_task(NavidromeService::Instance->SearchAsync(query, 20)).then([self](Platform::String^ jsonStr) {
+    create_task(NavidromeService::Instance->SearchAsync(query, 20, 0)).then([self](Platform::String^ jsonStr) {
         if (jsonStr != nullptr) {
             self->Dispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([self, jsonStr]() {
                 try {
@@ -802,10 +807,24 @@ void LibraryPage::OnLyricsToggleClicked(Object^ sender, RoutedEventArgs^ e) {
     }
 }
 
+void LibraryPage::OnNavigatedFrom(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e)
+{
+    // 2.1: Unregister the BackRequested handler to prevent accumulation
+    SystemNavigationManager::GetForCurrentView()->BackRequested -= _backRequestedToken;
+}
+
 void LibraryPage::OnDisconnectClicked(Object^ sender, RoutedEventArgs^ e) {
+    // 1.1: Pause playback and clear all session state before navigating away
     auto playback = PlaybackService::Instance;
     playback->Player->Pause();
     playback->Player->Source = nullptr;
+
+    NavidromeService::Instance->SetCredentials(nullptr, nullptr, nullptr);
+    ViewModels::LibraryViewModel::Instance->ClearAll();
+    ViewModels::PlaylistsViewModel::Instance->Clear();
+
+    // Clear the back-stack so the user cannot navigate back from LoginPage
+    this->Frame->BackStack->Clear();
     this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(LoginPage::typeid));
 }
 void Opal::LibraryPage::OnCarouselScrollLeft(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)

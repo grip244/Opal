@@ -5,6 +5,7 @@
 #include <ppltasks.h>
 #include "Services/DebugLogger.h"
 #include <algorithm>
+#include <utility>
 #include <vector>
 #include <cwctype>
 
@@ -85,9 +86,9 @@ void AlbumsPage::LoadAlbums()
                                     am->Year = "";
                                 }
                                 
-                                Platform::String^ coverUrlStr = NavidromeService::Instance->GetCoverArtUrl(am->Id, 500);
-                                try { am->CoverArt = ref new BitmapImage(ref new Uri(coverUrlStr)); } catch (Exception^ ex) { DebugLogger::Instance->LogException("LoadAlbums (CoverArt)", ex); }
-                                
+                                String^ coverArtId = albObj->HasKey("coverArt") ? albObj->GetNamedString("coverArt") : am->Id;
+                                am->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(coverArtId, 500);
+                                am->PopulateSearchTerms();
                                 albums.push_back(am);
                             }
                             _albums->Clear();

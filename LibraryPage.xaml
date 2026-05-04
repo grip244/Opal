@@ -94,24 +94,40 @@
                                         <FlipView.ItemTemplate>
                                             <DataTemplate>
                                                 <Grid Tapped="OnSpotlightTapped" Tag="{Binding}" Background="#11FFFFFF" CornerRadius="12">
-                                                    <!-- Stretched Background -->
-                                                    <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" Opacity="0.4" />
-                                                    <Grid Background="#77000000" /> <!-- Text protection overlay -->
+                                                     <!-- Stretched Background -->
+                                                    <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" IsBlurEnabled="True" />
+                                                    
+                                                    <!-- Gradient Overlay for Legibility (Transparent -> Dark) -->
+                                                    <Grid>
+                                                        <Grid.Background>
+                                                            <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                                                                <GradientStop Color="#00000000" Offset="0" />
+                                                                <GradientStop Color="#CC000000" Offset="0.8" />
+                                                                <GradientStop Color="#FF000000" Offset="1" />
+                                                            </LinearGradientBrush>
+                                                        </Grid.Background>
+                                                    </Grid>
 
                                                     <StackPanel Orientation="Horizontal" Padding="24" Spacing="24" VerticalAlignment="Center">
                                                         <Border CornerRadius="8" Width="150" Height="150" BorderThickness="1" BorderBrush="#22FFFFFF" Background="#11FFFFFF" Canvas.ZIndex="1">
                                                             <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="150" />
                                                         </Border>
-                                                        <StackPanel VerticalAlignment="Center" Spacing="4">
-                                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                                <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Foreground="White" />
+                                                         <StackPanel VerticalAlignment="Center" Spacing="0">
+                                                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,4">
+                                                                <TextBlock Text="{Binding Title}" FontSize="32" FontWeight="Bold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Foreground="White" MaxLines="1" />
                                                                 <Border Background="#55FFFFFF" CornerRadius="4" Padding="6,2" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
-                                                                    <TextBlock Text="E" FontSize="9" FontWeight="Bold" Foreground="White" />
+                                                                    <TextBlock Text="E" FontSize="11" FontWeight="Bold" Foreground="White" />
                                                                 </Border>
                                                             </StackPanel>
-                                                            <TextBlock Text="{Binding Artist}" FontSize="18" Opacity="0.9" Foreground="White" />
-                                                            <TextBlock Text="{Binding Album}" FontSize="14" Opacity="0.6" Foreground="White" />
+                                                            <TextBlock Text="{Binding Artist}" FontSize="20" FontWeight="SemiBold" Opacity="0.9" Foreground="White" />
+                                                            <TextBlock Text="{Binding Album}" FontSize="16" Opacity="0.6" Foreground="White" Margin="0,4,0,0" />
+                                                            <StackPanel Orientation="Horizontal" Spacing="6" Opacity="0.4" Margin="0,8,0,0">
+                                                                <TextBlock Text="{Binding Genre}" FontSize="14" Foreground="White" />
+                                                                <TextBlock Text="•" FontSize="14" Foreground="White" />
+                                                                <TextBlock Text="{Binding Year}" FontSize="14" Foreground="White" />
+                                                            </StackPanel>
                                                         </StackPanel>
+
                                                     </StackPanel>
                                                 </Grid>
                                             </DataTemplate>
