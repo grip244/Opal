@@ -67,8 +67,8 @@ std::wstring NavidromeService::NormalizeUrlNative(const std::wstring& url)
     std::wstring s = url;
     auto schemePos = s.find(L"://");
     if (schemePos == std::wstring::npos) {
-        s = L"https://" + s;
-        schemePos = 5;
+        s = L"http://" + s;
+        schemePos = 4;
     }
     size_t hostStart = schemePos + 3;
     size_t slashPos = s.find(L'/', hostStart);
@@ -111,7 +111,7 @@ IAsyncOperation<String^>^ NavidromeService::LoginAsync(String^ serverUrl, String
 {
     if (serverUrl == nullptr || username == nullptr || password == nullptr) return create_async([]() -> String^ { return "ERR_EMPTY_CREDENTIALS"; });
 
-    return create_async([=]() -> String^ {
+    return create_async([=]() -> task<String^> {
         try
         {
             auto salt = GenerateSalt();
@@ -129,44 +129,55 @@ IAsyncOperation<String^>^ NavidromeService::LoginAsync(String^ serverUrl, String
 
             auto uri = ref new Uri(ref new String(fullUrl.c_str()));
             auto client = CreateRequestClient();
-            auto response = create_task(client->GetAsync(uri)).get();
             
-            if (response != nullptr && response->Content != nullptr)
-            {
-                auto str = create_task(response->Content->ReadAsStringAsync()).get();
-                if (str != nullptr) {
-                    std::wstring ws(str->Data());
-                    
-                    // Specific check for success status
-                    if (ws.find(L"\"status\":\"ok\"") != std::wstring::npos || ws.find(L"\"status\": \"ok\"") != std::wstring::npos)
+            return create_task(client->GetAsync(uri)).then([=](concurrency::task<HttpResponseMessage^> previousTask) -> task<String^> {
+                try {
+                    auto response = previousTask.get();
+                    if (response != nullptr && response->Content != nullptr)
                     {
-                        SetCredentials(serverUrl, username, password);
-                        return "SUCCESS";
+                        return create_task(response->Content->ReadAsStringAsync()).then([=](String^ str) -> String^ {
+                            if (str != nullptr) {
+                                std::wstring ws(str->Data());
+
+                                // Specific check for success status
+                                if (ws.find(L"\"status\":\"ok\"") != std::wstring::npos || ws.find(L"\"status\": \"ok\"") != std::wstring::npos)
+                                {
+                                    SetCredentials(serverUrl, username, password);
+                                    return "SUCCESS";
+                                }
+
+                                // Check for specific Subsonic error codes
+                                if (ws.find(L"\"code\":40") != std::wstring::npos) return "ERR_INVALID_CREDENTIALS";
+                                if (ws.find(L"\"code\":50") != std::wstring::npos || response->StatusCode == Windows::Web::Http::HttpStatusCode::TooManyRequests) return "ERR_RATE_LIMIT";
+                            }
+
+                            if (response->StatusCode == Windows::Web::Http::HttpStatusCode::Unauthorized)
+                                return "ERR_UNAUTHORIZED";
+
+                            return "ERR_SERVER_CONNECTION";
+                        });
                     }
                     
-                    // Check for specific Subsonic error codes
-                    if (ws.find(L"\"code\":40") != std::wstring::npos) return "ERR_INVALID_CREDENTIALS";
-                    if (ws.find(L"\"code\":50") != std::wstring::npos || response->StatusCode == Windows::Web::Http::HttpStatusCode::TooManyRequests) return "ERR_RATE_LIMIT";
-                }
-            }
-            
-            if (response != nullptr && response->StatusCode == Windows::Web::Http::HttpStatusCode::Unauthorized)
-                return "ERR_UNAUTHORIZED";
+                    if (response != nullptr && response->StatusCode == Windows::Web::Http::HttpStatusCode::Unauthorized)
+                        return task_from_result<String^>("ERR_UNAUTHORIZED");
 
-            return "ERR_SERVER_CONNECTION";
+                    return task_from_result<String^>("ERR_SERVER_CONNECTION");
+                } catch (...) {
+                    return task_from_result<String^>("ERR_NETWORK_FAILURE");
+                }
+            });
         }
         catch (Exception^ ex)
         {
             DebugLogger::Instance->LogException("LoginAsync", ex);
-            return "ERR_NETWORK_FAILURE";
+            return task_from_result<String^>("ERR_NETWORK_FAILURE");
         }
     });
 }
-
 IAsyncOperation<String^>^ NavidromeService::GetAlbumListAsync(String^ type, int size, int offset)
 {
     if (!IsAuthenticated()) return create_async([]() -> String^ { return nullptr; });
-    return create_async([=]() -> String^ {
+    return create_async([=]() -> task<String^> {
         try
         {
             auto token = GetSessionToken(_password);
@@ -186,18 +197,24 @@ IAsyncOperation<String^>^ NavidromeService::GetAlbumListAsync(String^ type, int 
             fullUrl += rel;
 
             auto client = CreateRequestClient();
-            auto response = create_task(client->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).get();
-            if (!response->IsSuccessStatusCode) return nullptr;
-            return create_task(response->Content->ReadAsStringAsync()).get();
+            return create_task(client->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).then([=](concurrency::task<HttpResponseMessage^> previousTask) -> task<String^> {
+            try {
+                auto response = previousTask.get();
+                if (!response->IsSuccessStatusCode) return task_from_result<String^>(nullptr);
+                return create_task(response->Content->ReadAsStringAsync());
+                        } catch (...) {
+                return task_from_result<String^>(nullptr);
+            }
+        });
         }
-        catch (...) { return nullptr; }
+        catch (...) { return task_from_result<String^>(nullptr); }
     });
 }
 
 IAsyncOperation<String^>^ NavidromeService::GetAlbumListByGenreAsync(String^ genre, int size, int offset)
 {
     if (!IsAuthenticated()) return create_async([]() -> String^ { return nullptr; });
-    return create_async([=]() -> String^ {
+    return create_async([=]() -> task<String^> {
         try
         {
             auto token = GetSessionToken(_password);
@@ -217,18 +234,24 @@ IAsyncOperation<String^>^ NavidromeService::GetAlbumListByGenreAsync(String^ gen
             fullUrl += rel;
 
             auto client = CreateRequestClient();
-            auto response = create_task(client->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).get();
-            if (!response->IsSuccessStatusCode) return nullptr;
-            return create_task(response->Content->ReadAsStringAsync()).get();
+            return create_task(client->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).then([=](concurrency::task<HttpResponseMessage^> previousTask) -> task<String^> {
+            try {
+                auto response = previousTask.get();
+                if (!response->IsSuccessStatusCode) return task_from_result<String^>(nullptr);
+                return create_task(response->Content->ReadAsStringAsync());
+                        } catch (...) {
+                return task_from_result<String^>(nullptr);
+            }
+        });
         }
-        catch (...) { return nullptr; }
+        catch (...) { return task_from_result<String^>(nullptr); }
     });
 }
 
 IAsyncOperation<String^>^ NavidromeService::GetAlbumListByYearAsync(int fromYear, int toYear, int size, int offset)
 {
     if (!IsAuthenticated()) return create_async([]() -> String^ { return nullptr; });
-    return create_async([=]() -> String^ {
+    return create_async([=]() -> task<String^> {
         try
         {
             auto token = GetSessionToken(_password);
@@ -248,11 +271,17 @@ IAsyncOperation<String^>^ NavidromeService::GetAlbumListByYearAsync(int fromYear
             fullUrl += rel;
 
             auto client = CreateRequestClient();
-            auto response = create_task(client->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).get();
-            if (!response->IsSuccessStatusCode) return nullptr;
-            return create_task(response->Content->ReadAsStringAsync()).get();
+            return create_task(client->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).then([=](concurrency::task<HttpResponseMessage^> previousTask) -> task<String^> {
+            try {
+                auto response = previousTask.get();
+                if (!response->IsSuccessStatusCode) return task_from_result<String^>(nullptr);
+                return create_task(response->Content->ReadAsStringAsync());
+                        } catch (...) {
+                return task_from_result<String^>(nullptr);
+            }
+        });
         }
-        catch (...) { return nullptr; }
+        catch (...) { return task_from_result<String^>(nullptr); }
     });
 }
 
@@ -298,7 +327,7 @@ String^ NavidromeService::GetStreamUrl(String^ id)
 IAsyncOperation<String^>^ NavidromeService::GetSongListAsync(String^ endpoint, int size, int offset)
 {
     if (!IsAuthenticated()) return create_async([]() -> String^ { return nullptr; });
-    return create_async([=]() -> String^ {
+    return create_async([=]() -> task<String^> {
         try
         {
             auto token = GetSessionToken(_password);
@@ -318,18 +347,24 @@ IAsyncOperation<String^>^ NavidromeService::GetSongListAsync(String^ endpoint, i
             fullUrl += rel;
 
             auto client = CreateRequestClient();
-            auto response = create_task(client->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).get();
-            if (!response->IsSuccessStatusCode) return nullptr;
-            return create_task(response->Content->ReadAsStringAsync()).get();
+            return create_task(client->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).then([=](concurrency::task<HttpResponseMessage^> previousTask) -> task<String^> {
+            try {
+                auto response = previousTask.get();
+                if (!response->IsSuccessStatusCode) return task_from_result<String^>(nullptr);
+                return create_task(response->Content->ReadAsStringAsync());
+                        } catch (...) {
+                return task_from_result<String^>(nullptr);
+            }
+        });
         }
-        catch (...) { return nullptr; }
+        catch (...) { return task_from_result<String^>(nullptr); }
     });
 }
 
 IAsyncOperation<String^>^ NavidromeService::GetLyricsBySongIdAsync(String^ songId)
 {
     if (!IsAuthenticated()) return create_async([]() -> String^ { return nullptr; });
-    return create_async([=]() -> String^ {
+    return create_async([=]() -> task<String^> {
         try
         {
             auto token = GetSessionToken(_password);
@@ -347,18 +382,24 @@ IAsyncOperation<String^>^ NavidromeService::GetLyricsBySongIdAsync(String^ songI
             fullUrl += rel;
 
             auto client = CreateRequestClient();
-            auto response = create_task(client->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).get();
-            if (!response->IsSuccessStatusCode) return nullptr;
-            return create_task(response->Content->ReadAsStringAsync()).get();
+            return create_task(client->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).then([=](concurrency::task<HttpResponseMessage^> previousTask) -> task<String^> {
+            try {
+                auto response = previousTask.get();
+                if (!response->IsSuccessStatusCode) return task_from_result<String^>(nullptr);
+                return create_task(response->Content->ReadAsStringAsync());
+                        } catch (...) {
+                return task_from_result<String^>(nullptr);
+            }
+        });
         }
-        catch (...) { return nullptr; }
+        catch (...) { return task_from_result<String^>(nullptr); }
     });
 }
 
 IAsyncOperation<String^>^ NavidromeService::SearchAsync(String^ query, int size, int offset)
 {
     if (!IsAuthenticated()) return create_async([]() -> String^ { return nullptr; });
-    return create_async([=]() -> String^ {
+    return create_async([=]() -> task<String^> {
         try
         {
             auto token = GetSessionToken(_password);
@@ -378,11 +419,17 @@ IAsyncOperation<String^>^ NavidromeService::SearchAsync(String^ query, int size,
             fullUrl += rel;
 
             auto client = CreateRequestClient();
-            auto response = create_task(client->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).get();
-            if (!response->IsSuccessStatusCode) return nullptr;
-            return create_task(response->Content->ReadAsStringAsync()).get();
+            return create_task(client->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).then([=](concurrency::task<HttpResponseMessage^> previousTask) -> task<String^> {
+            try {
+                auto response = previousTask.get();
+                if (!response->IsSuccessStatusCode) return task_from_result<String^>(nullptr);
+                return create_task(response->Content->ReadAsStringAsync());
+                        } catch (...) {
+                return task_from_result<String^>(nullptr);
+            }
+        });
         }
-        catch (...) { return nullptr; }
+        catch (...) { return task_from_result<String^>(nullptr); }
     });
 }
 
@@ -399,7 +446,7 @@ IAsyncOperation<String^>^ NavidromeService::GetGenresAsync()
 IAsyncOperation<String^>^ NavidromeService::GetArtistAsync(String^ id)
 {
     if (!IsAuthenticated() || _serverUrl == nullptr || _username == nullptr) return create_async([]() -> String^ { return nullptr; });
-    return create_async([=]() -> String^ {
+    return create_async([=]() -> task<String^> {
         auto token = GetSessionToken(_password);
         auto salt = GenerateSalt();
         auto normalizedServerUrl = NormalizeUrl(_serverUrl);
@@ -407,15 +454,16 @@ IAsyncOperation<String^>^ NavidromeService::GetArtistAsync(String^ id)
         std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
         if (fullUrl.back() != L'/') fullUrl += L'/';
         return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).then([](HttpResponseMessage^ resp) {
-            return resp->IsSuccessStatusCode ? create_task(resp->Content->ReadAsStringAsync()).get() : nullptr;
-        }).get();
+            if (resp->IsSuccessStatusCode) return create_task(resp->Content->ReadAsStringAsync());
+            return task_from_result<String^>(nullptr);
+        });
     });
 }
 
 IAsyncOperation<String^>^ NavidromeService::GetAlbumAsync(String^ id)
 {
     if (!IsAuthenticated() || _serverUrl == nullptr || _username == nullptr) return create_async([]() -> String^ { return nullptr; });
-    return create_async([=]() -> String^ {
+    return create_async([=]() -> task<String^> {
         auto token = GetSessionToken(_password);
         auto salt = GenerateSalt();
         auto normalizedServerUrl = NormalizeUrl(_serverUrl);
@@ -423,15 +471,16 @@ IAsyncOperation<String^>^ NavidromeService::GetAlbumAsync(String^ id)
         std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
         if (fullUrl.back() != L'/') fullUrl += L'/';
         return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).then([](HttpResponseMessage^ resp) {
-            return resp->IsSuccessStatusCode ? create_task(resp->Content->ReadAsStringAsync()).get() : nullptr;
-        }).get();
+            if (resp->IsSuccessStatusCode) return create_task(resp->Content->ReadAsStringAsync());
+            return task_from_result<String^>(nullptr);
+        });
     });
 }
 
 IAsyncOperation<String^>^ NavidromeService::GetSongAsync(String^ id)
 {
     if (!IsAuthenticated() || _serverUrl == nullptr || _username == nullptr) return create_async([]() -> String^ { return nullptr; });
-    return create_async([=]() -> String^ {
+    return create_async([=]() -> task<String^> {
         auto token = GetSessionToken(_password);
         auto salt = GenerateSalt();
         auto normalizedServerUrl = NormalizeUrl(_serverUrl);
@@ -439,15 +488,16 @@ IAsyncOperation<String^>^ NavidromeService::GetSongAsync(String^ id)
         std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
         if (fullUrl.back() != L'/') fullUrl += L'/';
         return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).then([](HttpResponseMessage^ resp) {
-            return resp->IsSuccessStatusCode ? create_task(resp->Content->ReadAsStringAsync()).get() : nullptr;
-        }).get();
+            if (resp->IsSuccessStatusCode) return create_task(resp->Content->ReadAsStringAsync());
+            return task_from_result<String^>(nullptr);
+        });
     });
 }
 
 Windows::Foundation::IAsyncAction^ NavidromeService::ScrobbleAsync(String^ id, bool submission, long long time)
 {
     if (!IsAuthenticated()) return create_async([]() {});
-    return create_async([=]() {
+    return create_async([=]() -> task<void> {
         try
         {
             auto token = GetSessionToken(_password);
@@ -469,16 +519,18 @@ Windows::Foundation::IAsyncAction^ NavidromeService::ScrobbleAsync(String^ id, b
             if (fullUrl.back() != L'/') fullUrl += L'/';
             fullUrl += rel;
 
-            create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).get();
+            return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).then([](concurrency::task<HttpResponseMessage^> previousTask) {
+                try { previousTask.get(); } catch (...) {}
+            });
         }
-        catch (...) {}
+        catch (...) { return task_from_result(); }
     });
 }
 
 Windows::Foundation::IAsyncAction^ NavidromeService::ToggleFavoriteAsync(String^ id, bool isFavorite)
 {
     if (!IsAuthenticated()) return create_async([]() {});
-    return create_async([=]() {
+    return create_async([=]() -> task<void> {
         try
         {
             auto token = GetSessionToken(_password);
@@ -496,16 +548,18 @@ Windows::Foundation::IAsyncAction^ NavidromeService::ToggleFavoriteAsync(String^
             if (fullUrl.back() != L'/') fullUrl += L'/';
             fullUrl += rel;
 
-            create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).get();
+            return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).then([](concurrency::task<HttpResponseMessage^> previousTask) {
+                try { previousTask.get(); } catch (...) {}
+            });
         }
-        catch (...) {}
+        catch (...) { return task_from_result(); }
     });
 }
 
 Windows::Foundation::IAsyncAction^ NavidromeService::SetRatingAsync(String^ id, int rating)
 {
     if (!IsAuthenticated()) return create_async([]() {});
-    return create_async([=]() {
+    return create_async([=]() -> task<void> {
         try
         {
             auto token = GetSessionToken(_password);
@@ -523,9 +577,11 @@ Windows::Foundation::IAsyncAction^ NavidromeService::SetRatingAsync(String^ id, 
             if (fullUrl.back() != L'/') fullUrl += L'/';
             fullUrl += rel;
 
-            create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).get();
+            return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String(fullUrl.c_str())))).then([](concurrency::task<HttpResponseMessage^> previousTask) {
+                try { previousTask.get(); } catch (...) {}
+            });
         }
-        catch (...) {}
+        catch (...) { return task_from_result(); }
     });
 }
 
@@ -537,7 +593,7 @@ IAsyncOperation<String^>^ NavidromeService::GetPlaylistsAsync()
 IAsyncOperation<String^>^ NavidromeService::GetPlaylistAsync(String^ id)
 {
     if (!IsAuthenticated() || _serverUrl == nullptr || _username == nullptr) return create_async([]() -> String^ { return nullptr; });
-    return create_async([=]() -> String^ {
+    return create_async([=]() -> task<String^> {
         auto token = GetSessionToken(_password);
         auto salt = GenerateSalt();
         auto normalizedServerUrl = NormalizeUrl(_serverUrl);
@@ -545,15 +601,16 @@ IAsyncOperation<String^>^ NavidromeService::GetPlaylistAsync(String^ id)
         std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
         if (fullUrl.back() != L'/') fullUrl += L'/';
         return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).then([](HttpResponseMessage^ resp) {
-            return resp->IsSuccessStatusCode ? create_task(resp->Content->ReadAsStringAsync()).get() : nullptr;
-        }).get();
+            if (resp->IsSuccessStatusCode) return create_task(resp->Content->ReadAsStringAsync());
+            return task_from_result<String^>(nullptr);
+        });
     });
 }
 
 IAsyncOperation<String^>^ NavidromeService::CreatePlaylistAsync(String^ name)
 {
     if (!IsAuthenticated()) return create_async([]() -> String^ { return nullptr; });
-    return create_async([=]() -> String^ {
+    return create_async([=]() -> task<String^> {
         try {
             auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
@@ -562,19 +619,25 @@ IAsyncOperation<String^>^ NavidromeService::CreatePlaylistAsync(String^ name)
             std::wstring rel = L"rest/createPlaylist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&name=" + std::wstring(escapedName->Data());
             std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
             if (fullUrl.back() != L'/') fullUrl += L'/';
-            auto response = create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).get();
-            if (response->IsSuccessStatusCode) {
-                return create_task(response->Content->ReadAsStringAsync()).get();
+            return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).then([=](concurrency::task<HttpResponseMessage^> previousTask) -> task<String^> {
+            try {
+                auto response = previousTask.get();
+                if (response->IsSuccessStatusCode) {
+                    return create_task(response->Content->ReadAsStringAsync());
+                }
+                return task_from_result<String^>(nullptr);
+                        } catch (...) {
+                return task_from_result<String^>(nullptr);
             }
-        } catch (...) {}
-        return nullptr;
+        });
+        } catch (...) { return task_from_result<String^>(nullptr); }
     });
 }
 
 IAsyncAction^ NavidromeService::DeletePlaylistAsync(String^ id)
 {
     if (!IsAuthenticated()) return create_async([]() {});
-    return create_async([=]() {
+    return create_async([=]() -> task<void> {
         try {
             auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
@@ -583,15 +646,17 @@ IAsyncAction^ NavidromeService::DeletePlaylistAsync(String^ id)
             std::wstring rel = L"rest/deletePlaylist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&id=" + std::wstring(escapedId->Data());
             std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
             if (fullUrl.back() != L'/') fullUrl += L'/';
-            create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).get();
-        } catch (...) {}
+            return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).then([](concurrency::task<HttpResponseMessage^> previousTask) {
+                try { previousTask.get(); } catch (...) {}
+            });
+        } catch (...) { return task_from_result(); }
     });
 }
 
 IAsyncAction^ NavidromeService::AddSongToPlaylistAsync(String^ playlistId, String^ songId)
 {
     if (!IsAuthenticated()) return create_async([]() {});
-    return create_async([=]() {
+    return create_async([=]() -> task<void> {
         try {
             auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
@@ -602,29 +667,35 @@ IAsyncAction^ NavidromeService::AddSongToPlaylistAsync(String^ playlistId, Strin
             std::wstring rel = L"rest/updatePlaylist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&playlistId=" + std::wstring(escapedPid->Data()) + L"&songIdToAdd=" + std::wstring(escapedSid->Data());
             std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
             if (fullUrl.back() != L'/') fullUrl += L'/';
-            auto response = create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).get();
-            DebugLogger::Instance->Log("NavidromeService", "AddSongToPlaylist Response: " + response->StatusCode.ToString());
-        } catch (...) {}
+            return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).then([=](concurrency::task<HttpResponseMessage^> previousTask) {
+                try {
+                    auto response = previousTask.get();
+                DebugLogger::Instance->Log("NavidromeService", "AddSongToPlaylist Response: " + response->StatusCode.ToString());
+                            } catch (...) {}
+            });
+        } catch (...) { return task_from_result(); }
     });
 }
 
 IAsyncAction^ NavidromeService::UpdatePlaylistNameAsync(String^ playlistId, String^ newName)
 {
-    return create_async([this, playlistId, newName]() {
+    return create_async([this, playlistId, newName]() -> task<void> {
         auto token = GetSessionToken(_password);
         auto salt = GenerateSalt();
         auto normalizedServerUrl = NormalizeUrl(_serverUrl);
         std::wstring rel = L"rest/updatePlaylist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&playlistId=" + std::wstring(playlistId->Data()) + L"&name=" + std::wstring(newName->Data());
         std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
         if (fullUrl.back() != L'/') fullUrl += L'/';
-        create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).get();
+            return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).then([](concurrency::task<HttpResponseMessage^> previousTask) {
+                try { previousTask.get(); } catch (...) {}
+            });
     });
 }
 
 IAsyncAction^ NavidromeService::RemoveSongFromPlaylistAsync(String^ playlistId, int songIndex)
 {
     if (!IsAuthenticated()) return create_async([]() {});
-    return create_async([=]() {
+    return create_async([=]() -> task<void> {
         try {
             auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
@@ -635,16 +706,20 @@ IAsyncAction^ NavidromeService::RemoveSongFromPlaylistAsync(String^ playlistId, 
             std::wstring rel = L"rest/updatePlaylist.view?u=" + std::wstring(_username->Data()) + L"&t=" + std::wstring(token->Data()) + L"&s=" + std::wstring(salt->Data()) + L"&v=1.16.1&c=Opal[Xbox/Windows]&f=json&playlistId=" + std::wstring(escapedPid->Data()) + L"&id=" + std::wstring(escapedPid->Data()) + L"&songIndexToRemove=" + std::to_wstring(songIndex);
             std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
             if (fullUrl.back() != L'/') fullUrl += L'/';
-            auto response = create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).get();
-            DebugLogger::Instance->Log("NavidromeService", "RemoveSongFromPlaylist Response: " + response->StatusCode.ToString());
-        } catch (...) {}
+            return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).then([=](concurrency::task<HttpResponseMessage^> previousTask) {
+                try {
+                    auto response = previousTask.get();
+                DebugLogger::Instance->Log("NavidromeService", "RemoveSongFromPlaylist Response: " + response->StatusCode.ToString());
+                            } catch (...) {}
+            });
+        } catch (...) { return task_from_result(); }
     });
 }
 
 IAsyncAction^ NavidromeService::UpdatePlaylistMetadataAsync(String^ playlistId, String^ name, String^ comment, bool isPublic)
 {
     if (!IsAuthenticated()) return create_async([]() {});
-    return create_async([=]() {
+    return create_async([=]() -> task<void> {
         try {
             auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
@@ -663,15 +738,17 @@ IAsyncAction^ NavidromeService::UpdatePlaylistMetadataAsync(String^ playlistId, 
 
             std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
             if (fullUrl.back() != L'/') fullUrl += L'/';
-            create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).get();
-        } catch (...) {}
+            return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).then([](concurrency::task<HttpResponseMessage^> previousTask) {
+                try { previousTask.get(); } catch (...) {}
+            });
+        } catch (...) { return task_from_result(); }
     });
 }
 
 IAsyncAction^ NavidromeService::ReorderPlaylistAsync(String^ playlistId, Windows::Foundation::Collections::IVector<String^>^ songIds)
 {
     if (!IsAuthenticated()) return create_async([]() {});
-    return create_async([=]() {
+    return create_async([=]() -> task<void> {
         try {
             // Reordering in Subsonic is most reliably done by using createPlaylist with the existing playlistId
             // which overwrites the playlist tracklist.
@@ -694,15 +771,17 @@ IAsyncAction^ NavidromeService::ReorderPlaylistAsync(String^ playlistId, Windows
 
             std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
             if (fullUrl.back() != L'/') fullUrl += L'/';
-            create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).get();
-        } catch (...) {}
+            return create_task(CreateRequestClient()->GetAsync(ref new Uri(ref new String((fullUrl + rel).c_str())))).then([](concurrency::task<HttpResponseMessage^> previousTask) {
+                try { previousTask.get(); } catch (...) {}
+            });
+        } catch (...) { return task_from_result(); }
     });
 }
 
 IAsyncAction^ NavidromeService::UploadPlaylistImageAsync(String^ playlistId, Windows::Storage::Streams::IBuffer^ imageData, String^ mimeType)
 {
     if (!IsAuthenticated()) return create_async([]() {});
-    return create_async([=]() {
+    return create_async([=]() -> task<void> {
         try {
             auto token = GetSessionToken(_password);
             auto salt = GenerateSalt();
@@ -723,7 +802,9 @@ IAsyncAction^ NavidromeService::UploadPlaylistImageAsync(String^ playlistId, Win
             fileContent->Headers->ContentType = ref new Windows::Web::Http::Headers::HttpMediaTypeHeaderValue(mimeType);
             content->Add(fileContent, "image", "cover.jpg");
 
-            create_task(CreateRequestClient()->PostAsync(ref new Uri(ref new String(fullUrl.c_str())), content)).get();
-        } catch (...) {}
+            return create_task(CreateRequestClient()->PostAsync(ref new Uri(ref new String(fullUrl.c_str())), content)).then([](concurrency::task<HttpResponseMessage^> previousTask) {
+                try { previousTask.get(); } catch (...) {}
+            });
+        } catch (...) { return task_from_result(); }
     });
 }
