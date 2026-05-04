@@ -158,7 +158,7 @@ void TracksPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
     // 1. Text Filter
     String^ query = FilterBox->Text;
     std::wstring wQuery(query == nullptr ? L"" : query->Data());
-    for (auto& c : wQuery) c = towlower(c);
+    std::transform(wQuery.begin(), wQuery.end(), wQuery.begin(), ::towlower);
 
     std::vector<Song^> result;
     result.reserve(_allTracks->Size);
