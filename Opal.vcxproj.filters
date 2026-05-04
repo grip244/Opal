@@ -23,6 +23,7 @@
     <ClCompile Include="Services\SettingsService.cpp" />
     <ClCompile Include="Services\NavidromeService.cpp" />
     <ClCompile Include="Services\LyricsService.cpp" />
+    <None Include="Tests\LyricsServiceTest.cpp" />
     <ClCompile Include="ViewModels\LyricsViewModel.cpp" />
     <ClCompile Include="ArtistsPage.xaml.cpp" />
     <ClCompile Include="AlbumsPage.xaml.cpp" />
@@ -45,6 +46,7 @@
     <ClInclude Include="Services\NavidromeService.h" />
     <ClInclude Include="Models\LyricLine.h" />
     <ClInclude Include="Services\LyricsService.h" />
+    <ClInclude Include="Services\LyricsServiceInternal.h" />
     <ClInclude Include="ViewModels\LyricsViewModel.h" />
     <ClInclude Include="Models\SharedModels.h" />
     <ClInclude Include="ArtistsPage.xaml.h" />

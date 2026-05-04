@@ -6,6 +6,7 @@
 #include <string>
 #include <sstream>
 #include <ppltasks.h>
+#include <cstring>
 #include "DebugLogger.h"
 
 using namespace Opal::Models;
@@ -17,11 +18,6 @@ using namespace Windows::Foundation::Collections;
 using namespace Windows::Data::Json;
 using namespace Windows::Foundation;
 
-struct InternalLyricLine {
-    uint32_t TimestampMs;
-    String^ Text;
-};
-
 LyricsResult^ LyricsService::ParseLrc(String^ rawLrc) {
     LyricsResult^ finalResult = ref new LyricsResult();
     finalResult->IsTimed = false;
@@ -30,9 +26,32 @@ LyricsResult^ LyricsService::ParseLrc(String^ rawLrc) {
     if (rawLrc == nullptr || rawLrc->IsEmpty()) return finalResult;
 
     std::wstring lyricsW = rawLrc->Data();
+    NativeLyricsResult nativeResult = LyricsParser::ParseLrc(lyricsW, [](const std::string& component, const std::wstring& message) {
+        DebugLogger::Instance->Log(ref new String(std::wstring(component.begin(), component.end()).c_str()), ref new String(message.c_str()));
+    });
+
+    Vector<LyricLine^>^ result = ref new Vector<LyricLine^>();
+    for (const auto& nativeLine : nativeResult.Lines) {
+        LyricLine^ line = ref new LyricLine();
+        line->TimestampMs = nativeLine.TimestampMs;
+        line->Text = ref new String(nativeLine.Text.c_str());
+        result->Append(line);
+    }
+
+    finalResult->Lines = result;
+    finalResult->IsTimed = nativeResult.IsTimed;
+    return finalResult;
+}
+
+NativeLyricsResult LyricsParser::ParseLrc(const std::wstring& lyricsW, ErrorLogger logger) {
+    NativeLyricsResult result;
+    result.IsTimed = false;
+
+    if (lyricsW.empty()) return result;
+
     std::wregex lrcRegex(L"\\[(\\d{2,}):(\\d{2})(?:\\.(\\d{2,3}))?\\]([^\\n\\r]*)");
     
-    std::vector<InternalLyricLine> internalLines;
+    std::vector<NativeLyricLine> internalLines;
 
     auto words_begin = std::wsregex_iterator(lyricsW.begin(), lyricsW.end(), lrcRegex);
     auto words_end = std::wsregex_iterator();
@@ -64,9 +83,16 @@ LyricsResult^ LyricsService::ParseLrc(String^ rawLrc) {
                 textW = textW.substr(first, (last - first + 1));
             }
             
-            String^ text = ref new String(textW.c_str());
-            internalLines.push_back({ totalMs, text });
-        } catch (Platform::Exception^ ex) { DebugLogger::Instance->LogException("ParseLrc", ex); }
+            internalLines.push_back({ totalMs, textW });
+        } catch (const std::exception& ex) {
+            if (logger) {
+                logger("ParseLrcNative", L"Error parsing line: " + std::wstring(ex.what(), ex.what() + strlen(ex.what())));
+            }
+        } catch (...) {
+            if (logger) {
+                logger("ParseLrcNative", L"Unknown error parsing line");
+            }
+        }
     }
 
     if (!foundTimed) {
@@ -76,25 +102,17 @@ LyricsResult^ LyricsService::ParseLrc(String^ rawLrc) {
             if (lineW.empty()) continue;
             if (lineW.back() == L'\r') lineW.pop_back();
             if (lineW.empty()) continue;
-            internalLines.push_back({ 0, ref new String(lineW.c_str()) });
+            internalLines.push_back({ 0, lineW });
         }
     }
 
-    std::sort(internalLines.begin(), internalLines.end(), [](const InternalLyricLine& a, const InternalLyricLine& b) {
+    std::sort(internalLines.begin(), internalLines.end(), [](const NativeLyricLine& a, const NativeLyricLine& b) {
         return a.TimestampMs < b.TimestampMs;
     });
 
-    Vector<LyricLine^>^ result = ref new Vector<LyricLine^>();
-    for (const auto& internalLine : internalLines) {
-        LyricLine^ line = ref new LyricLine();
-        line->TimestampMs = internalLine.TimestampMs;
-        line->Text = internalLine.Text;
-        result->Append(line);
-    }
-
-    finalResult->Lines = result;
-    finalResult->IsTimed = foundTimed;
-    return finalResult;
+    result.Lines = internalLines;
+    result.IsTimed = foundTimed;
+    return result;
 }
 
 LyricsResult^ LyricsService::ParseOpenSubsonicJson(String^ jsonStr) {
@@ -178,5 +196,3 @@ LyricsResult^ LyricsService::ParseOpenSubsonicJson(String^ jsonStr) {
     } catch (Platform::Exception^ ex) { DebugLogger::Instance->LogException("ParseOpenSubsonicJson", ex); }
     return finalResult;
 }
-
-

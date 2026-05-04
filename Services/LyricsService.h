@@ -2,9 +2,8 @@
 
 #include <collection.h>
 #include <ppltasks.h>
-#include <string>
-#include <vector>
 #include "Models/LyricLine.h"
+#include "LyricsServiceInternal.h"
 
 namespace Opal {
     namespace Services {
