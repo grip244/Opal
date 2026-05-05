@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Opal"
+    xmlns:controls="using:Opal.UI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
@@ -36,6 +37,9 @@
                         <Setter Target="RootGrid.Padding" Value="48,40,48,48" />
                         <Setter Target="ArtistsGridView.Padding" Value="24,0,24,24" />
                         <Setter Target="ArtistsGridView.ItemContainerStyle" Value="{StaticResource XboxArtistItemStyle}" />
+                        <Setter Target="PageTitle.FontSize" Value="20" />
+                        <Setter Target="SearchContainer.Width" Value="160" />
+                        <Setter Target="SortByCombo.Width" Value="110" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -47,20 +51,64 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" HorizontalAlignment="Left" Margin="0,0,0,32" Spacing="16">
-                <TextBlock Text="Artists" FontSize="26" FontWeight="Bold" HorizontalAlignment="Left" Foreground="{ThemeResource AppTextForegroundBrush}" SelectionChanged="TextBlock_SelectionChanged" />
-            </StackPanel>
+            <Grid Grid.Row="0" Margin="0,0,0,32">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
-            <GridView x:Name="ArtistsGridView" Grid.Row="1" ItemClick="OnArtistClicked" IsItemClickEnabled="True" ItemContainerStyle="{StaticResource ArtistItemStyle}">
+                <TextBlock x:Name="PageTitle" Grid.Column="0" Text="Artists" FontSize="28" FontWeight="Bold"
+                           VerticalAlignment="Center" Foreground="{ThemeResource AppTextForegroundBrush}" />
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            HorizontalAlignment="Right" Spacing="16">
+                    <Grid x:Name="SearchContainer" Width="220">
+                        <TextBox x:Name="FilterBox" PlaceholderText="Search artists..."
+                                 TextChanged="OnFilterOrSortChanged"
+                                 VerticalAlignment="Center"
+                                 Background="{ThemeResource AppControlBackgroundBrush}"
+                                 BorderThickness="0" CornerRadius="18" Padding="32,6,12,6"
+                                 UseSystemFocusVisuals="True"
+                                 XYFocusRight="{x:Bind SortByCombo}" />
+                        <FontIcon Glyph="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                  HorizontalAlignment="Left" Margin="12,0,0,0"
+                                  VerticalAlignment="Center" Opacity="0.5"
+                                  Foreground="{ThemeResource AppTextForegroundBrush}" />
+                    </Grid>
+                    <ComboBox x:Name="SortByCombo" Width="130" Height="36"
+                              SelectionChanged="OnFilterOrSortChanged"
+                              Background="{ThemeResource AppControlBackgroundBrush}"
+                              BorderThickness="0" CornerRadius="18" VerticalAlignment="Center"
+                              UseSystemFocusVisuals="True"
+                              XYFocusLeft="{x:Bind FilterBox}">
+                        <ComboBoxItem Content="A-Z" IsSelected="True" />
+                        <ComboBoxItem Content="Album Count" />
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+
+            <GridView x:Name="ArtistsGridView" Grid.Row="1" ItemClick="OnArtistClicked" IsItemClickEnabled="True" ItemContainerStyle="{StaticResource ArtistItemStyle}" UseSystemFocusVisuals="True">
+                <GridView.ItemContainerTransitions>
+                    <TransitionCollection>
+                        <EntranceThemeTransition FromVerticalOffset="20" />
+                    </TransitionCollection>
+                </GridView.ItemContainerTransitions>
                 <GridView.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Spacing="6">
-                            <Ellipse Width="100" Height="100">
-                                <Ellipse.Fill>
-                                    <ImageBrush ImageSource="{Binding CoverArt}" Stretch="UniformToFill" />
-                                </Ellipse.Fill>
-                            </Ellipse>
-                            <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" TextAlignment="Center" Margin="0,10,0,0" TextTrimming="CharacterEllipsis"/>
+                            <Grid Width="100" Height="100">
+                                <Border CornerRadius="50" Background="{ThemeResource AppControlBackgroundBrush}">
+                                    <controls:ThumbnailView SourceUrl="{Binding CoverUrl}"
+                                                            DecodeWidth="200"
+                                                            ThumbnailCornerRadius="50,50,50,50" />
+                                </Border>
+                                <Border HorizontalAlignment="Right" VerticalAlignment="Top" 
+                                        Background="{ThemeResource SystemAccentColor}" 
+                                        CornerRadius="10" MinWidth="20" Height="20" Padding="6,0">
+                                    <TextBlock Text="{Binding AlbumCount}" FontSize="10" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                                </Border>
+                            </Grid>
+                            <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" TextAlignment="Center" Margin="0,10,0,0" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
                         </StackPanel>
                     </DataTemplate>
                 </GridView.ItemTemplate>

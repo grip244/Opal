@@ -177,18 +177,6 @@ void MainPage::OnPageLoaded(Object^ sender, RoutedEventArgs^ e)
         Windows::Storage::ApplicationData::Current->LocalSettings->Values->Remove("InnerNavigationState");
     }
 
-    UpdateSidebarPlaylists();
-
-    auto timer = ref new DispatcherTimer();
-    TimeSpan delay; delay.Duration = 1500 * 10000; // 1.5 seconds in 100ns ticks
-    timer->Interval = delay;
-    auto self = this;
-    timer->Tick += ref new EventHandler<Object^>([this, timer](Object^, Object^) {
-        timer->Stop();
-        this->UpdateSidebarPlaylists();
-    });
-    timer->Start();
-
     CastingService::Instance->Dispatcher = this->Dispatcher;
 
     // 3.1: Initialize GamepadService with this page's CoreWindow, ContentFrame, and SearchBox
@@ -202,7 +190,10 @@ void MainPage::OnPageLoaded(Object^ sender, RoutedEventArgs^ e)
         VisualStateManager::GoToState(this, "XboxState", false);
     }
     
-    // Casting service is already initialized in App::OnLaunched
+    // Initialize CastingService if authenticated (deferred from App::OnLaunched)
+    if (NavidromeService::Instance->IsAuthenticated()) {
+        CastingService::Instance->StartListening();
+    }
 
     // Initial routing logic
     auto localSettings = Windows::Storage::ApplicationData::Current->LocalSettings;
@@ -232,14 +223,16 @@ void MainPage::OnPageLoaded(Object^ sender, RoutedEventArgs^ e)
 
     UpdateMenuVisibility();
     
+    // Subscribe to playlist changes FIRST so the VectorChanged handler fires
+    // when LoadPlaylistsAsync completes, triggering the sidebar rebuild with data.
     auto vm = PlaylistsVM;
-    vm->LoadPlaylistsAsync();
     vm->Playlists->VectorChanged += ref new VectorChangedEventHandler<PlaylistModel^>([this](IObservableVector<PlaylistModel^>^ sender, IVectorChangedEventArgs^ args) {
         auto self = this;
         this->Dispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([self]() {
             self->UpdateSidebarPlaylists();
         }));
     });
+    vm->LoadPlaylistsAsync();
 }
 
 void MainPage::OnMenuItemInvoked(Microsoft::UI::Xaml::Controls::NavigationView^ sender, Microsoft::UI::Xaml::Controls::NavigationViewItemInvokedEventArgs^ args)
@@ -363,6 +356,9 @@ void MainPage::OnProgressSeek(Object^ sender, Windows::UI::Xaml::Input::PointerR
 }
 
 void MainPage::OnCastFlyoutOpened(Object^ sender, Object^ e) {
+    // Start active discovery now that the user is looking for devices
+    CastingService::Instance->StartDiscovery();
+
     // Sync UI with actual service state
     bool isActive = CastingService::Instance->IsCastingActive;
     DisconnectButton->Visibility = isActive ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
@@ -507,6 +503,11 @@ void MainPage::OnNavigated(Object^ sender, NavigationEventArgs^ e)
     catch (...) {
         // Guard against ItemsRepeater BringIntoView exceptions during initial layout
         DebugLogger::Instance->Log("MainPage", "Navigation selection recovered from layout exception");
+    }
+
+    // If we just logged in or authenticated, ensure playlists are loaded
+    if (NavidromeService::Instance->IsAuthenticated() && PlaylistsVM->Playlists->Size == 0 && !PlaylistsVM->IsLoading) {
+        PlaylistsVM->LoadPlaylistsAsync();
     }
 
     UpdateMenuVisibility();
@@ -813,148 +814,161 @@ void MainPage::OnViewPlaylistsClick(Object^ sender, Windows::UI::Xaml::RoutedEve
 
 void MainPage::UpdateSidebarPlaylists()
 {
-    static bool _updateQueued = false;
-    if (_updateQueued) return;
-    _updateQueued = true;
+    // Debounce: wait 300ms of inactivity before rebuilding
+    if (_sidebarDebounceTimer == nullptr) {
+        _sidebarDebounceTimer = ref new DispatcherTimer();
+        TimeSpan ts; ts.Duration = 3000000LL; // 300ms
+        _sidebarDebounceTimer->Interval = ts;
+        auto self = this;
+        _sidebarDebounceTimer->Tick += ref new EventHandler<Object^>([self](Object^, Object^) {
+            self->_sidebarDebounceTimer->Stop();
+            self->RebuildSidebarPlaylistsInternal();
+        });
+    }
+    _sidebarDebounceTimer->Stop();
+    _sidebarDebounceTimer->Start();
+}
 
-    this->Dispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([this]() {
-        _updateQueued = false;
+void MainPage::RebuildSidebarPlaylistsInternal()
+{
+    try {
+        auto savedSelection = MainNavigationView->SelectedItem;
+        bool selectionWasDynamic = false;
+        Platform::String^ savedTag = nullptr;
 
-        try {
-            auto savedSelection = MainNavigationView->SelectedItem;
-            bool selectionWasDynamic = false;
-            Platform::String^ savedTag = nullptr;
-
-            // Check if current selection is one of the playlist sub-items
-            if (savedSelection != nullptr) {
-                auto navItem = dynamic_cast<Microsoft::UI::Xaml::Controls::NavigationViewItem^>(savedSelection);
-                if (navItem != nullptr && navItem->Tag != nullptr) {
-                    for (unsigned int i = 0; i < PlaylistsNavItem->MenuItems->Size; i++) {
-                        if (PlaylistsNavItem->MenuItems->GetAt(i) == savedSelection) {
-                            selectionWasDynamic = true;
-                            savedTag = navItem->Tag->ToString();
-                            break;
-                        }
+        // Check if current selection is one of the playlist sub-items
+        if (savedSelection != nullptr) {
+            auto navItem = dynamic_cast<Microsoft::UI::Xaml::Controls::NavigationViewItem^>(savedSelection);
+            if (navItem != nullptr && navItem->Tag != nullptr) {
+                for (unsigned int i = 0; i < PlaylistsNavItem->MenuItems->Size; i++) {
+                    if (PlaylistsNavItem->MenuItems->GetAt(i) == savedSelection) {
+                        selectionWasDynamic = true;
+                        savedTag = navItem->Tag->ToString();
+                        break;
                     }
                 }
             }
-
-            // Clear orphaned top-level playlist items that were added after PlaylistsNavItem in previous versions
-            while (MainNavigationView->MenuItems->Size > 7) {
-                MainNavigationView->MenuItems->RemoveAt(7);
-            }
-
-            auto vm = ViewModels::PlaylistsViewModel::Instance;
-            auto newItems = ref new Platform::Collections::Vector<Platform::Object^>();
-            Platform::Object^ newSelectionMatch = nullptr;
-
-            for (unsigned int i = 0; i < vm->Playlists->Size; i++)
-            {
-                auto p = vm->Playlists->GetAt(i);
-                auto item = ref new Microsoft::UI::Xaml::Controls::NavigationViewItem();
-                item->Tag = p->Id;
-
-                // Layout: [Thumbnail] [Text Stack]
-                auto rootGrid = ref new Grid();
-                rootGrid->Margin = Thickness(-28, 4, 0, 4); // Remove hierarchical indentation
-                auto col1 = ref new ColumnDefinition();
-                col1->Width = GridLengthHelper::FromPixels(52);
-                auto col2 = ref new ColumnDefinition();
-                col2->Width = { 1.0, GridUnitType::Star };
-                rootGrid->ColumnDefinitions->Append(col1);
-                rootGrid->ColumnDefinitions->Append(col2);
-
-                auto thumbBorder = ref new Border();
-                thumbBorder->Width = 40;
-                thumbBorder->Height = 40;
-                thumbBorder->CornerRadius = CornerRadiusHelper::FromUniformRadius(6);
-                thumbBorder->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
-                thumbBorder->Background = dynamic_cast<Windows::UI::Xaml::Media::Brush^>(Windows::UI::Xaml::Application::Current->Resources->Lookup("AppControlBackgroundBrush"));
-
-                auto thumb = ref new Opal::UI::Controls::ThumbnailView();
-                thumb->SourceUrl = p->CoverUrl;
-                thumb->DecodeWidth = 80;
-                thumb->ThumbnailCornerRadius = CornerRadiusHelper::FromUniformRadius(6);
-                thumbBorder->Child = thumb;
-                
-                rootGrid->Children->Append(thumbBorder);
-                Grid::SetColumn(thumbBorder, 0);
-
-                auto stack = ref new StackPanel();
-                stack->Spacing = 0;
-                stack->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
-
-                auto title = ref new TextBlock();
-                title->Text = p->Name;
-                title->FontSize = 14;
-                title->FontWeight = Windows::UI::Text::FontWeights::SemiBold;
-                stack->Children->Append(title);
-
-                auto info = ref new StackPanel();
-                info->Orientation = Orientation::Horizontal;
-                info->Spacing = 4;
-                info->Opacity = 0.5;
-
-                auto noteIcon = ref new FontIcon();
-                noteIcon->FontFamily = ref new Windows::UI::Xaml::Media::FontFamily("Segoe MDL2 Assets");
-                noteIcon->Glyph = L"\uE8D6"; // Music Note
-                noteIcon->FontSize = 10;
-                noteIcon->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
-                info->Children->Append(noteIcon);
-
-                auto count = ref new TextBlock();
-                count->Text = p->SongCount.ToString();
-                count->FontSize = 11;
-                count->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
-                info->Children->Append(count);
-
-                auto clockIcon = ref new FontIcon();
-                clockIcon->FontFamily = ref new Windows::UI::Xaml::Media::FontFamily("Segoe MDL2 Assets");
-                clockIcon->Glyph = L"\uE916"; // Clock
-                clockIcon->FontSize = 10;
-                clockIcon->Margin = Thickness(4, 0, 0, 0);
-                clockIcon->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
-                info->Children->Append(clockIcon);
-
-                auto duration = ref new TextBlock();
-                duration->Text = p->Duration;
-                duration->FontSize = 11;
-                duration->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
-                info->Children->Append(duration);
-
-                stack->Children->Append(info);
-                rootGrid->Children->Append(stack);
-                Grid::SetColumn(stack, 1);
-
-                item->Content = rootGrid;
-                item->Icon = nullptr; // Using custom thumbnail instead of icon
-
-                newItems->Append(item);
-
-                // Track if this newly created item matches the old selection
-                if (savedTag != nullptr && p->Id == savedTag) {
-                    newSelectionMatch = item;
-                }
-            }
-
-            PlaylistsNavItem->MenuItemsSource = newItems;
-
-            // Restore selection
-            if (newSelectionMatch != nullptr) {
-                MainNavigationView->SelectedItem = newSelectionMatch;
-            } else if (savedSelection != nullptr) {
-                MainNavigationView->SelectedItem = savedSelection;
-            }
-
-            // Force a layout refresh for hierarchical items by toggling expansion
-            // This fixes a known WinUI 2 bug where items don't appear in an already-expanded parent
-            PlaylistsNavItem->IsExpanded = false;
-            PlaylistsNavItem->IsExpanded = true;
         }
-        catch (...) {
-            DebugLogger::Instance->Log("MainPage", "Sidebar update recovered from layout exception");
+
+        // Clear orphaned top-level playlist items that were added after PlaylistsNavItem in previous versions
+        while (MainNavigationView->MenuItems->Size > 7) {
+            MainNavigationView->MenuItems->RemoveAt(7);
         }
-    }));
+
+        auto vm = ViewModels::PlaylistsViewModel::Instance;
+        auto newItems = ref new Platform::Collections::Vector<Platform::Object^>();
+        Platform::Object^ newSelectionMatch = nullptr;
+
+        for (unsigned int i = 0; i < vm->Playlists->Size; i++)
+        {
+            auto p = vm->Playlists->GetAt(i);
+            auto item = ref new Microsoft::UI::Xaml::Controls::NavigationViewItem();
+            item->Tag = p->Id;
+
+            // Layout: [Thumbnail] [Text Stack]
+            auto rootGrid = ref new Grid();
+            rootGrid->Margin = Thickness(-28, 4, 0, 4); // Remove hierarchical indentation
+            auto col1 = ref new ColumnDefinition();
+            col1->Width = GridLengthHelper::FromPixels(52);
+            auto col2 = ref new ColumnDefinition();
+            col2->Width = { 1.0, GridUnitType::Star };
+            rootGrid->ColumnDefinitions->Append(col1);
+            rootGrid->ColumnDefinitions->Append(col2);
+
+            auto thumbBorder = ref new Border();
+            thumbBorder->Width = 40;
+            thumbBorder->Height = 40;
+            thumbBorder->CornerRadius = CornerRadiusHelper::FromUniformRadius(6);
+            thumbBorder->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
+            thumbBorder->Background = dynamic_cast<Windows::UI::Xaml::Media::Brush^>(Windows::UI::Xaml::Application::Current->Resources->Lookup("AppControlBackgroundBrush"));
+
+            auto thumb = ref new Opal::UI::Controls::ThumbnailView();
+            thumb->SourceUrl = p->CoverUrl;
+            thumb->DecodeWidth = 80;
+            thumb->ThumbnailCornerRadius = CornerRadiusHelper::FromUniformRadius(6);
+            thumbBorder->Child = thumb;
+            
+            rootGrid->Children->Append(thumbBorder);
+            Grid::SetColumn(thumbBorder, 0);
+
+            auto stack = ref new StackPanel();
+            stack->Spacing = 0;
+            stack->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
+
+            auto title = ref new TextBlock();
+            title->Text = p->Name;
+            title->FontSize = 14;
+            title->FontWeight = Windows::UI::Text::FontWeights::SemiBold;
+            stack->Children->Append(title);
+
+            auto info = ref new StackPanel();
+            info->Orientation = Orientation::Horizontal;
+            info->Spacing = 4;
+            info->Opacity = 0.5;
+
+            auto noteIcon = ref new FontIcon();
+            noteIcon->FontFamily = ref new Windows::UI::Xaml::Media::FontFamily("Segoe MDL2 Assets");
+            noteIcon->Glyph = L"\uE8D6"; // Music Note
+            noteIcon->FontSize = 10;
+            noteIcon->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
+            info->Children->Append(noteIcon);
+
+            auto count = ref new TextBlock();
+            count->Text = p->SongCount.ToString();
+            count->FontSize = 11;
+            count->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
+            info->Children->Append(count);
+
+            auto clockIcon = ref new FontIcon();
+            clockIcon->FontFamily = ref new Windows::UI::Xaml::Media::FontFamily("Segoe MDL2 Assets");
+            clockIcon->Glyph = L"\uE916"; // Clock
+            clockIcon->FontSize = 10;
+            clockIcon->Margin = Thickness(4, 0, 0, 0);
+            clockIcon->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
+            info->Children->Append(clockIcon);
+
+            auto duration = ref new TextBlock();
+            duration->Text = p->Duration;
+            duration->FontSize = 11;
+            duration->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
+            info->Children->Append(duration);
+
+            stack->Children->Append(info);
+            rootGrid->Children->Append(stack);
+            Grid::SetColumn(stack, 1);
+
+            item->Content = rootGrid;
+            item->Icon = nullptr; // Using custom thumbnail instead of icon
+
+            newItems->Append(item);
+
+            // Track if this newly created item matches the old selection
+            if (savedTag != nullptr && p->Id == savedTag) {
+                newSelectionMatch = item;
+            }
+        }
+
+        PlaylistsNavItem->MenuItemsSource = newItems;
+
+        // Restore selection
+        if (newSelectionMatch != nullptr) {
+            MainNavigationView->SelectedItem = newSelectionMatch;
+        } else if (savedSelection != nullptr) {
+            MainNavigationView->SelectedItem = savedSelection;
+        }
+
+        // Force a layout refresh for hierarchical items by toggling expansion
+        // This fixes a known WinUI 2 bug where items don't appear in an already-expanded parent
+        // Always set expanded so the dropdown never starts collapsed, even on first load
+        PlaylistsNavItem->IsExpanded = false;
+        PlaylistsNavItem->IsExpanded = true;
+
+        // Trigger a menu visibility update to force a layout pass on the NavigationView
+        UpdateMenuVisibility();
+    }
+    catch (...) {
+        DebugLogger::Instance->Log("MainPage", "Sidebar update recovered from layout exception");
+    }
 }
 
 // 3.2: Shuffle Toggle

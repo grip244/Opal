@@ -9,14 +9,32 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid>
-        <ScrollViewer Padding="40" VerticalScrollBarVisibility="Auto">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="DeviceStates">
+                <VisualState x:Name="XboxState">
+                    <VisualState.Setters>
+                        <Setter Target="SettingsHeader.FontSize" Value="20" />
+                        <Setter Target="AccountUserText.FontSize" Value="18" />
+                        <Setter Target="AvatarContainer.Width" Value="48" />
+                        <Setter Target="AvatarContainer.Height" Value="48" />
+                        <Setter Target="RootScroll.Padding" Value="48,40,48,48" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+        <ScrollViewer x:Name="RootScroll" Padding="40" VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="32" MaxWidth="800" HorizontalAlignment="Left">
-                <TextBlock Text="Settings" FontSize="36" FontWeight="Bold" Margin="0,0,0,12"/>
+                <StackPanel.ChildrenTransitions>
+                    <TransitionCollection>
+                        <EntranceThemeTransition FromVerticalOffset="20" />
+                    </TransitionCollection>
+                </StackPanel.ChildrenTransitions>
+                <TextBlock x:Name="SettingsHeader" Text="Settings" FontSize="28" FontWeight="Bold" Margin="0,0,0,12" Foreground="{ThemeResource AppTextForegroundBrush}"/>
 
 
                 <StackPanel Spacing="16">
                     <TextBlock Text="Playback" FontSize="20" FontWeight="SemiBold"/>
-                    <Border Background="#11FFFFFF" Padding="24" CornerRadius="8">
+                    <Border Background="{ThemeResource AppControlBackgroundBrush}" Padding="24" CornerRadius="8">
                         <StackPanel Spacing="12">
                             <ToggleSwitch x:Name="AutoPlayToggle" Header="Auto-Play" 
                                           Toggled="OnAutoPlayToggled" IsOn="True" UseSystemFocusVisuals="True"/>
@@ -103,7 +121,7 @@
 
                 <StackPanel Spacing="16">
                     <TextBlock Text="Legal" FontSize="20" FontWeight="SemiBold"/>
-                    <Border Background="#11FFFFFF" Padding="24" CornerRadius="8">
+                    <Border Background="{ThemeResource AppControlBackgroundBrush}" Padding="24" CornerRadius="8">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <HyperlinkButton Content="Privacy Policy" NavigateUri="https://darademsc.ddns.net/#privacy" Padding="0" UseSystemFocusVisuals="True"/>
                             <TextBlock Text="•" VerticalAlignment="Center" Opacity="0.4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
@@ -113,6 +131,7 @@
                         </StackPanel>
                     </Border>
                 </StackPanel>
+                <TextBlock Text="Opal v1.1.6" Opacity="0.4" HorizontalAlignment="Center" Margin="0,40,0,20" Foreground="{ThemeResource AppTextForegroundBrush}"/>
             </StackPanel>
         </ScrollViewer>
     </Grid>

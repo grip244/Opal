@@ -38,6 +38,10 @@
                         <Setter Target="GlobalPlayerBar.CornerRadius" Value="0" />
                         <Setter Target="NowPlayingTitle.FontSize" Value="16" />
                         <Setter Target="NowPlayingArtist.FontSize" Value="12" />
+                        <Setter Target="InfoColumn.Width" Value="220" />
+                        <Setter Target="TransportControls.Spacing" Value="16" />
+                        <Setter Target="VolumeSlider.Width" Value="100" />
+                        <Setter Target="SearchBox.Width" Value="160" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -89,9 +93,9 @@
                 <muxc:NavigationViewItem Content="Tracks" Tag="Tracks" Icon="Audio" />
                 <muxc:NavigationViewItem Content="Genres" Tag="Genres" Icon="Tag" />
                 <muxc:NavigationViewItemSeparator />
-                <muxc:NavigationViewItem x:Name="PlaylistsNavItem" SelectsOnInvoked="False" IsExpanded="True">
+                <muxc:NavigationViewItem x:Name="PlaylistsNavItem" Tag="Playlists" SelectsOnInvoked="False" IsExpanded="True">
                     <muxc:NavigationViewItem.Content>
-                        <Grid HorizontalAlignment="Stretch" Margin="0,0,-4,0">
+                        <Grid HorizontalAlignment="Stretch" Margin="0,0,28,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
@@ -119,9 +123,14 @@
 
         <!-- Global Player Bar -->
         <Border x:Name="GlobalPlayerBar" Grid.Row="1" Background="{ThemeResource OverlayBackgroundBrush}" BorderBrush="{ThemeResource AppControlBorderBrush}" BorderThickness="0,1,0,0" CornerRadius="0" Height="112" Margin="0" Padding="0" Visibility="Collapsed">
+            <Border.Transitions>
+                <TransitionCollection>
+                    <EntranceThemeTransition FromVerticalOffset="112" />
+                </TransitionCollection>
+            </Border.Transitions>
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="300" />
+                    <ColumnDefinition x:Name="InfoColumn" Width="300" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
@@ -155,6 +164,11 @@
                 </Grid>
 
                 <StackPanel Grid.Column="1" Spacing="4" Margin="0,0,24,0" VerticalAlignment="Center">
+                    <StackPanel.Transitions>
+                        <TransitionCollection>
+                            <EntranceThemeTransition FromVerticalOffset="40" />
+                        </TransitionCollection>
+                    </StackPanel.Transitions>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -166,7 +180,7 @@
                         <TextBlock x:Name="TotalTimeText" Text="0:00" Grid.Column="2" FontSize="14" Opacity="0.6" Margin="12,0,0,0" Foreground="{ThemeResource AppTextForegroundBrush}" />
                     </Grid>
 
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="24">
+                    <StackPanel x:Name="TransportControls" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="24">
                         <!-- 3.2: Shuffle Toggle -->
                         <ToggleButton x:Name="ShuffleBtn" Click="OnShuffleClicked"
                                       Background="Transparent" Padding="10"
@@ -193,7 +207,7 @@
                             <FontIcon x:Name="RepeatIcon" FontFamily="Segoe MDL2 Assets" Glyph="&#xE8EE;" FontSize="16" Foreground="{ThemeResource AppTextForegroundBrush}" />
                         </Button>
                         <Button x:Name="LyricsButton" Click="OnLyricsToggleClicked" Background="Transparent" Padding="12" ToolTipService.ToolTip="Lyrics Toggle" UseSystemFocusVisuals="True">
-                            <SymbolIcon Symbol="Comment" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                            <SymbolIcon Symbol="Microphone" Foreground="{ThemeResource AppTextForegroundBrush}" />
                         </Button>
                         <Button x:Name="CastButton" Background="Transparent" Padding="12" ToolTipService.ToolTip="Casting Active" UseSystemFocusVisuals="True">
                             <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEC15;" Foreground="{ThemeResource AppTextForegroundBrush}"/>
@@ -241,7 +255,10 @@
                                 </MenuFlyout>
                             </Button.Flyout>
                         </Button>
-                        <Slider x:Name="VolumeSlider" Width="150" Minimum="0" Maximum="100" Value="100" ValueChanged="OnVolumeChanged" VerticalAlignment="Center" Margin="16,0,0,0" UseSystemFocusVisuals="True" />
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE767;" FontSize="14" Opacity="0.6" Foreground="{ThemeResource AppTextForegroundBrush}" Margin="0,0,8,0" />
+                            <Slider x:Name="VolumeSlider" Width="150" Minimum="0" Maximum="100" Value="100" ValueChanged="OnVolumeChanged" VerticalAlignment="Center" UseSystemFocusVisuals="True" />
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
             </Grid>

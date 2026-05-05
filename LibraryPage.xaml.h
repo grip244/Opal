@@ -49,10 +49,12 @@ namespace Opal
         void OnTrackFavoriteClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnTrackRatingChanged(Microsoft::UI::Xaml::Controls::RatingControl^ sender, Platform::Object^ args);
         void OnPlayAlbumClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnShuffleAlbumClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnCollapseClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnSpotlightTapped(Platform::Object^ sender, Windows::UI::Xaml::Input::TappedRoutedEventArgs^ e);
         void OnCarouselPrev(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnCarouselNext(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnCarouselSelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
         void OnHomeClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnArtistClicked(Platform::Object^ sender, Windows::UI::Xaml::Controls::ItemClickEventArgs^ e);
         void OnAlbumClicked(Platform::Object^ sender, Windows::UI::Xaml::Controls::ItemClickEventArgs^ e);
@@ -67,6 +69,12 @@ namespace Opal
         void OnQueueDragItemsCompleted(Windows::UI::Xaml::Controls::ListViewBase^ sender, Windows::UI::Xaml::Controls::DragItemsCompletedEventArgs^ args);
         void OnRemoveFromQueueClick(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnClearQueueClick(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        
+        void OnSeeAllGenres(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnSeeAllExplore(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnSeeAllRecentlyPlayed(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnSeeAllNewest(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnSeeAllRecentReleases(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 
     protected:
         virtual void OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) override;

@@ -39,6 +39,11 @@
                         <Setter Target="RootGrid.Padding" Value="48,40,48,48" />
                         <Setter Target="AlbumsGridView.Padding" Value="24,0,24,24" />
                         <Setter Target="AlbumsGridView.ItemContainerStyle" Value="{StaticResource XboxAlbumItemStyle}" />
+                        <Setter Target="PageTitle.FontSize" Value="20" />
+                        <Setter Target="ToolbarStack.Spacing" Value="12" />
+                        <Setter Target="FilterBox.Width" Value="140" />
+                        <Setter Target="SortByCombo.Width" Value="110" />
+                        <Setter Target="YearFilterCombo.Width" Value="110" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -56,17 +61,28 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Text="Albums" FontSize="26" FontWeight="Bold" VerticalAlignment="Center" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                <TextBlock x:Name="PageTitle" Grid.Column="0" Text="Albums" FontSize="28" FontWeight="Bold" VerticalAlignment="Center" Foreground="{ThemeResource AppTextForegroundBrush}" />
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="24">
-                    <TextBox x:Name="FilterBox" Width="180" PlaceholderText="Search..." 
-                             TextChanged="OnFilterOrSortChanged" 
-                             VerticalAlignment="Center" 
-                             Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="12" />
+                <StackPanel x:Name="ToolbarStack" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="24">
+                    <Grid x:Name="SearchContainer" Width="220">
+                        <TextBox x:Name="FilterBox" PlaceholderText="Search albums..." 
+                                 TextChanged="OnFilterOrSortChanged" 
+                                 VerticalAlignment="Center" 
+                                 Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" Padding="32,6,12,6"
+                                 UseSystemFocusVisuals="True"
+                                 XYFocusRight="{x:Bind SortByCombo}" />
+                        <FontIcon Glyph="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                  HorizontalAlignment="Left" Margin="12,0,0,0"
+                                  VerticalAlignment="Center" Opacity="0.5"
+                                  Foreground="{ThemeResource AppTextForegroundBrush}" />
+                    </Grid>
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <TextBlock Text="Sort:" VerticalAlignment="Center" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}" FontSize="13" />
                         <ComboBox x:Name="SortByCombo" Width="130" Height="36" SelectionChanged="OnFilterOrSortChanged" 
-                                 Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="8" Opacity="0.8">
+                                 Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" Opacity="0.8"
+                                 UseSystemFocusVisuals="True"
+                                 XYFocusLeft="{x:Bind FilterBox}"
+                                 XYFocusRight="{x:Bind YearFilterCombo}">
                             <ComboBoxItem Content="A-Z" IsSelected="True" />
                             <ComboBoxItem Content="Oldest First" />
                             <ComboBoxItem Content="Newest First" />
@@ -75,7 +91,9 @@
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <TextBlock Text="Filter:" VerticalAlignment="Center" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}" FontSize="13" />
                         <ComboBox x:Name="YearFilterCombo" Width="130" Height="36" SelectionChanged="OnFilterOrSortChanged" 
-                                 Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="8" Opacity="0.8">
+                                 Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" Opacity="0.8"
+                                 UseSystemFocusVisuals="True"
+                                 XYFocusLeft="{x:Bind SortByCombo}">
                             <ComboBoxItem Content="All Years" IsSelected="True" />
                             <ComboBoxItem Content="2020 - Now" />
                             <ComboBoxItem Content="2010 - 2019" />
@@ -88,7 +106,12 @@
                 </StackPanel>
             </Grid>
 
-            <GridView x:Name="AlbumsGridView" Grid.Row="1" ItemClick="OnAlbumClicked" IsItemClickEnabled="True" ItemContainerStyle="{StaticResource AlbumItemStyle}">
+            <GridView x:Name="AlbumsGridView" Grid.Row="1" ItemClick="OnAlbumClicked" IsItemClickEnabled="True" ItemContainerStyle="{StaticResource AlbumItemStyle}" UseSystemFocusVisuals="True">
+                <GridView.ItemContainerTransitions>
+                    <TransitionCollection>
+                        <EntranceThemeTransition FromVerticalOffset="20" />
+                    </TransitionCollection>
+                </GridView.ItemContainerTransitions>
                 <GridView.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Spacing="2">

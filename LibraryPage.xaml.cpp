@@ -3,6 +3,8 @@
 #include "LoginPage.xaml.h"
 #include "Services/PlaybackService.h"
 #include "ViewModels/PlaylistsViewModel.h"
+#include "GenresPage.xaml.h"
+#include "AlbumsPage.xaml.h"
 #include <Windows.UI.Xaml.Media.h>
 #include "Services/LyricsService.h"
 #include "Services/CastingService.h"
@@ -11,6 +13,9 @@
 #include "ViewModels/GenreViewModel.h"
 #include <sstream>
 #include <string>
+#include <random>
+#include <algorithm>
+#include <Windows.UI.Xaml.Media.Animation.h>
 
 using namespace Opal;
 using namespace Platform;
@@ -19,6 +24,7 @@ using namespace Windows::Foundation;
 using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
 using namespace Windows::UI::Xaml::Media;
+using namespace Windows::UI::Xaml::Media::Animation;
 using namespace Windows::UI::Xaml::Navigation;
 using namespace Windows::Media::Playback;
 using namespace Windows::UI::Xaml::Media::Imaging;
@@ -89,6 +95,16 @@ LibraryPage::LibraryPage()
             page->UpdateUpcomingQueue();
         }));
     });
+
+    auto carouselTimer = ref new DispatcherTimer();
+    TimeSpan cts; cts.Duration = 5000 * 10000LL; // 5 seconds
+    carouselTimer->Interval = cts;
+    carouselTimer->Tick += ref new Windows::Foundation::EventHandler<Object^>([page](Object^ sender, Object^ args) {
+        if (page->SpotlightCarousel->Visibility == Windows::UI::Xaml::Visibility::Visible) {
+            page->OnCarouselNext(nullptr, nullptr);
+        }
+    });
+    carouselTimer->Start();
 }
 
 void LibraryPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e)
@@ -132,6 +148,13 @@ void LibraryPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventAr
         if (am != nullptr)
         {
             LoadAlbumPage(am->Id);
+
+            auto animation = ConnectedAnimationService::GetForCurrentView()->GetAnimation("ForwardConnectedAnimation");
+            if (animation != nullptr)
+            {
+                AlbumGrid->UpdateLayout();
+                animation->TryStart(AlbumDetailImageBorder);
+            }
         }
         else
         {
@@ -550,6 +573,31 @@ void LibraryPage::OnRandomAlbumClicked(Object^ sender, RoutedEventArgs^ e) {
     });
 }
 
+void LibraryPage::OnSeeAllGenres(Object^ sender, RoutedEventArgs^ e)
+{
+    this->Frame->Navigate(TypeName(GenresPage::typeid));
+}
+
+void LibraryPage::OnSeeAllExplore(Object^ sender, RoutedEventArgs^ e)
+{
+    this->Frame->Navigate(TypeName(AlbumsPage::typeid));
+}
+
+void LibraryPage::OnSeeAllRecentlyPlayed(Object^ sender, RoutedEventArgs^ e)
+{
+    this->Frame->Navigate(TypeName(AlbumsPage::typeid));
+}
+
+void LibraryPage::OnSeeAllNewest(Object^ sender, RoutedEventArgs^ e)
+{
+    this->Frame->Navigate(TypeName(AlbumsPage::typeid));
+}
+
+void LibraryPage::OnSeeAllRecentReleases(Object^ sender, RoutedEventArgs^ e)
+{
+    this->Frame->Navigate(TypeName(AlbumsPage::typeid));
+}
+
 void LibraryPage::OnArtistClicked(Object^ sender, ItemClickEventArgs^ e) { auto am = dynamic_cast<ArtistModel^>(e->ClickedItem); if (am != nullptr) LoadArtistPage(am->Id); }
 void LibraryPage::OnAlbumClicked(Object^ sender, ItemClickEventArgs^ e) { auto am = dynamic_cast<AlbumID3^>(e->ClickedItem); if (am != nullptr) LoadAlbumPage(am->Id); }
 void LibraryPage::OnGenericAlbumClicked(Object^ sender, ItemClickEventArgs^ e)
@@ -764,6 +812,21 @@ bool LibraryPage::IsFullPlayerActive::get() {
     return FullPlayerGrid != nullptr && FullPlayerGrid->Visibility == Windows::UI::Xaml::Visibility::Visible;
 }
 void LibraryPage::OnPlayAlbumClicked(Object^ sender, RoutedEventArgs^ e) { if (_albumSongs->Size > 0) { PlaybackService::Instance->PlayQueue(_albumSongs, 0); } }
+void LibraryPage::OnShuffleAlbumClicked(Object^ sender, RoutedEventArgs^ e)
+{
+    if (_albumSongs->Size > 0)
+    {
+        std::vector<Song^> songs;
+        for (auto s : _albumSongs) songs.push_back(s);
+        
+        std::random_device rd;
+        std::mt19937 g(rd());
+        std::shuffle(songs.begin(), songs.end(), g);
+        
+        auto output = ref new Platform::Collections::Vector<Song^>(std::move(songs));
+        PlaybackService::Instance->PlayQueue(output, 0);
+    }
+}
 void LibraryPage::OnQueueItemClick(Object^ sender, ItemClickEventArgs^ e) { 
     auto song = dynamic_cast<Song^>(e->ClickedItem); 
     if (song != nullptr) { 
@@ -890,6 +953,17 @@ void LibraryPage::OnCarouselNext(Object^ sender, RoutedEventArgs^ e) {
         if (current < size - 1) SpotlightCarousel->SelectedIndex = current + 1;
         else SpotlightCarousel->SelectedIndex = 0;
     }
+}
+
+void LibraryPage::OnCarouselSelectionChanged(Object^ sender, SelectionChangedEventArgs^ e)
+{
+    if (SpotlightCarousel == nullptr || CarouselPrevBtn == nullptr || CarouselNextBtn == nullptr) return;
+
+    auto current = SpotlightCarousel->SelectedIndex;
+    auto size = (int)SpotlightCarousel->Items->Size;
+
+    CarouselPrevBtn->Visibility = (current > 0) ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+    CarouselNextBtn->Visibility = (current < size - 1) ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 }
 
 void LibraryPage::OnGenreClicked(Object^ sender, ItemClickEventArgs^ e) {

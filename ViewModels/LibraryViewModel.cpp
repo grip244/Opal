@@ -42,32 +42,23 @@ void LibraryViewModel::LoadAllCategories()
     if (!navService->IsAuthenticated()) return;
 
 
-    // Load Explore (random)
-    create_task(navService->GetAlbumListAsync("random", 20, 0)).then([this](Platform::String^ jsonStr) {
-        UpdateAlbumCollection(_exploreAlbums, jsonStr);
-    });
-
-    // Load Newly Added (newest)
-    create_task(navService->GetAlbumListAsync("newest", 20, 0)).then([this](Platform::String^ jsonStr) {
-        UpdateAlbumCollection(_newestAlbums, jsonStr);
-    });
-    
-    // Load Recently Played (recent)
-    create_task(navService->GetAlbumListAsync("recent", 20, 0)).then([this](Platform::String^ jsonStr) {
-        UpdateAlbumCollection(_recentPlayedAlbums, jsonStr);
-    });
-
-    // Load Recently Released (byYear)
-    auto cal = ref new Windows::Globalization::Calendar();
-    cal->SetToNow();
-    int currentYear = cal->Year;
-    create_task(navService->GetAlbumListByYearAsync(currentYear, 1900, 20, 0)).then([this](Platform::String^ jsonStr) {
-        UpdateAlbumCollection(_recentReleasedAlbums, jsonStr);
-    });
-    
-    // Load Spotlight (random songs)
+    // Load spotlight first (hero panel), then stagger the rest
     create_task(navService->GetSongListAsync("getRandomSongs", 5, 0)).then([this](Platform::String^ jsonStr) {
         UpdateSongCollection(_spotlightSongs, jsonStr);
+        return create_task(NavidromeService::Instance->GetAlbumListAsync("random", 20, 0));
+    }).then([this](Platform::String^ jsonStr) {
+        UpdateAlbumCollection(_exploreAlbums, jsonStr);
+        return create_task(NavidromeService::Instance->GetAlbumListAsync("newest", 20, 0));
+    }).then([this](Platform::String^ jsonStr) {
+        UpdateAlbumCollection(_newestAlbums, jsonStr);
+        return create_task(NavidromeService::Instance->GetAlbumListAsync("recent", 20, 0));
+    }).then([this](Platform::String^ jsonStr) {
+        UpdateAlbumCollection(_recentPlayedAlbums, jsonStr);
+        auto cal = ref new Windows::Globalization::Calendar();
+        cal->SetToNow();
+        return create_task(NavidromeService::Instance->GetAlbumListByYearAsync(cal->Year, 1900, 20, 0));
+    }).then([this](Platform::String^ jsonStr) {
+        UpdateAlbumCollection(_recentReleasedAlbums, jsonStr);
     });
 }
 

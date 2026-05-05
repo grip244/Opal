@@ -4,6 +4,7 @@
 #include "Services/NavidromeService.h"
 #include <ppltasks.h>
 #include "Services/DebugLogger.h"
+#include <algorithm>
 
 using namespace Opal;
 using namespace Platform;
@@ -18,6 +19,7 @@ using namespace Windows::System::Profile;
 ArtistsPage::ArtistsPage()
 {
     _artists = ref new Platform::Collections::Vector<ArtistModel^>();
+    _allArtists = ref new Platform::Collections::Vector<ArtistModel^>();
     InitializeComponent();
     this->Loaded += ref new RoutedEventHandler(this, &ArtistsPage::OnPageLoaded);
 }
@@ -43,6 +45,7 @@ void ArtistsPage::LoadArtists()
                         JsonObject^ artistsObj = root->GetNamedObject("artists", nullptr);
                         JsonArray^ indices = artistsObj->GetNamedArray("index", nullptr);
                         _artists->Clear();
+                        _allArtists->Clear();
                         for (unsigned int k = 0; k < indices->Size; k++) {
                             JsonObject^ indexObj = indices->GetObjectAt(k);
                             JsonArray^ artistArray = indexObj->GetNamedArray("artist", nullptr);
@@ -51,17 +54,50 @@ void ArtistsPage::LoadArtists()
                                 auto am = ref new ArtistModel();
                                 am->Id = artObj->GetNamedString("id", "");
                                 am->Name = artObj->GetNamedString("name", "Unknown Artist");
-                                Platform::String^ coverUrlStr = NavidromeService::Instance->GetCoverArtUrl(am->Id, 500);
-                                try { am->CoverArt = ref new BitmapImage(ref new Uri(coverUrlStr)); } catch (Exception^ ex) { DebugLogger::Instance->LogException("LoadArtists (CoverArt)", ex); }
+                                am->AlbumCount = (int)artObj->GetNamedNumber("albumCount", 0);
+                                am->CoverUrl = NavidromeService::Instance->GetCoverArtUrl(am->Id, 300);
+                                am->PopulateSearchTerms();
                                 _artists->Append(am);
+                                _allArtists->Append(am);
                             }
                         }
-                        this->ArtistsGridView->ItemsSource = _artists;
+                        this->OnFilterOrSortChanged(nullptr, nullptr);
                     }
                 } catch (Exception^ ex) { DebugLogger::Instance->LogException("LoadArtists (JSON Parse)", ex); }
             }));
         }
     });
+}
+
+void ArtistsPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
+{
+    if (_allArtists == nullptr || _allArtists->Size == 0) return;
+
+    String^ query = FilterBox->Text;
+    std::wstring wQuery(query == nullptr ? L"" : query->Data());
+    for (auto& c : wQuery) c = towlower(c);
+
+    std::vector<ArtistModel^> result;
+    for (unsigned int i = 0; i < _allArtists->Size; i++) {
+        auto am = _allArtists->GetAt(i);
+        if (wQuery.empty()) { result.push_back(am); continue; }
+        std::wstring terms(am->SearchTerms->Data());
+        if (terms.find(wQuery) != std::wstring::npos) result.push_back(am);
+    }
+
+    int sortIdx = (SortByCombo != nullptr) ? SortByCombo->SelectedIndex : 0;
+    std::sort(result.begin(), result.end(), [sortIdx](ArtistModel^ a, ArtistModel^ b) {
+        if (sortIdx == 0) return std::wstring(a->Name->Data()) < std::wstring(b->Name->Data());
+        return a->AlbumCount > b->AlbumCount; // Most albums first
+    });
+
+    _artists = ref new Platform::Collections::Vector<ArtistModel^>(std::move(result));
+    ArtistsGridView->ItemsSource = _artists;
+
+    // Update count
+    wchar_t buf[64];
+    swprintf_s(buf, L"Artists (%u)", _artists->Size);
+    PageTitle->Text = ref new String(buf);
 }
 
 void ArtistsPage::OnArtistClicked(Object^ sender, ItemClickEventArgs^ e)

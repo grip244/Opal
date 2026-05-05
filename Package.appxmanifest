@@ -10,7 +10,7 @@
   <Identity
     Name="Daradeinc.OpalMusicPlayer"
     Publisher="CN=5603CF31-664D-44B0-93AC-55D357A3E500"
-    Version="1.1.5.0" />
+    Version="1.1.6.0" />
 
   <mp:PhoneIdentity PhoneProductId="de1ca472-7b0c-4e76-bdd9-89f3b44b44ab" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 

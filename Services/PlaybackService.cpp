@@ -220,6 +220,11 @@ void PlaybackService::OnMediaEnded(MediaPlayer^ sender, Object^ args) {
 }
 
 void PlaybackService::OnCurrentItemChanged(MediaPlaybackList^ sender, CurrentMediaPlaybackItemChangedEventArgs^ args) {
+    // Reset previous song IsPlaying status
+    if (_currentSong != nullptr) {
+        _currentSong->IsPlaying = false;
+    }
+
     auto item = sender->CurrentItem;
     if (item == nullptr) return;
 
@@ -228,6 +233,10 @@ void PlaybackService::OnCurrentItemChanged(MediaPlaybackList^ sender, CurrentMed
 
     _currentIndex = index;
     _currentSong = _queue->GetAt(index);
+    
+    // Set current song as playing for UI indicators
+    _currentSong->IsPlaying = true;
+
     _hasScrobbledCurrentSong = false;
     _playedIds.insert(std::wstring(_currentSong->Id->Data()));
 

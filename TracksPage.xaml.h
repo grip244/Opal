@@ -12,6 +12,7 @@ namespace Opal
         void OnFilterOrSortChanged(Platform::Object^ sender, Platform::Object^ e);
         void OnTrackClicked(Platform::Object^ sender, Windows::UI::Xaml::Controls::ItemClickEventArgs^ e);
         void OnPlayAllClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnShuffleAllClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnTrackFavoriteClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnTrackRatingChanged(Microsoft::UI::Xaml::Controls::RatingControl^ sender, Platform::Object^ args);
         void OnFavoriteIconLoaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);

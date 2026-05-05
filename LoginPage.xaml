@@ -22,10 +22,30 @@
                 <VisualState x:Name="XboxState">
                     <VisualState.Setters>
                         <Setter Target="RootGrid.Padding" Value="48,40,48,48" />
+                        <Setter Target="LoginForm.Width" Value="480" />
+                        <Setter Target="LoginTitle.FontSize" Value="24" />
+                        <Setter Target="LoginSubtitle.FontSize" Value="14" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
+
+        <Grid.ChildrenTransitions>
+            <TransitionCollection>
+                <EntranceThemeTransition FromVerticalOffset="20" />
+            </TransitionCollection>
+        </Grid.ChildrenTransitions>
+
+        <!-- Phase 4: Radial Background Accent Fallback -->
+        <Ellipse Width="1000" Height="1000" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.03" IsHitTestVisible="False">
+            <Ellipse.Fill>
+                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                    <GradientStop Color="Transparent" Offset="0" />
+                    <GradientStop Color="#4ECCA3" Offset="0.5" />
+                    <GradientStop Color="Transparent" Offset="1" />
+                </LinearGradientBrush>
+            </Ellipse.Fill>
+        </Ellipse>
 
         <!-- Notification Toast -->
         <muxc:TeachingTip x:Name="ErrorToast"
@@ -40,29 +60,26 @@
             </muxc:TeachingTip.IconSource>
         </muxc:TeachingTip>
 
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="600" Spacing="16" Height="Auto">
-            <TextBlock Text="Opal" FontSize="32" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,20,0,12" Foreground="#4ECCA3"/>
-            <TextBlock Text="Connect to your Music" FontSize="16" HorizontalAlignment="Center" Margin="0,-20,0,8" Opacity="0.8" Foreground="{ThemeResource AppTextForegroundBrush}"/>
-            <TextBox x:Name="ServerTextBox" Header="Server URL" PlaceholderText="https://navidrome.example" FontSize="8" Height="47" KeyDown="OnLoginFieldKeyDown"/>
-            <TextBox x:Name="UsernameTextBox" Header="Username" FontSize="8" Height="47" KeyDown="OnLoginFieldKeyDown"/>
-            <PasswordBox x:Name="PasswordBox" Header="Password" FontSize="8" Height="47" KeyDown="OnLoginFieldKeyDown"/>
-            <CheckBox x:Name="RememberMeCheckBox" Content="Remember Me" IsChecked="True" FontSize="8" Width="97" Height="12" HorizontalAlignment="Left" RenderTransformOrigin="0.5,0.5" >
-                <CheckBox.RenderTransform>
-                    <CompositeTransform ScaleX="1"/>
-                </CheckBox.RenderTransform>
-            </CheckBox>
-            <Button x:Name="ConnectButton" Content="Connect" HorizontalAlignment="Stretch" Height="24" FontSize="8" Background="#4ECCA3" Foreground="White" Click="OnConnectClicked" />
+        <StackPanel x:Name="LoginForm" VerticalAlignment="Center" HorizontalAlignment="Center" Width="600" Spacing="16" Height="Auto">
+            <TextBlock x:Name="LoginTitle" Text="Opal" FontSize="32" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,20,0,12" Foreground="#4ECCA3"/>
+            <TextBlock x:Name="LoginSubtitle" Text="Connect to your Music" FontSize="16" HorizontalAlignment="Center" Margin="0,-20,0,8" Opacity="0.8" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+            <TextBox x:Name="ServerTextBox" Header="Server URL" PlaceholderText="https://navidrome.example" FontSize="14" Height="Auto" MinHeight="47" KeyDown="OnLoginFieldKeyDown" UseSystemFocusVisuals="True" />
+            <TextBox x:Name="UsernameTextBox" Header="Username" FontSize="14" Height="Auto" MinHeight="47" KeyDown="OnLoginFieldKeyDown" UseSystemFocusVisuals="True" />
+            <PasswordBox x:Name="PasswordBox" Header="Password" FontSize="14" Height="Auto" MinHeight="47" KeyDown="OnLoginFieldKeyDown" UseSystemFocusVisuals="True" />
+            <CheckBox x:Name="RememberMeCheckBox" Content="Remember Me" IsChecked="True" FontSize="14" HorizontalAlignment="Left" UseSystemFocusVisuals="True" />
+            <Button x:Name="ConnectButton" Content="Connect" HorizontalAlignment="Stretch" Height="44" FontSize="16" FontWeight="SemiBold" CornerRadius="22" Style="{StaticResource AccentButtonStyle}" Click="OnConnectClicked" UseSystemFocusVisuals="True" />
+            
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8" Margin="0,8,0,0">
-                <HyperlinkButton Content="Privacy Policy" FontSize="12" NavigateUri="https://darademsc.ddns.net/#privacy" Padding="0" />
+                <HyperlinkButton Content="Privacy Policy" FontSize="12" NavigateUri="https://darademsc.ddns.net/#privacy" Padding="0" UseSystemFocusVisuals="True" />
                 <TextBlock Text="•" VerticalAlignment="Center" FontSize="12" Opacity="0.4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
-                <HyperlinkButton Content="Terms of Service" FontSize="12" NavigateUri="https://darademsc.ddns.net/#tos" Padding="0" />
+                <HyperlinkButton Content="Terms of Service" FontSize="12" NavigateUri="https://darademsc.ddns.net/#tos" Padding="0" UseSystemFocusVisuals="True" />
                 <TextBlock Text="•" VerticalAlignment="Center" FontSize="12" Opacity="0.4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
-                <HyperlinkButton Content="GitHub Repository" FontSize="12" NavigateUri="https://github.com/grip244/Opal" Padding="0" />
+                <HyperlinkButton Content="GitHub Repository" FontSize="12" NavigateUri="https://github.com/grip244/Opal" Padding="0" UseSystemFocusVisuals="True" />
             </StackPanel>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,-10,0,10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10">
                 <ProgressRing x:Name="ProgressRing" IsActive="False" Width="36" Height="36" />
-                <TextBlock x:Name="StatusText" FontSize="12" VerticalAlignment="Center" Width="250" Margin="0,0,30,0" TextWrapping="Wrap"/>
+                <TextBlock x:Name="StatusText" FontSize="12" VerticalAlignment="Center" Width="250" Margin="12,0,0,0" TextWrapping="Wrap"/>
             </StackPanel>
         </StackPanel>
     </Grid>

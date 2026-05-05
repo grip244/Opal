@@ -46,6 +46,21 @@
                 </Setter>
             </Style>
             <converters:ExplicitStatusConverter x:Key="ExplicitStatusConverter" />
+
+            <DataTemplate x:Key="AlbumCardTemplate">
+                <StackPanel Spacing="6">
+                    <Border x:Name="ArtBorder" CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
+                        <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="200" />
+                    </Border>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                        <Border Background="{ThemeResource AppTertiaryTextForegroundBrush}" CornerRadius="3" Padding="3,1" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
+                            <TextBlock Text="E" FontSize="8" FontWeight="Bold" Foreground="{ThemeResource AppBackgroundBrush}" />
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="{Binding Artist}" FontSize="11" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}"/>
+                </StackPanel>
+            </DataTemplate>
         </ResourceDictionary>
     </Page.Resources>
     
@@ -67,6 +82,17 @@
                         <Setter Target="LyricsListView.HorizontalAlignment" Value="Stretch" />
                         <Setter Target="LyricsOverlay.Padding" Value="20" />
                         <Setter Target="QueuePanel.Margin" Value="0,24,40,24" />
+                        <Setter Target="ArtistDetailName.FontSize" Value="30" />
+                        <Setter Target="ArtistDetailImage.Width" Value="80" />
+                        <Setter Target="ArtistDetailImage.Height" Value="80" />
+                        <Setter Target="AlbumDetailImage.Width" Value="150" />
+                        <Setter Target="AlbumDetailImage.Height" Value="150" />
+                        <Setter Target="AlbumDetailTitle.FontSize" Value="20" />
+                        <Setter Target="AlbumDetailArtist.FontSize" Value="12" />
+                        <Setter Target="NowPlayingImageBorder.Width" Value="240" />
+                        <Setter Target="NowPlayingImageBorder.Height" Value="240" />
+                        <Setter Target="LyricsListView.FontSize" Value="14" />
+                        <Setter Target="RecentlyPlayedTitle.FontSize" Value="20" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -88,9 +114,14 @@
                     <Grid x:Name="HomeGrid" Visibility="Collapsed" d:Visibility="Visible">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                             <StackPanel x:Name="HomeStack" Spacing="32" Padding="0,0,0,40">
+                                <StackPanel.ChildrenTransitions>
+                                    <TransitionCollection>
+                                        <EntranceThemeTransition FromVerticalOffset="20" />
+                                    </TransitionCollection>
+                                </StackPanel.ChildrenTransitions>
                                 <!-- Spotlight Carousel -->
                                 <Grid x:Name="SpotlightHero" Margin="0,0,0,12" Height="200">
-                                    <FlipView x:Name="SpotlightCarousel" ItemsSource="{x:Bind LibraryVM.SpotlightSongs, Mode=OneWay}" Background="Transparent" Style="{StaticResource HiddenFlipViewButtonsStyle}">
+                                    <FlipView x:Name="SpotlightCarousel" ItemsSource="{x:Bind LibraryVM.SpotlightSongs, Mode=OneWay}" SelectionChanged="OnCarouselSelectionChanged" Background="Transparent" Style="{StaticResource HiddenFlipViewButtonsStyle}">
                                         <FlipView.ItemTemplate>
                                             <DataTemplate>
                                                 <Grid Tapped="OnSpotlightTapped" Tag="{Binding}" Background="#11FFFFFF" CornerRadius="12">
@@ -114,13 +145,13 @@
                                                         </Border>
                                                          <StackPanel VerticalAlignment="Center" Spacing="0">
                                                             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,4">
-                                                                <TextBlock Text="{Binding Title}" FontSize="32" FontWeight="Bold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Foreground="White" MaxLines="1" />
+                                                                <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="Bold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Foreground="White" MaxLines="1" />
                                                                 <Border Background="#55FFFFFF" CornerRadius="4" Padding="6,2" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
-                                                                    <TextBlock Text="E" FontSize="11" FontWeight="Bold" Foreground="White" />
+                                                                    <TextBlock Text="E" FontSize="10" FontWeight="Bold" Foreground="White" />
                                                                 </Border>
                                                             </StackPanel>
-                                                            <TextBlock Text="{Binding Artist}" FontSize="20" FontWeight="SemiBold" Opacity="0.9" Foreground="White" />
-                                                            <TextBlock Text="{Binding Album}" FontSize="16" Opacity="0.6" Foreground="White" Margin="0,4,0,0" />
+                                                            <TextBlock Text="{Binding Artist}" FontSize="16" FontWeight="SemiBold" Opacity="0.9" Foreground="White" />
+                                                            <TextBlock Text="{Binding Album}" FontSize="14" Opacity="0.6" Foreground="White" Margin="0,2,0,0" />
                                                             <StackPanel Orientation="Horizontal" Spacing="6" Opacity="0.4" Margin="0,8,0,0">
                                                                 <TextBlock Text="{Binding Genre}" FontSize="14" Foreground="White" />
                                                                 <TextBlock Text="•" FontSize="14" Foreground="White" />
@@ -135,17 +166,20 @@
                                     </FlipView>
 
                                     <!-- Arrows -->
-                                    <Button VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0" Background="#99111111" Width="42" Height="42" CornerRadius="21" BorderThickness="0" Click="OnCarouselPrev">
+                                    <Button x:Name="CarouselPrevBtn" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0" Background="#99111111" Width="42" Height="42" CornerRadius="21" BorderThickness="0" Click="OnCarouselPrev">
                                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE76B;" FontSize="14" Foreground="White" />
                                     </Button>
-                                    <Button VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,10,0" Background="#99111111" Width="42" Height="42" CornerRadius="21" BorderThickness="0" Click="OnCarouselNext">
+                                    <Button x:Name="CarouselNextBtn" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,10,0" Background="#99111111" Width="42" Height="42" CornerRadius="21" BorderThickness="0" Click="OnCarouselNext">
                                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE76C;" FontSize="14" Foreground="White" />
                                     </Button>
                                 </Grid>
 
                                 <!-- Recommended Genres -->
                                 <StackPanel Spacing="12">
-                                    <TextBlock Text="Recommended Genres" FontSize="20" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                    <Grid>
+                                        <TextBlock Text="Recommended Genres" FontSize="20" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                        <HyperlinkButton Content="See All →" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="OnSeeAllGenres" FontSize="13" Opacity="0.8" UseSystemFocusVisuals="True" />
+                                    </Grid>
                                     <GridView x:Name="FeaturedGenresGrid"
                                               SelectionMode="None"
                                               IsItemClickEnabled="True"
@@ -177,10 +211,12 @@
                                 <StackPanel Spacing="12">
                                     <Grid>
                                         <TextBlock x:Name="LibraryTitle" Text="Explore from your library" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                        <HyperlinkButton Content="See All →" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="OnSeeAllExplore" FontSize="13" Opacity="0.8" UseSystemFocusVisuals="True" />
                                     </Grid>
                                     <GridView x:Name="ExploreGridView" ItemClick="OnGenericAlbumClicked" IsItemClickEnabled="True" SelectionMode="None" 
                                               HorizontalAlignment="Stretch" VerticalAlignment="Top" Padding="0,0,0,8"
                                               ItemContainerStyle="{StaticResource AlbumItemStyle}"
+                                              ItemTemplate="{StaticResource AlbumCardTemplate}"
                                               ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Hidden" 
                                               ItemsSource="{x:Bind LibraryVM.ExploreAlbums, Mode=OneWay}">
                                         <GridView.ItemsPanel>
@@ -188,22 +224,6 @@
                                                 <ItemsWrapGrid Orientation="Vertical" MaximumRowsOrColumns="1" />
                                             </ItemsPanelTemplate>
                                         </GridView.ItemsPanel>
-                                        <GridView.ItemTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Spacing="6">
-                                                    <Border CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
-                                                        <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="200" />
-                                                    </Border>
-                                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
-                                                        <Border Background="{ThemeResource AppTertiaryTextForegroundBrush}" CornerRadius="3" Padding="3,1" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
-                                                            <TextBlock Text="E" FontSize="8" FontWeight="Bold" Foreground="{ThemeResource AppBackgroundBrush}" />
-                                                        </Border>
-                                                    </StackPanel>
-                                                    <TextBlock Text="{Binding Artist}" FontSize="11" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </GridView.ItemTemplate>
                                     </GridView>
                                 </StackPanel>
 
@@ -211,10 +231,12 @@
                                 <StackPanel Spacing="12">
                                     <Grid>
                                         <TextBlock x:Name="RecentlyPlayedTitle" Text="Recently Played" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                        <HyperlinkButton Content="See All →" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="OnSeeAllRecentlyPlayed" FontSize="13" Opacity="0.8" UseSystemFocusVisuals="True" />
                                     </Grid>
                                     <GridView x:Name="RecentlyPlayedGridView" ItemClick="OnGenericAlbumClicked" IsItemClickEnabled="True" SelectionMode="None" 
                                               HorizontalAlignment="Stretch" VerticalAlignment="Top" Padding="0,0,0,8"
                                               ItemContainerStyle="{StaticResource AlbumItemStyle}"
+                                              ItemTemplate="{StaticResource AlbumCardTemplate}"
                                               ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Hidden" 
                                               ItemsSource="{x:Bind LibraryVM.RecentPlayedAlbums, Mode=OneWay}">
                                         <GridView.ItemsPanel>
@@ -222,22 +244,6 @@
                                                 <ItemsWrapGrid Orientation="Vertical" MaximumRowsOrColumns="1" />
                                             </ItemsPanelTemplate>
                                         </GridView.ItemsPanel>
-                                        <GridView.ItemTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Spacing="6">
-                                                    <Border CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
-                                                        <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="200" />
-                                                    </Border>
-                                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
-                                                        <Border Background="{ThemeResource AppTertiaryTextForegroundBrush}" CornerRadius="3" Padding="3,1" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
-                                                            <TextBlock Text="E" FontSize="8" FontWeight="Bold" Foreground="{ThemeResource AppBackgroundBrush}" />
-                                                        </Border>
-                                                    </StackPanel>
-                                                    <TextBlock Text="{Binding Artist}" FontSize="11" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </GridView.ItemTemplate>
                                     </GridView>
                                 </StackPanel>
 
@@ -246,10 +252,12 @@
                                 <StackPanel Spacing="12">
                                     <Grid>
                                         <TextBlock x:Name="NewestTitle" Text="Newly added releases" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                        <HyperlinkButton Content="See All →" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="OnSeeAllNewest" FontSize="13" Opacity="0.8" UseSystemFocusVisuals="True" />
                                     </Grid>
                                     <GridView x:Name="NewlyAddedGridView" ItemClick="OnGenericAlbumClicked" IsItemClickEnabled="True" SelectionMode="None" 
                                               HorizontalAlignment="Stretch" VerticalAlignment="Top" Padding="0,0,0,8"
                                               ItemContainerStyle="{StaticResource AlbumItemStyle}"
+                                              ItemTemplate="{StaticResource AlbumCardTemplate}"
                                               ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Hidden" 
                                               ItemsSource="{x:Bind LibraryVM.NewestAlbums, Mode=OneWay}">
                                         <GridView.ItemsPanel>
@@ -257,22 +265,6 @@
                                                 <ItemsWrapGrid Orientation="Vertical" MaximumRowsOrColumns="1" />
                                             </ItemsPanelTemplate>
                                         </GridView.ItemsPanel>
-                                        <GridView.ItemTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Spacing="6">
-                                                    <Border CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
-                                                        <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="200" />
-                                                    </Border>
-                                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
-                                                        <Border Background="{ThemeResource AppTertiaryTextForegroundBrush}" CornerRadius="3" Padding="3,1" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
-                                                            <TextBlock Text="E" FontSize="8" FontWeight="Bold" Foreground="{ThemeResource AppBackgroundBrush}" />
-                                                        </Border>
-                                                    </StackPanel>
-                                                    <TextBlock Text="{Binding Artist}" FontSize="11" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </GridView.ItemTemplate>
                                     </GridView>
                                 </StackPanel>
 
@@ -282,10 +274,12 @@
                                 <StackPanel Spacing="12">
                                     <Grid>
                                         <TextBlock x:Name="RecentTitle" Text="Recently released" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                        <HyperlinkButton Content="See All →" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="OnSeeAllRecentReleases" FontSize="13" Opacity="0.8" UseSystemFocusVisuals="True" />
                                     </Grid>
                                     <GridView x:Name="RecentlyReleasedGridView" ItemClick="OnGenericAlbumClicked" IsItemClickEnabled="True" SelectionMode="None" 
                                               HorizontalAlignment="Stretch" VerticalAlignment="Top" Padding="0,0,0,8"
                                               ItemContainerStyle="{StaticResource AlbumItemStyle}"
+                                              ItemTemplate="{StaticResource AlbumCardTemplate}"
                                               ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Hidden" 
                                               ItemsSource="{x:Bind LibraryVM.RecentReleasedAlbums, Mode=OneWay}">
                                         <GridView.ItemsPanel>
@@ -293,22 +287,6 @@
                                                 <ItemsWrapGrid Orientation="Vertical" MaximumRowsOrColumns="1" />
                                             </ItemsPanelTemplate>
                                         </GridView.ItemsPanel>
-                                        <GridView.ItemTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Spacing="6">
-                                                    <Border CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Height="{StaticResource AlbumSize}" Width="{StaticResource AlbumSize}">
-                                                        <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="200" />
-                                                    </Border>
-                                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
-                                                        <Border Background="{ThemeResource AppTertiaryTextForegroundBrush}" CornerRadius="3" Padding="3,1" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
-                                                            <TextBlock Text="E" FontSize="8" FontWeight="Bold" Foreground="{ThemeResource AppBackgroundBrush}" />
-                                                        </Border>
-                                                    </StackPanel>
-                                                    <TextBlock Text="{Binding Artist}" FontSize="11" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </GridView.ItemTemplate>
                                     </GridView>
                                 </StackPanel>
 
@@ -317,6 +295,11 @@
                     </Grid>
 
                         <Grid x:Name="ArtistGrid" Visibility="Collapsed">
+                        <Grid.ChildrenTransitions>
+                            <TransitionCollection>
+                                <EntranceThemeTransition FromVerticalOffset="20" />
+                            </TransitionCollection>
+                        </Grid.ChildrenTransitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
@@ -366,23 +349,34 @@
                     </Grid>
 
                     <Grid x:Name="AlbumGrid" Visibility="Collapsed">
+                        <Grid.ChildrenTransitions>
+                            <TransitionCollection>
+                                <EntranceThemeTransition FromVerticalOffset="20" />
+                            </TransitionCollection>
+                        </Grid.ChildrenTransitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
                         <StackPanel Orientation="Horizontal" Spacing="24" Margin="0,0,0,16">
-                            <Border CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" Height="100" Width="100">
-                                <controls:ThumbnailView x:Name="AlbumDetailImage" DecodeWidth="200" />
+                            <Button x:Name="AlbumBackButton" Click="OnBackClicked" Margin="0,0,12,0" VerticalAlignment="Center">
+                                <SymbolIcon Symbol="Back" />
+                            </Button>
+                            <Border x:Name="AlbumDetailImageBorder" CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" Height="200" Width="200">
+                                <controls:ThumbnailView x:Name="AlbumDetailImage" DecodeWidth="400" />
                             </Border>
                             <StackPanel VerticalAlignment="Center" Spacing="4">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock x:Name="AlbumDetailTitle" FontSize="28" FontWeight="Bold" TextWrapping="Wrap" />
+                                    <TextBlock x:Name="AlbumDetailTitle" FontSize="28" FontWeight="Bold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
                                     <Border x:Name="AlbumExplicitBadge" Visibility="Collapsed" Background="#55FFFFFF" CornerRadius="4" Padding="6,2" VerticalAlignment="Center" Margin="0,4,0,0">
                                         <TextBlock Text="E" FontSize="14" FontWeight="Bold" Foreground="White" />
                                     </Border>
                                 </StackPanel>
                                 <TextBlock x:Name="AlbumDetailArtist" FontSize="14" Opacity="0.8" />
-                                <Button Content="Play Album" Click="OnPlayAlbumClicked" FontSize="14" Background="{ThemeResource SystemAccentColor}" Foreground="White" CornerRadius="16" Padding="12,4" Margin="0,4,0,0" UseSystemFocusVisuals="True" />
+                                <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,4,0,0">
+                                    <Button Content="Play Album" Click="OnPlayAlbumClicked" FontSize="14" Background="{ThemeResource SystemAccentColor}" Foreground="White" CornerRadius="21" Height="42" Padding="20,8" UseSystemFocusVisuals="True" />
+                                    <Button Content="Shuffle" Click="OnShuffleAlbumClicked" FontSize="14" Background="Transparent" BorderBrush="{ThemeResource AppControlBorderBrush}" BorderThickness="1" CornerRadius="21" Height="42" Padding="20,8" UseSystemFocusVisuals="True" />
+                                </StackPanel>
                             </StackPanel>
                         </StackPanel>
                         
@@ -454,7 +448,7 @@
                             <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70D;" FontSize="18" />
                         </Button>
                         <StackPanel x:Name="AlbumArtView" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="32">
-                            <Grid Width="360" Height="360">
+                            <Grid x:Name="NowPlayingImageBorder" Width="360" Height="360">
                                 <Border CornerRadius="20" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Background="{ThemeResource AppControlBackgroundBrush}">
                                     <controls:ThumbnailView x:Name="NowPlayingImage" DecodeWidth="600" />
                                 </Border>

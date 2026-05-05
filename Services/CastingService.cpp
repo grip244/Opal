@@ -53,10 +53,7 @@ IObservableVector<RemoteDevice^>^ CastingService::DiscoveredDevices::get() {
     return _discoveredDevices;
 }
 
-void CastingService::StartListening() {}
-void CastingService::StopListening() {}
-
-void CastingService::StartDiscovery() {
+void CastingService::StartListening() {
     if (_udpSocket != nullptr) return;
 
     _udpSocket = ref new DatagramSocket();
@@ -66,33 +63,47 @@ void CastingService::StartDiscovery() {
         try {
             t.get();
             _udpSocket->JoinMulticastGroup(ref new Windows::Networking::HostName("239.0.0.222"));
-            
-            _discoveryTimer = ref new Windows::UI::Xaml::DispatcherTimer();
-            Windows::Foundation::TimeSpan ts; ts.Duration = 5 * 10000000LL; // 5 seconds
-            _discoveryTimer->Interval = ts;
-            auto self = this;
-            _discoveryTimer->Tick += ref new Windows::Foundation::EventHandler<Object^>([self](Object^, Object^) {
-                self->SendDiscoveryBeacon();
-            });
-            _discoveryTimer->Start();
-            
-            DebugLogger::Instance->Log("CastingService", "Discovery started on UDP 9888");
-            SendDiscoveryBeacon();
+            DebugLogger::Instance->Log("CastingService", "Passive listening started on UDP 9888");
         }
         catch (Exception^ ex) {
-            DebugLogger::Instance->LogException("StartDiscovery", ex);
+            DebugLogger::Instance->LogException("StartListening", ex);
         }
     });
+}
+
+void CastingService::StopListening() {
+    StopDiscovery();
+    if (_udpSocket != nullptr) {
+        delete _udpSocket;
+        _udpSocket = nullptr;
+    }
+}
+
+void CastingService::StartDiscovery() {
+    // Ensure we are listening first (socket bound) before we start beaconing
+    if (_udpSocket == nullptr) {
+        StartListening();
+    }
+
+    if (_discoveryTimer != nullptr) return;
+
+    _discoveryTimer = ref new Windows::UI::Xaml::DispatcherTimer();
+    Windows::Foundation::TimeSpan ts; ts.Duration = 5 * 10000000LL; // 5 seconds
+    _discoveryTimer->Interval = ts;
+    auto self = this;
+    _discoveryTimer->Tick += ref new Windows::Foundation::EventHandler<Object^>([self](Object^, Object^) {
+        self->SendDiscoveryBeacon();
+    });
+    _discoveryTimer->Start();
+    
+    DebugLogger::Instance->Log("CastingService", "Active discovery (beaconing) started");
+    SendDiscoveryBeacon();
 }
 
 void CastingService::StopDiscovery() {
     if (_discoveryTimer != nullptr) {
         _discoveryTimer->Stop();
         _discoveryTimer = nullptr;
-    }
-    if (_udpSocket != nullptr) {
-        delete _udpSocket;
-        _udpSocket = nullptr;
     }
 }
 

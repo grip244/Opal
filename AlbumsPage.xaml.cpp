@@ -9,12 +9,16 @@
 #include <vector>
 #include <cwctype>
 
+#include <Windows.UI.Xaml.Media.Animation.h>
+
 using namespace Opal;
 using namespace Platform;
 using namespace concurrency;
 using namespace Windows::Foundation;
 using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
+using namespace Windows::UI::Xaml::Media;
+using namespace Windows::UI::Xaml::Media::Animation;
 using namespace Windows::UI::Xaml::Media::Imaging;
 using namespace Windows::Data::Json;
 using namespace Windows::System::Profile;
@@ -162,6 +166,11 @@ void AlbumsPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
 
     auto output = ref new Platform::Collections::Vector<AlbumID3^>(std::move(result));
     AlbumsGridView->ItemsSource = output;
+
+    // Update count
+    wchar_t buf[64];
+    swprintf_s(buf, L"Albums (%u)", output->Size);
+    PageTitle->Text = ref new String(buf);
 }
 
 void AlbumsPage::OnAlbumClicked(Object^ sender, ItemClickEventArgs^ e)
@@ -169,6 +178,12 @@ void AlbumsPage::OnAlbumClicked(Object^ sender, ItemClickEventArgs^ e)
     auto am = dynamic_cast<AlbumID3^>(e->ClickedItem);
     if (am != nullptr)
     {
+        // Prepare connected animation
+        auto container = dynamic_cast<GridViewItem^>(AlbumsGridView->ContainerFromItem(e->ClickedItem));
+        if (container != nullptr) {
+            ConnectedAnimationService::GetForCurrentView()->PrepareToAnimate("ForwardConnectedAnimation", container);
+        }
+
         // Navigate to LibraryPage with Album ID
         this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(LibraryPage::typeid), am);
     }

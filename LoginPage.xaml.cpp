@@ -130,16 +130,16 @@ void LoginPage::ShowErrorToast(String^ title, String^ message)
 
 void LoginPage::OnLoginSuccess()
 {
-    // Defer syncing thumbnails until after navigation/initial load is complete
+    // Credentials already saved on background thread
+    
+    // Navigate to LibraryPage first
+    this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(LibraryPage::typeid));
 
-    // Clear stale data from previous server/session
+    // Clear stale data AFTER navigation, so the old page's bindings are detached
     ViewModels::LibraryViewModel::Instance->ClearAll();
     ViewModels::PlaylistsViewModel::Instance->Clear();
 
-    // Credentials already saved on background thread
-    ViewModels::PlaylistsViewModel::Instance->LoadPlaylistsAsync();
-    // Navigate to LibraryPage
-    this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(LibraryPage::typeid));
+    // REMOVED: LoadPlaylistsAsync() - MainPage handles this in OnPageLoaded
 }
 
 

@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 #include <cwctype>
+#include <random>
 
 using namespace Opal;
 using namespace Platform;
@@ -225,6 +226,23 @@ void TracksPage::OnPlayAllClicked(Object^ sender, RoutedEventArgs^ e)
     if (itemsSource != nullptr && itemsSource->Size > 0)
     {
         PlaybackService::Instance->PlayQueue(itemsSource, 0);
+    }
+}
+
+void TracksPage::OnShuffleAllClicked(Object^ sender, RoutedEventArgs^ e)
+{
+    auto itemsSource = dynamic_cast<Platform::Collections::Vector<Song^>^>(TracksListView->ItemsSource);
+    if (itemsSource != nullptr && itemsSource->Size > 0)
+    {
+        std::vector<Song^> songs;
+        for (auto s : itemsSource) songs.push_back(s);
+        
+        std::random_device rd;
+        std::mt19937 g(rd());
+        std::shuffle(songs.begin(), songs.end(), g);
+        
+        auto output = ref new Platform::Collections::Vector<Song^>(std::move(songs));
+        PlaybackService::Instance->PlayQueue(output, 0);
     }
 }
 

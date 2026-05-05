@@ -162,6 +162,10 @@ void ThumbnailView::OnTimerTick(Object^ sender, Object^ e)
 {
     _debounceTimer->Stop();
 
+    // Guard: SourceUrl may have been cleared by virtualization recycling
+    // between when the timer was started and when this tick fires.
+    if (SourceUrl == nullptr || SourceUrl->IsEmpty()) return;
+
     try
     {
         auto uri = ref new Uri(SourceUrl);

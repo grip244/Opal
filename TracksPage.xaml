@@ -20,7 +20,8 @@
             <SolidColorBrush x:Key="AccentBrush" Color="#EE4040" />
             
             <converters:ExplicitStatusConverter x:Key="ExplicitStatusConverter" />
-            <x:Double x:Key="HeaderFontSize">26</x:Double>
+            <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+            <x:Double x:Key="HeaderFontSize">28</x:Double>
             <x:Double x:Key="ItemTitleFontSize">15</x:Double>
             <x:Double x:Key="ThumbSize">48</x:Double>
             <Thickness x:Key="ThumbMargin">12,0,0,0</Thickness>
@@ -36,9 +37,11 @@
                     <VisualState.Setters>
                         <Setter Target="RootGrid.Padding" Value="48,40,48,48" />
                         <Setter Target="TracksListView.Padding" Value="24,0,24,24" />
-                        <Setter Target="PageTitle.FontSize" Value="24" />
-                        <Setter Target="FilterBox.Width" Value="180" />
-                        <Setter Target="SortByCombo.Width" Value="130" />
+                        <Setter Target="PageTitle.FontSize" Value="20" />
+                        <Setter Target="FilterBox.Width" Value="160" />
+                        <Setter Target="SortByCombo.Width" Value="110" />
+                        <Setter Target="AlbumColumn.Width" Value="140" />
+                        <Setter Target="ControlsColumn.Width" Value="180" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -58,10 +61,16 @@
 
                 <StackPanel Orientation="Horizontal" Grid.Column="0" Spacing="16">
                     <TextBlock x:Name="PageTitle" Text="Tracks" FontSize="{StaticResource HeaderFontSize}" FontWeight="Bold" VerticalAlignment="Center" Foreground="{ThemeResource AppTextForegroundBrush}" />
-                    <Button Click="OnPlayAllClicked" Background="{ThemeResource SystemAccentColor}" Foreground="White" CornerRadius="16" Padding="16,6" VerticalAlignment="Center">
+                    <Button Click="OnPlayAllClicked" Background="{ThemeResource SystemAccentColor}" Foreground="White" CornerRadius="18" Padding="16,8" VerticalAlignment="Center" UseSystemFocusVisuals="True">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <SymbolIcon Symbol="Play"/>
-                            <TextBlock Text="Play All" FontWeight="SemiBold" FontSize="13" />
+                            <TextBlock Text="Play All" FontWeight="Bold" FontSize="13" />
+                        </StackPanel>
+                    </Button>
+                    <Button Click="OnShuffleAllClicked" Background="Transparent" BorderBrush="{ThemeResource AppControlBorderBrush}" BorderThickness="1" CornerRadius="18" Padding="16,8" VerticalAlignment="Center" UseSystemFocusVisuals="True">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <SymbolIcon Symbol="Shuffle"/>
+                            <TextBlock Text="Shuffle" FontWeight="SemiBold" FontSize="13" />
                         </StackPanel>
                     </Button>
                     <TextBlock x:Name="TotalTracksCounter" Text="Total Tracks: (Loading...)" FontSize="13" Opacity="0.6" VerticalAlignment="Center" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}" />
@@ -73,7 +82,9 @@
                         <TextBox x:Name="FilterBox" PlaceholderText="Search tracks..." 
                                  TextChanged="OnFilterOrSortChanged" 
                                  VerticalAlignment="Center" 
-                                 Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" Padding="32,6,12,6" />
+                                 Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" Padding="32,6,12,6"
+                                 UseSystemFocusVisuals="True"
+                                 XYFocusRight="{x:Bind FavoritesFilterBtn}" />
                         <FontIcon Glyph="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Left" Margin="12,0,0,0" VerticalAlignment="Center" Opacity="0.5" Foreground="{ThemeResource AppTextForegroundBrush}" />
                     </Grid>
                     
@@ -91,7 +102,9 @@
                     </ToggleButton>
                     
                     <ComboBox x:Name="SortByCombo" Width="140" Height="36" SelectionChanged="OnFilterOrSortChanged" 
-                              Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" VerticalAlignment="Center">
+                              Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" VerticalAlignment="Center"
+                              UseSystemFocusVisuals="True"
+                              XYFocusLeft="{x:Bind FavoritesFilterBtn}">
                         <ComboBoxItem Content="A-Z (Title)" IsSelected="True" />
                         <ComboBoxItem Content="Artist" />
                         <ComboBoxItem Content="Duration" />
@@ -101,10 +114,15 @@
             </Grid>
 
             <ListView x:Name="TracksListView" Grid.Row="1" ItemClick="OnTrackClicked" IsItemClickEnabled="True" 
-                      SelectionMode="None" ShowsScrollingPlaceholders="True">
+                      SelectionMode="None" ShowsScrollingPlaceholders="True" UseSystemFocusVisuals="True">
+                <ListView.ItemContainerTransitions>
+                    <TransitionCollection>
+                        <EntranceThemeTransition FromVerticalOffset="20" />
+                    </TransitionCollection>
+                </ListView.ItemContainerTransitions>
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <Grid Padding="12" Margin="0,2" Background="{ThemeResource AppControlBackgroundBrush}" CornerRadius="12">
+                        <Grid Padding="12" Margin="0,2" Background="{ThemeResource AppControlBackgroundBrush}" CornerRadius="8">
                             <Grid.ContextFlyout>
                                 <MenuFlyout Opening="OnTrackContextOpening">
                                     <MenuFlyoutItem Text="Play" Click="OnPlayMenuClicked" Icon="Play" />
@@ -117,11 +135,13 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="60" />
                                 <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="200" />
-                                <ColumnDefinition Width="250" />
+                                <ColumnDefinition x:Name="AlbumColumn" Width="200" />
+                                <ColumnDefinition x:Name="ControlsColumn" Width="250" />
                                 <ColumnDefinition Width="70" />
                                 <ColumnDefinition Width="48" />
                             </Grid.ColumnDefinitions>
+
+                            <Border Width="4" Height="24" CornerRadius="2" Background="{ThemeResource SystemAccentColor}" HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="{Binding IsPlaying, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="-12,0,0,0" />
 
                             
                             <Border Grid.Column="0" CornerRadius="6" Width="{StaticResource ThumbSize}" Height="{StaticResource ThumbSize}" Background="{ThemeResource AppControlBackgroundBrush}">
@@ -132,6 +152,7 @@
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="{StaticResource ThumbMargin}">
 
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <FontIcon Glyph="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{ThemeResource SystemAccentColor}" Visibility="{Binding IsPlaying, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,4,0" />
                                     <TextBlock Text="{Binding Title}" FontSize="{StaticResource ItemTitleFontSize}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}" />
 
                                     <Border Background="{ThemeResource AppTertiaryTextForegroundBrush}" CornerRadius="4" Padding="4,1" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">

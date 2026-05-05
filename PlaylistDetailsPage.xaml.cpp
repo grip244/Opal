@@ -16,6 +16,8 @@ using namespace Windows::UI::Xaml::Navigation;
 using namespace Windows::UI::Xaml::Media;
 using namespace Windows::UI::Popups;
 using namespace concurrency;
+#include <random>
+#include <algorithm>
 
 PlaylistDetailsPage::PlaylistDetailsPage()
 {
@@ -120,6 +122,30 @@ void PlaylistDetailsPage::OnPlayAllClicked(Object^ sender, RoutedEventArgs^ e)
     if (_songs->Size > 0)
     {
         PlaybackService::Instance->PlayQueue(_songs, 0);
+    }
+}
+
+void PlaylistDetailsPage::OnShuffleClicked(Object^ sender, RoutedEventArgs^ e)
+{
+    if (_songs->Size > 0)
+    {
+        std::vector<Song^> songs;
+        for (auto s : _songs) songs.push_back(s);
+        
+        std::random_device rd;
+        std::mt19937 g(rd());
+        std::shuffle(songs.begin(), songs.end(), g);
+        
+        auto output = ref new Platform::Collections::Vector<Song^>(std::move(songs));
+        PlaybackService::Instance->PlayQueue(output, 0);
+    }
+}
+
+void PlaylistDetailsPage::OnQueueAllClicked(Object^ sender, RoutedEventArgs^ e)
+{
+    if (_songs->Size > 0)
+    {
+        for (auto s : _songs) PlaybackService::Instance->AddToQueue(s);
     }
 }
 

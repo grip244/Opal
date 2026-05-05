@@ -28,6 +28,11 @@ namespace Opal
             void set(bool value);
         }
 
+        property Platform::String^ Theme {
+            Platform::String^ get();
+            void set(Platform::String^ value);
+        }
+
     private:
         SettingsService();
         static SettingsService^ _instance;

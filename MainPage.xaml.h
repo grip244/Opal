@@ -17,6 +17,7 @@ namespace Opal
         }
 
         void UpdateSidebarPlaylists();
+        void RebuildSidebarPlaylistsInternal();
         property ViewModels::PlaylistsViewModel^ PlaylistsVM {
             ViewModels::PlaylistsViewModel^ get();
         }
@@ -61,6 +62,7 @@ namespace Opal
         void OnSleepTimerCancelClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void UpdateSleepTimerLabel();
         Windows::UI::Xaml::DispatcherTimer^ _sleepTimer;
+        Windows::UI::Xaml::DispatcherTimer^ _sidebarDebounceTimer;
         int _sleepRemainingSeconds;
 
     };

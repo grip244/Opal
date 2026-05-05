@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Opal"
+    xmlns:converters="using:Opal.Converters"
     RequiresPointerMode="WhenRequested">
     <Application.Resources>
         <ResourceDictionary>
@@ -11,6 +12,7 @@
                 <ResourceDictionary Source="ms-appx:///UI/Templates/DeviceTemplates.xaml"/>
                 <ResourceDictionary Source="ms-appx:///UI/Themes/ThemeResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

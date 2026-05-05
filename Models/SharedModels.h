@@ -8,6 +8,7 @@ namespace Opal
     {
     private:
         bool _isFavorite;
+        bool _isPlaying;
         double _rating;
         int _playlistIndex;
         event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ _propertyChanged;
@@ -41,6 +42,16 @@ namespace Opal
         }
         property Platform::String^ ExplicitStatus;
         property Platform::String^ SearchTerms;
+        
+        property bool IsPlaying {
+            bool get() { return _isPlaying; }
+            void set(bool value) {
+                if (_isPlaying != value) {
+                    _isPlaying = value;
+                    NotifyPropertyChanged("IsPlaying");
+                }
+            }
+        }
         
         property Platform::String^ DurationStr {
             Platform::String^ get() {
@@ -127,6 +138,8 @@ namespace Opal
         property Platform::String^ Id;
         property Platform::String^ Name;
         property Platform::String^ SearchTerms;
+        property Platform::String^ CoverUrl;
+        property int AlbumCount;
         property Windows::UI::Xaml::Media::ImageSource^ CoverArt {
             Windows::UI::Xaml::Media::ImageSource^ get() { return _coverArt; }
             void set(Windows::UI::Xaml::Media::ImageSource^ value) {

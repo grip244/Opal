@@ -6,10 +6,12 @@
 #include "pch.h"
 #include "MainPage.xaml.h"
 #include "Services/CastingService.h"
+#include "Services/NavidromeService.h"
 #include "Services/DebugLogger.h"
 
-using namespace Opal;
+#include "Services/SettingsService.h"
 
+using namespace Opal;
 using namespace Platform;
 using namespace Windows::UI::Core;
 using namespace Windows::ApplicationModel;
@@ -30,12 +32,14 @@ CoreDispatcher^ App::_mainDispatcher = nullptr;
 CoreDispatcher^ App::MainDispatcher::get() { return _mainDispatcher; }
 void App::MainDispatcher::set(CoreDispatcher^ value) { _mainDispatcher = value; }
 
-/// <summary>
-/// Initializes the singleton application object.  This is the first line of authored code
-/// executed, and as such is the logical equivalent of main() or WinMain().
-/// </summary>
 App::App()
 {
+    try {
+        auto theme = SettingsService::Instance->Theme;
+        if (theme == "Light") RequestedTheme = ApplicationTheme::Light;
+        else if (theme == "Dark") RequestedTheme = ApplicationTheme::Dark;
+    } catch (...) {}
+
     InitializeComponent();
     Suspending += ref new SuspendingEventHandler(this, &App::OnSuspending);
     Resuming += ref new EventHandler<Object^>(this, &App::OnResuming);
@@ -102,9 +106,10 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
             // Ensure the current window is active
             Window::Current->Activate();
         }
-        DebugLogger::Instance->Log("App", "Attempting to start CastingService listener");
-        Opal::CastingService::Instance->StartListening();
-        Opal::CastingService::Instance->StartDiscovery();
+        DebugLogger::Instance->Log("App", "Checking if CastingService should start");
+        if (Opal::NavidromeService::Instance->IsAuthenticated()) {
+            Opal::CastingService::Instance->StartListening();
+        }
     }
     else
     {
@@ -167,7 +172,6 @@ void App::OnResuming(Object^ sender, Object^ e)
     (void)e;      // Unused parameter
 
     Opal::CastingService::Instance->StartListening();
-    Opal::CastingService::Instance->StartDiscovery();
 }
 
 void App::OnEnteredBackground(Object^ sender, EnteredBackgroundEventArgs^ e)

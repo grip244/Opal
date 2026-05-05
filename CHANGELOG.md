@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.6] - 2026-05-04
+
+### Added
+- **Phase 1: Core Aesthetics**
+    - **Dynamic Theme Engine**: Full support for Light/Dark/System theme switching with persistent user preference on startup.
+    - **Metadata Density**: Standardized information display across the library; added album counts to artist cards and song counts/durations to playlists.
+    - **Premium Login Depth**: Integrated subtle radial background accents to the login screen for a high-end feel.
+- **Phase 2: Premium Motion Design**
+    - **Connected Animations**: Implemented fluid "fly-in" transitions when navigating from library grids to detail views.
+    - **Advanced Spotlight UX**: Added auto-advancing (5s) spotlight carousels with boundary-aware navigation arrow visibility.
+    - **Visual Feedback**: Integrated accent-colored "Now Playing" indicators across all track lists and grids.
+- **Phase 3: Console (Xbox) Optimization**
+    - **Standardized Padding**: Resolved "zoomed-in" layout issues by enforcing 48px margins and safe-area offsets on all pages.
+    - **Responsive Scaling**: Optimized typography and element dimensions specifically for 10-foot TV viewing distances.
+    - **XYFocus Hardening**: Guaranteed 100% D-pad navigation compatibility for all new UI components and dialogs.
+- **Phase 4: Cherry on Top (Detail Polish)**
+    - **Artist Badges**: Album count metadata now appears as stylized accent badges overlaid on artist avatars.
+    - **Refined Iconography**: Replaced legacy lyrics/volume icons with professional-grade symbols (Microphone/Speaker).
+
+### Fixed
+- **Stability & Performance**:
+    - Fixed a critical "Duplication assignment" XAML error in several library pages.
+    - Resolved C++ template syntax errors (`IBox`, `TryStart`) to ensure build stability on modern SDKs.
+    - Fixed a runtime crash where `NullToVisibilityConverter` was missing on certain pages.
+    - Resolved persistent Visibility enum qualification errors in the C++ backend.
+
 ## [1.1.5] - 2026-05-03
 
 ### Added

@@ -39,14 +39,45 @@
     </Page.Resources>
 
     <Grid Background="{ThemeResource AppBackgroundBrush}">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="DeviceStates">
+                <VisualState x:Name="XboxState">
+                    <VisualState.Setters>
+                        <Setter Target="PageTitle.FontSize" Value="20" />
+                        <Setter Target="HeaderPanel.Padding" Value="48,40,48,12" />
+                        <Setter Target="GenreGrid.Padding" Value="40,0,40,40" />
+                        <Setter Target="SearchContainer.Width" Value="160" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Padding="24,24,24,12">
-            <TextBlock Text="Genres" Style="{StaticResource HeaderTextBlockStyle}" FontWeight="Bold" />
-            <TextBlock Text="Browse your library by genre" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" />
+        <StackPanel x:Name="HeaderPanel" Grid.Row="0" Padding="24,24,24,12">
+            <Grid>
+                <StackPanel>
+                    <TextBlock x:Name="PageTitle" Text="Genres" FontSize="28" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                    <TextBlock Text="Browse your library by genre" FontSize="14" Opacity="0.7" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}" />
+                </StackPanel>
+                <Grid x:Name="SearchContainer" HorizontalAlignment="Right" VerticalAlignment="Center" Width="220">
+                    <TextBox x:Name="FilterBox" PlaceholderText="Search genres..." 
+                             TextChanged="OnFilterOrSortChanged" 
+                             VerticalAlignment="Center" 
+                             Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" Padding="32,6,12,6"
+                             UseSystemFocusVisuals="True" />
+                    <FontIcon Glyph="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Left" Margin="12,0,0,0" VerticalAlignment="Center" Opacity="0.5" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                </Grid>
+            </Grid>
+        </StackPanel>
+
+        <StackPanel x:Name="EmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="1" 
+                    Visibility="{x:Bind GenreGrid.Items.Size, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}, ConverterParameter='zero'}">
+            <SymbolIcon Symbol="Filter" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}" Width="64" Height="64" Opacity="0.3" />
+            <TextBlock Text="No genres found" FontSize="18" FontWeight="SemiBold" Opacity="0.5" Margin="0,12,0,0" Foreground="{ThemeResource AppTextForegroundBrush}" HorizontalAlignment="Center"/>
+            <TextBlock Text="Try a different search term" FontSize="14" Opacity="0.4" Margin="0,4,0,0" Foreground="{ThemeResource AppTextForegroundBrush}" HorizontalAlignment="Center"/>
         </StackPanel>
 
         <GridView x:Name="GenreGrid"
@@ -55,7 +86,13 @@
                   SelectionMode="None"
                   IsItemClickEnabled="True"
                   ItemClick="OnGenreClicked"
-                  ItemTemplate="{StaticResource GenreTemplate}">
+                  ItemTemplate="{StaticResource GenreTemplate}"
+                  UseSystemFocusVisuals="True">
+                <GridView.ItemContainerTransitions>
+                    <TransitionCollection>
+                        <EntranceThemeTransition FromVerticalOffset="20" />
+                    </TransitionCollection>
+                </GridView.ItemContainerTransitions>
             <GridView.ItemsPanel>
                 <ItemsPanelTemplate>
                     <ItemsWrapGrid Orientation="Horizontal" HorizontalAlignment="Center" />

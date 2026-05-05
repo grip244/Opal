@@ -124,3 +124,15 @@ void SettingsService::IsAutoPlayEnabled::set(bool value)
 {
     ApplicationData::Current->LocalSettings->Values->Insert("Opal.AutoPlay", PropertyValue::CreateBoolean(value));
 }
+
+String^ SettingsService::Theme::get()
+{
+    auto vals = ApplicationData::Current->LocalSettings->Values;
+    if (vals->HasKey("Opal.Theme")) return safe_cast<String^>(vals->Lookup("Opal.Theme"));
+    return "Default";
+}
+
+void SettingsService::Theme::set(String^ value)
+{
+    ApplicationData::Current->LocalSettings->Values->Insert("Opal.Theme", value);
+}
