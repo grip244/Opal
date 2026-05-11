@@ -18,20 +18,20 @@ namespace Opal
     public:
         LibraryPage();
         
-        property Opal::ViewModels::LyricsViewModel^ LyricsVM {
-            Opal::ViewModels::LyricsViewModel^ get();
+        property ViewModels::LyricsViewModel^ LyricsVM {
+            ViewModels::LyricsViewModel^ get() { return ViewModels::LyricsViewModel::Instance; }
         }
 
-        property Opal::ViewModels::LibraryViewModel^ LibraryVM {
-            Opal::ViewModels::LibraryViewModel^ get();
+        property ViewModels::LibraryViewModel^ LibraryVM {
+            ViewModels::LibraryViewModel^ get() { return ViewModels::LibraryViewModel::Instance; }
         }
         
         property Windows::Foundation::Collections::IVector<Song^>^ PlaybackQueue {
-            Windows::Foundation::Collections::IVector<Song^>^ get();
+            Windows::Foundation::Collections::IVector<Song^>^ get() { return PlaybackService::Instance->Queue; }
         }
 
         property Windows::Foundation::Collections::IObservableVector<Song^>^ UpcomingQueue {
-            Windows::Foundation::Collections::IObservableVector<Song^>^ get();
+            Windows::Foundation::Collections::IObservableVector<Song^>^ get() { return _upcomingQueue; }
         }
 
         property Song^ HeroSong {

@@ -300,13 +300,19 @@ void TracksPage::OnTrackContextOpening(Object^ sender, Object^ e)
     auto menu = dynamic_cast<MenuFlyout^>(sender);
     if (menu == nullptr) return;
     
+    bool isXbox = (Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamily == "Windows.Xbox");
+
     MenuFlyoutSubItem^ addToPlaylistSub = nullptr;
     for (unsigned int i = 0; i < menu->Items->Size; i++) {
         auto item = menu->Items->GetAt(i);
-        if (item->Name == "AddToPlaylistMenu") addToPlaylistSub = dynamic_cast<MenuFlyoutSubItem^>(item);
+        if (item->Name == "AddToPlaylistMenu") {
+            addToPlaylistSub = dynamic_cast<MenuFlyoutSubItem^>(item);
+            if (isXbox) addToPlaylistSub->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+            else addToPlaylistSub->Visibility = Windows::UI::Xaml::Visibility::Visible;
+        }
     }
     
-    if (addToPlaylistSub != nullptr) {
+    if (addToPlaylistSub != nullptr && !isXbox) {
         addToPlaylistSub->Items->Clear();
         auto vm = ViewModels::PlaylistsViewModel::Instance;
         for (unsigned int i = 0; i < vm->Playlists->Size; i++) {

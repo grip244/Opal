@@ -202,7 +202,8 @@
                         <Setter Target="XboxTopNav.Visibility" Value="Visible" />
                         
                         <Setter Target="LyricsListView.HorizontalAlignment" Value="Stretch" />
-                        <Setter Target="LyricsOverlay.Padding" Value="20" />
+                        <Setter Target="LyricsOverlay.Margin" Value="40,24,0,140" />
+                        <Setter Target="LyricsOverlay.Padding" Value="24" />
                         <Setter Target="QueuePanel.Margin" Value="0,24,40,140" />
                         <Setter Target="ArtistDetailName.FontSize" Value="30" />
                         <Setter Target="ArtistDetailImage.Width" Value="80" />

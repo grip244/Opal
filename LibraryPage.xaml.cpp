@@ -133,26 +133,6 @@ Song^ LibraryPage::HeroSong::get()
     return nullptr;
 }
 
-Opal::ViewModels::LyricsViewModel^ LibraryPage::LyricsVM::get()
-{
-    return Opal::ViewModels::LyricsViewModel::Instance;
-}
-
-Opal::ViewModels::LibraryViewModel^ LibraryPage::LibraryVM::get()
-{
-    return Opal::ViewModels::LibraryViewModel::Instance;
-}
-
-Windows::Foundation::Collections::IVector<Song^>^ LibraryPage::PlaybackQueue::get()
-{
-    return PlaybackService::Instance->Queue;
-}
-
-Windows::Foundation::Collections::IObservableVector<Song^>^ LibraryPage::UpcomingQueue::get()
-{
-    return _upcomingQueue;
-}
-
 void LibraryPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e)
 {
     // 2.1: Register BackRequested here so it is paired with OnNavigatedFrom unregistration

@@ -1004,11 +1004,17 @@ void MainPage::RebuildSidebarPlaylistsInternal()
             MainNavigationView->SelectedItem = savedSelection;
         }
 
-        // Force a layout refresh for hierarchical items by toggling expansion
-        // This fixes a known WinUI 2 bug where items don't appear in an already-expanded parent
-        // Always set expanded so the dropdown never starts collapsed, even on first load
-        PlaylistsNavItem->IsExpanded = false;
-        PlaylistsNavItem->IsExpanded = true;
+        bool isXbox = (Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamily == "Windows.Xbox");
+        if (!isXbox) {
+            // Force a layout refresh for hierarchical items by toggling expansion
+            // This fixes a known WinUI 2 bug where items don't appear in an already-expanded parent
+            // Always set expanded so the dropdown never starts collapsed, even on first load
+            PlaylistsNavItem->IsExpanded = false;
+            PlaylistsNavItem->IsExpanded = true;
+        } else {
+            // On Xbox, keep it collapsed to prevent the flyout/dropdown behavior
+            PlaylistsNavItem->IsExpanded = false;
+        }
 
         // Trigger a menu visibility update to force a layout pass on the NavigationView
         UpdateMenuVisibility();
