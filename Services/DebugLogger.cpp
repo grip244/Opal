@@ -8,6 +8,7 @@
 
 using namespace Opal;
 using namespace Platform;
+using namespace Windows::Networking;
 using namespace Windows::Networking::Sockets;
 using namespace Windows::Storage::Streams;
 using namespace concurrency;
@@ -24,8 +25,10 @@ DebugLogger^ DebugLogger::Instance::get() {
 }
 
 DebugLogger::DebugLogger() {
+#ifdef _DEBUG
     _listener = ref new StreamSocketListener();
     _listener->ConnectionReceived += ref new Windows::Foundation::TypedEventHandler<StreamSocketListener^, StreamSocketListenerConnectionReceivedEventArgs^>(this, &DebugLogger::OnConnectionReceived);
+#endif
     _logFolder = Windows::Storage::ApplicationData::Current->LocalFolder;
     _lastFileError = nullptr;
 }
@@ -105,12 +108,14 @@ void DebugLogger::LogException(String^ functionName, Exception^ ex) {
     Log("Error", "Error in " + functionName + ": " + ex->HResult.ToString() + " \u2014 " + ex->Message);
 }
 
+#ifdef _DEBUG
 void DebugLogger::StartHttpServer(int port) {
     try {
-        create_task(_listener->BindServiceNameAsync(port.ToString())).then([port](task<void> t) {
+        auto hostName = ref new HostName("127.0.0.1");
+        create_task(_listener->BindEndpointAsync(hostName, port.ToString())).then([port](task<void> t) {
             try {
                 t.get();
-                DebugLogger::Instance->Log("DebugLogger", "HTTP Server started on port " + port.ToString());
+                DebugLogger::Instance->Log("DebugLogger", "HTTP Server started on localhost:" + port.ToString());
             } catch (Platform::Exception^ ex) {
                  DebugLogger::Instance->Log("DebugLogger", "Failed to bind: " + ex->Message);
             }
@@ -121,29 +126,55 @@ void DebugLogger::StartHttpServer(int port) {
 void DebugLogger::OnConnectionReceived(StreamSocketListener^ sender, StreamSocketListenerConnectionReceivedEventArgs^ args) {
     try {
         auto socket = args->Socket;
-        auto writer = ref new DataWriter(socket->OutputStream);
+        auto reader = ref new DataReader(socket->InputStream);
+        reader->InputStreamOptions = InputStreamOptions::Partial;
 
-        std::wstringstream ss;
-        {
-            std::lock_guard<std::mutex> lock(g_logMutex);
-            for (const auto& l : g_logs) {
-                ss << l << L"\r\n";
+        create_task(reader->LoadAsync(1024)).then([this, socket, reader](unsigned int bytesRead) {
+            if (bytesRead == 0) {
+                delete reader;
+                delete socket;
+                return task_from_result();
             }
-        }
-        std::wstring responseBody = ss.str();
 
-        std::wstring header = L"HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=utf-8\r\nConnection: close\r\n\r\n";
-        std::wstring fullResponse = header + responseBody;
+            String^ request = reader->ReadString(bytesRead);
+            std::wstring reqStr = request->Data();
 
-        writer->WriteString(ref new String(fullResponse.c_str()));
-        create_task(writer->StoreAsync()).then([writer, socket](unsigned int) {
-            return create_task(writer->FlushAsync());
-        }).then([writer, socket](bool) {
-            // Clean up resources properly after transfer
-            delete writer;
-            delete socket;
+            // Require simple authentication token in the request
+            if (reqStr.find(L"auth=OpalDebug") == std::wstring::npos) {
+                auto writer = ref new DataWriter(socket->OutputStream);
+                std::wstring response = L"HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nUnauthorized. Debug token required.";
+                writer->WriteString(ref new String(response.c_str()));
+                return create_task(writer->StoreAsync()).then([writer, socket, reader](unsigned int) {
+                    delete writer;
+                    delete reader;
+                    delete socket;
+                });
+            }
+
+            auto writer = ref new DataWriter(socket->OutputStream);
+            std::wstringstream ss;
+            {
+                std::lock_guard<std::mutex> lock(g_logMutex);
+                for (const auto& l : g_logs) {
+                    ss << l << L"\r\n";
+                }
+            }
+            std::wstring responseBody = ss.str();
+
+            std::wstring header = L"HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=utf-8\r\nConnection: close\r\n\r\n";
+            std::wstring fullResponse = header + responseBody;
+
+            writer->WriteString(ref new String(fullResponse.c_str()));
+            return create_task(writer->StoreAsync()).then([writer, socket, reader](unsigned int) {
+                return create_task(writer->FlushAsync()).then([writer, socket, reader](bool) {
+                    delete writer;
+                    delete reader;
+                    delete socket;
+                });
+            });
         }).then([](task<void> t) {
-            try { t.get(); } catch (...) {} // Catch final task exceptions
+            try { t.get(); } catch (...) {}
         });
     } catch (...) {}
 }
+#endif
