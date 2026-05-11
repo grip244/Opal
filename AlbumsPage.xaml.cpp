@@ -108,6 +108,7 @@ void AlbumsPage::LoadAlbums()
 
 void AlbumsPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
 {
+    if (AlbumsGridView == nullptr) return;
     if (_allAlbums == nullptr || _allAlbums->Size == 0) return;
 
     // 1. Text Filter
@@ -151,20 +152,28 @@ void AlbumsPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
 
     // 3. Sort
     int sortIdx = (SortByCombo != nullptr) ? SortByCombo->SelectedIndex : 0;
-    std::sort(result.begin(), result.end(), [sortIdx](AlbumID3^ a, AlbumID3^ b) {
+    bool isDescending = (SortDirectionButton != nullptr && SortDirectionButton->IsChecked != nullptr) ? SortDirectionButton->IsChecked->Value : false;
+
+    if (SortIcon != nullptr) SortIcon->Glyph = isDescending ? L"\uE8CC" : L"\uE8CB";
+
+    std::sort(result.begin(), result.end(), [sortIdx, isDescending](AlbumID3^ a, AlbumID3^ b) {
         if (sortIdx == 0) { // A-Z
-            return std::wstring(a->Title->Data()) < std::wstring(b->Title->Data());
+            auto aName = std::wstring(a->Title->Data());
+            auto bName = std::wstring(b->Title->Data());
+            return isDescending ? aName > bName : aName < bName;
         }
         else { // Year
             int ya = 0, yb = 0;
-            if (a->Year != nullptr && a->Year->Length() > 0) { try { ya = _wtoi(a->Year->Data()); } catch (Exception^ ex) { DebugLogger::Instance->LogException("OnFilterOrSortChanged (sort ya)", ex); } }
-            if (b->Year != nullptr && b->Year->Length() > 0) { try { yb = _wtoi(b->Year->Data()); } catch (Exception^ ex) { DebugLogger::Instance->LogException("OnFilterOrSortChanged (sort yb)", ex); } }
-            if (sortIdx == 1) return ya < yb; // Oldest
-            return ya > yb; // Newest
+            if (a->Year != nullptr && a->Year->Length() > 0) { try { ya = _wtoi(a->Year->Data()); } catch (...) { } }
+            if (b->Year != nullptr && b->Year->Length() > 0) { try { yb = _wtoi(b->Year->Data()); } catch (...) { } }
+            return isDescending ? ya > yb : ya < yb;
         }
     });
 
-    auto output = ref new Platform::Collections::Vector<AlbumID3^>(std::move(result));
+    auto output = ref new Platform::Collections::Vector<AlbumID3^>();
+    for (auto am : result) {
+        output->Append(am);
+    }
     AlbumsGridView->ItemsSource = output;
 
     // Update count

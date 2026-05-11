@@ -1,0 +1,8 @@
+namespace Opal.AudioDSP
+{
+    [default_interface]
+    runtimeclass EqualizerEffect : Windows.Media.Effects.IBasicAudioEffect
+    {
+        EqualizerEffect();
+    }
+}

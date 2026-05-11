@@ -71,6 +71,7 @@ void ArtistsPage::LoadArtists()
 
 void ArtistsPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
 {
+    if (ArtistsGridView == nullptr) return;
     if (_allArtists == nullptr || _allArtists->Size == 0) return;
 
     String^ query = FilterBox->Text;
@@ -86,12 +87,25 @@ void ArtistsPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
     }
 
     int sortIdx = (SortByCombo != nullptr) ? SortByCombo->SelectedIndex : 0;
-    std::sort(result.begin(), result.end(), [sortIdx](ArtistModel^ a, ArtistModel^ b) {
-        if (sortIdx == 0) return std::wstring(a->Name->Data()) < std::wstring(b->Name->Data());
-        return a->AlbumCount > b->AlbumCount; // Most albums first
+    bool isDescending = (SortDirectionButton != nullptr && SortDirectionButton->IsChecked != nullptr) ? SortDirectionButton->IsChecked->Value : false;
+
+    if (SortIcon != nullptr) SortIcon->Glyph = isDescending ? L"\uE8CC" : L"\uE8CB";
+
+    std::sort(result.begin(), result.end(), [sortIdx, isDescending](ArtistModel^ a, ArtistModel^ b) {
+        if (sortIdx == 0) {
+            auto aName = std::wstring(a->Name->Data());
+            auto bName = std::wstring(b->Name->Data());
+            return isDescending ? aName > bName : aName < bName;
+        }
+        // Album Count
+        return isDescending ? a->AlbumCount > b->AlbumCount : a->AlbumCount < b->AlbumCount;
     });
 
-    _artists = ref new Platform::Collections::Vector<ArtistModel^>(std::move(result));
+    auto finalVec = ref new Platform::Collections::Vector<ArtistModel^>();
+    for (auto am : result) {
+        finalVec->Append(am);
+    }
+    _artists = finalVec;
     ArtistsGridView->ItemsSource = _artists;
 
     // Update count

@@ -79,14 +79,16 @@
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <TextBlock Text="Sort:" VerticalAlignment="Center" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}" FontSize="13" />
                         <ComboBox x:Name="SortByCombo" Width="130" Height="36" SelectionChanged="OnFilterOrSortChanged" 
-                                 Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" Opacity="0.8"
-                                 UseSystemFocusVisuals="True"
-                                 XYFocusLeft="{x:Bind FilterBox}"
-                                 XYFocusRight="{x:Bind YearFilterCombo}">
+                                  Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" Opacity="0.8"
+                                  UseSystemFocusVisuals="True"
+                                  XYFocusLeft="{x:Bind FilterBox}"
+                                  XYFocusRight="{x:Bind SortDirectionButton}">
                             <ComboBoxItem Content="A-Z" IsSelected="True" />
-                            <ComboBoxItem Content="Oldest First" />
-                            <ComboBoxItem Content="Newest First" />
+                            <ComboBoxItem Content="Release Year" />
                         </ComboBox>
+                        <ToggleButton x:Name="SortDirectionButton" Click="OnFilterOrSortChanged" Width="36" Height="36" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" VerticalAlignment="Center" UseSystemFocusVisuals="True" XYFocusLeft="{x:Bind SortByCombo}" XYFocusRight="{x:Bind YearFilterCombo}">
+                            <FontIcon x:Name="SortIcon" Glyph="&#xE8CB;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                        </ToggleButton>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <TextBlock Text="Filter:" VerticalAlignment="Center" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}" FontSize="13" />

@@ -19,6 +19,10 @@ namespace Opal
                     else {
                         auto boxedInt2 = dynamic_cast<Platform::IBox<int>^>(value);
                         if (boxedInt2 != nullptr) isVisible = (boxedInt2->Value > 0);
+                        else {
+                            auto str = dynamic_cast<Platform::String^>(value);
+                            if (str != nullptr) isVisible = (str->Length() > 0);
+                        }
                     }
                 }
 

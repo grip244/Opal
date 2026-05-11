@@ -10,47 +10,137 @@
     xmlns:models="using:Opal"
     xmlns:converters="using:Opal.Converters"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="{ThemeResource AppBackgroundBrush}">
     <Page.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
             <converters:TimeSpanToStringConverter x:Key="TimeSpanToStringConverter" />
+
+            <!-- Sidebar blending overrides -->
+            <SolidColorBrush x:Key="NavigationViewSeparatorBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="Transparent" />
         </ResourceDictionary>
-
-
     </Page.Resources>
     
-    <Grid x:Name="RootGrid">
+    <Grid x:Name="RootGrid" Background="{ThemeResource AppBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="DeviceStates">
                 <VisualState x:Name="XboxState">
                     <VisualState.Setters>
                         <Setter Target="MainNavigationView.PaneDisplayMode" Value="LeftCompact" />
-                        <Setter Target="MainNavigationView.IsPaneToggleButtonVisible" Value="True" />
-                        <Setter Target="GlobalPlayerBar.Margin" Value="0" />
-                        <Setter Target="GlobalPlayerBar.Height" Value="96" />
-                        <Setter Target="GlobalPlayerBar.Padding" Value="0" />
-                        <Setter Target="MiniThumbnailBorder.Width" Value="96" />
-                        <Setter Target="MiniThumbnailBorder.Height" Value="96" />
-                        <Setter Target="MiniThumbnailBorder.CornerRadius" Value="0" />
-                        <Setter Target="GlobalPlayerBar.CornerRadius" Value="0" />
-                        <Setter Target="NowPlayingTitle.FontSize" Value="16" />
+                        <Setter Target="MainNavigationView.IsPaneToggleButtonVisible" Value="False" />
+                        <Setter Target="MainNavigationView.PaneBackground" Value="Transparent" />
+                        <Setter Target="MainNavigationView.Background" Value="Transparent" />
+                        <Setter Target="MainNavigationView.BorderThickness" Value="0" />
+                        <Setter Target="MainNavigationView.CompactPaneLength" Value="60" />
+                        
+                        <!-- Floating Pill Player Bar - Centered & Elevated -->
+                        <Setter Target="GlobalPlayerBar.(Grid.RowSpan)" Value="2" />
+                        <Setter Target="GlobalPlayerBar.(Grid.Row)" Value="0" />
+                        <Setter Target="GlobalPlayerBar.VerticalAlignment" Value="Bottom" />
+                        <Setter Target="GlobalPlayerBar.HorizontalAlignment" Value="Center" />
+                        <Setter Target="GlobalPlayerBar.Margin" Value="0,0,0,24" />
+                        <Setter Target="MainNavigationView.IsSettingsVisible" Value="True" />
+                        <Setter Target="GlobalPlayerBar.Height" Value="100" />
+                        <Setter Target="GlobalPlayerBar.Width" Value="800" />
+                        <Setter Target="GlobalPlayerBar.CornerRadius" Value="50" />
+                        <Setter Target="GlobalPlayerBar.BorderThickness" Value="1" />
+                        <Setter Target="GlobalPlayerBar.Background" Value="#11000000" />
+                        
+                        <Setter Target="MiniThumbnailBorder.Width" Value="100" />
+                        <Setter Target="MiniThumbnailBorder.Height" Value="100" />
+                        <Setter Target="MiniThumbnailBorder.CornerRadius" Value="50,0,0,50" />
+                        <Setter Target="MiniThumbnailBorder.Margin" Value="0" />
+                        <Setter Target="MiniThumbnail.ThumbnailCornerRadius" Value="50,0,0,50" />
+                        
+                        <Setter Target="NowPlayingTitle.FontSize" Value="15" />
                         <Setter Target="NowPlayingArtist.FontSize" Value="12" />
-                        <Setter Target="InfoColumn.Width" Value="220" />
-                        <Setter Target="TransportControls.Spacing" Value="16" />
-                        <Setter Target="VolumeSlider.Width" Value="100" />
-                        <Setter Target="SearchBox.Width" Value="160" />
+                        <Setter Target="InfoColumn.Width" Value="260" />
+                        <Setter Target="TitleContainer.MaxWidth" Value="130" />
+                        
+                        <Setter Target="TransportControls.Spacing" Value="20" />
+                        <Setter Target="PlayPauseButton.Width" Value="64" />
+                        <Setter Target="PlayPauseButton.Height" Value="64" />
+                        <Setter Target="PlayPauseButton.Margin" Value="0,0,0,0" />
+                        <Setter Target="PlayPauseIcon.Scale" Value="1.2,1.2,1" />
+                        
+                        <Setter Target="FavoriteBtn.Visibility" Value="Visible" />
+                        <Setter Target="GlobalRatingControl.Visibility" Value="Visible" />
+                        <Setter Target="GlobalRatingControl.Scale" Value="0.4,0.4,1" />
+                        <Setter Target="GlobalRatingControl.Margin" Value="0,0,0,0" />
+                        <Setter Target="FavoriteIcon.FontSize" Value="14" />
+                        <Setter Target="FavoriteBtn.Padding" Value="0" />
+                        <Setter Target="CurrentTimeText.Visibility" Value="Visible" />
+                        <Setter Target="TotalTimeText.Visibility" Value="Visible" />
+                        
+                        <!-- Progress Slider - Visible & System Themed -->
+                        <Setter Target="ProgressSlider.VerticalAlignment" Value="Center" />
+                        <Setter Target="ProgressSlider.Margin" Value="12,0,12,0" />
+                        <Setter Target="ProgressSlider.Height" Value="32" />
+                        <Setter Target="ProgressSlider.Foreground" Value="{ThemeResource SystemAccentColor}" />
+                        
+                        <Setter Target="VolumeSlider.Visibility" Value="Visible" />
+                        <Setter Target="CastButton.Visibility" Value="Collapsed" />
+                        <Setter Target="SearchBox.Visibility" Value="Collapsed" />
+                        <Setter Target="XboxSearchItem.Visibility" Value="Visible" />
+                        <Setter Target="PlaylistsNavItem.Visibility" Value="Collapsed" />
+                        <Setter Target="PlaylistsSeparator.Visibility" Value="Collapsed" />
+                        <Setter Target="PlayerExplicitBadge.Visibility" Value="Collapsed" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
 
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+        <!-- Xbox Search Overlay -->
+        <Grid x:Name="XboxSearchOverlay" VerticalAlignment="Top" Height="80" Visibility="Collapsed" Canvas.ZIndex="1000" Background="{ThemeResource AppBackgroundBrush}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Border Background="#CC000000" Grid.RowSpan="2" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+                <AutoSuggestBox x:Name="XboxSearchBox" 
+                                Width="600" 
+                                PlaceholderText="Search music..." 
+                                QueryIcon="Find"
+                                TextChanged="OnSearchTextChanged"
+                                SuggestionChosen="OnSearchSuggestionChosen"
+                                QuerySubmitted="OnSearchEntered"
+                                XYFocusDown="{x:Bind ContentFrame}">
+                    <AutoSuggestBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Padding="4">
+                                <Grid Width="40" Height="40" Margin="0,0,12,0">
+                                    <Border Background="#33FFFFFF" CornerRadius="4">
+                                        <FontIcon Glyph="{Binding Icon}" FontFamily="Segoe MDL2 Assets" FontSize="16" Opacity="0.5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <Border CornerRadius="4">
+                                        <controls:ThumbnailView SourceUrl="{Binding ImageUrl}" DecodeWidth="80" />
+                                    </Border>
+                                </Grid>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="14" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Subtitle}" FontSize="12" Opacity="0.7" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </StackPanel>
+                        </DataTemplate>
+                    </AutoSuggestBox.ItemTemplate>
+                </AutoSuggestBox>
+                <Button x:Name="CloseSearchBtn" Content="Close" Click="OnCloseSearchClick" CornerRadius="18" Padding="16,8" Background="Transparent" BorderThickness="1" BorderBrush="White" />
+            </StackPanel>
+            <Border Height="1" Background="{ThemeResource SystemAccentColor}" VerticalAlignment="Bottom" Opacity="0.5" Grid.Row="1" />
+        </Grid>
+
+
 
         <muxc:NavigationView x:Name="MainNavigationView"
                            PaneDisplayMode="Left"
@@ -92,7 +182,8 @@
                 <muxc:NavigationViewItem Content="Albums" Tag="Albums" Icon="AllApps" />
                 <muxc:NavigationViewItem Content="Tracks" Tag="Tracks" Icon="Audio" />
                 <muxc:NavigationViewItem Content="Genres" Tag="Genres" Icon="Tag" />
-                <muxc:NavigationViewItemSeparator />
+                <muxc:NavigationViewItem x:Name="XboxSearchItem" Tag="Search" Icon="Find" Content="Search" Visibility="Collapsed" />
+                <muxc:NavigationViewItemSeparator x:Name="PlaylistsSeparator" />
                 <muxc:NavigationViewItem x:Name="PlaylistsNavItem" Tag="Playlists" SelectsOnInvoked="False" IsExpanded="True">
                     <muxc:NavigationViewItem.Content>
                         <Grid HorizontalAlignment="Stretch" Margin="0,0,28,0">
@@ -115,14 +206,14 @@
                 </muxc:NavigationViewItem>
                 <!-- Dynamic playlists will be inserted after this item -->
             </muxc:NavigationView.MenuItems>
-            
-
+            <muxc:NavigationView.PaneFooter>
+            </muxc:NavigationView.PaneFooter>
             
             <Frame x:Name="ContentFrame" Navigated="OnNavigated" Padding="0" />
         </muxc:NavigationView>
 
         <!-- Global Player Bar -->
-        <Border x:Name="GlobalPlayerBar" Grid.Row="1" Background="{ThemeResource OverlayBackgroundBrush}" BorderBrush="{ThemeResource AppControlBorderBrush}" BorderThickness="0,1,0,0" CornerRadius="0" Height="112" Margin="0" Padding="0" Visibility="Collapsed">
+        <Border x:Name="GlobalPlayerBar" Grid.Row="1" Background="#11000000" BorderBrush="{ThemeResource AppControlBorderBrush}" BorderThickness="0,1,0,0" CornerRadius="0" Height="112" Margin="0" Padding="0" Visibility="Collapsed">
             <Border.Transitions>
                 <TransitionCollection>
                     <EntranceThemeTransition FromVerticalOffset="112" />
@@ -133,6 +224,7 @@
                     <ColumnDefinition x:Name="InfoColumn" Width="300" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
+                <Canvas x:Name="PlayerBarBackgroundCanvas" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 
                 <Grid Grid.Column="0">
                     <Grid.ColumnDefinitions>
@@ -147,7 +239,18 @@
                     </Border>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4" Margin="24,0,0,0">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <TextBlock x:Name="NowPlayingTitle" Text="Not Playing" FontSize="18" FontWeight="Bold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                            <Grid x:Name="TitleContainer" MaxWidth="180" Height="28" VerticalAlignment="Center">
+                                <Grid.Clip>
+                                    <RectangleGeometry x:Name="TitleClip" />
+                                </Grid.Clip>
+                                <ScrollViewer HorizontalScrollBarVisibility="Hidden" HorizontalScrollMode="Disabled" VerticalScrollBarVisibility="Hidden" VerticalScrollMode="Disabled" Padding="0" Margin="0">
+                                    <TextBlock x:Name="NowPlayingTitle" Text="Not Playing" FontSize="18" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" SizeChanged="OnTitleSizeChanged" VerticalAlignment="Center" TextWrapping="NoWrap" TextTrimming="None">
+                                        <TextBlock.RenderTransform>
+                                            <TranslateTransform x:Name="TitleScrollTransform" />
+                                        </TextBlock.RenderTransform>
+                                    </TextBlock>
+                                </ScrollViewer>
+                            </Grid>
                             <Border x:Name="PlayerExplicitBadge" Visibility="Collapsed" Background="{ThemeResource AppTertiaryTextForegroundBrush}" CornerRadius="3" Padding="4,2" VerticalAlignment="Center">
                                 <TextBlock Text="E" FontSize="10" FontWeight="Bold" Foreground="{ThemeResource AppBackgroundBrush}" />
                             </Border>
@@ -255,10 +358,17 @@
                                 </MenuFlyout>
                             </Button.Flyout>
                         </Button>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE767;" FontSize="14" Opacity="0.6" Foreground="{ThemeResource AppTextForegroundBrush}" Margin="0,0,8,0" />
-                            <Slider x:Name="VolumeSlider" Width="150" Minimum="0" Maximum="100" Value="100" ValueChanged="OnVolumeChanged" VerticalAlignment="Center" UseSystemFocusVisuals="True" />
-                        </StackPanel>
+                        <Button x:Name="VolumeBtn" Background="Transparent" Padding="12" BorderThickness="0" UseSystemFocusVisuals="True">
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE767;" FontSize="16" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                            <Button.Flyout>
+                                <Flyout>
+                                    <StackPanel Height="160" Padding="10" Spacing="8">
+                                        <TextBlock x:Name="VolumeText" Text="100" HorizontalAlignment="Center" FontSize="14" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                        <Slider x:Name="VolumeSlider" Orientation="Vertical" Minimum="0" Maximum="100" Value="100" ValueChanged="OnVolumeChanged" HorizontalAlignment="Center" UseSystemFocusVisuals="True" Height="110" />
+                                    </StackPanel>
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
                     </StackPanel>
                 </StackPanel>
             </Grid>

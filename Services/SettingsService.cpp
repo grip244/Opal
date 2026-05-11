@@ -136,3 +136,53 @@ void SettingsService::Theme::set(String^ value)
 {
     ApplicationData::Current->LocalSettings->Values->Insert("Opal.Theme", value);
 }
+
+void SettingsService::SaveEqPreset(int index)
+{
+    ApplicationData::Current->LocalSettings->Values->Insert("Opal.Eq.Preset", PropertyValue::CreateInt32(index));
+}
+
+int SettingsService::GetEqPreset()
+{
+    auto vals = ApplicationData::Current->LocalSettings->Values;
+    if (vals->HasKey("Opal.Eq.Preset")) return (int)vals->Lookup("Opal.Eq.Preset");
+    return 8; // Default to Custom
+}
+
+void SettingsService::SaveEqBand(int band, float gain)
+{
+    String^ key = "Opal.Eq.Band" + band;
+    ApplicationData::Current->LocalSettings->Values->Insert(key, PropertyValue::CreateSingle(gain));
+}
+
+float SettingsService::GetEqBand(int band)
+{
+    String^ key = "Opal.Eq.Band" + band;
+    auto vals = ApplicationData::Current->LocalSettings->Values;
+    if (vals->HasKey(key)) return (float)vals->Lookup(key);
+    return 0.0f;
+}
+
+void SettingsService::SaveEqEnabled(bool enabled)
+{
+    ApplicationData::Current->LocalSettings->Values->Insert("Opal.Eq.Enabled", PropertyValue::CreateBoolean(enabled));
+}
+
+bool SettingsService::GetEqEnabled()
+{
+    auto vals = ApplicationData::Current->LocalSettings->Values;
+    if (vals->HasKey("Opal.Eq.Enabled")) return (bool)vals->Lookup("Opal.Eq.Enabled");
+    return false;
+}
+
+void SettingsService::SaveEqPreAmp(float gain)
+{
+    ApplicationData::Current->LocalSettings->Values->Insert("Opal.Eq.PreAmp", PropertyValue::CreateSingle(gain));
+}
+
+float SettingsService::GetEqPreAmp()
+{
+    auto vals = ApplicationData::Current->LocalSettings->Values;
+    if (vals->HasKey("Opal.Eq.PreAmp")) return (float)vals->Lookup("Opal.Eq.PreAmp");
+    return 0.0f;
+}

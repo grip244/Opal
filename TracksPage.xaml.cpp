@@ -154,6 +154,7 @@ void TracksPage::OnLoadMoreClicked(Platform::Object^ sender, Windows::UI::Xaml::
 
 void TracksPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
 {
+    if (TracksListView == nullptr) return;
     if (_allTracks == nullptr || _allTracks->Size == 0) return;
 
     // 1. Text Filter
@@ -195,19 +196,28 @@ void TracksPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
 
     // 2. Sort
     int sortIdx = (SortByCombo != nullptr) ? SortByCombo->SelectedIndex : 0;
-    std::sort(result.begin(), result.end(), [sortIdx](Song^ a, Song^ b) {
+    bool isDescending = (SortDirectionButton != nullptr && SortDirectionButton->IsChecked != nullptr) ? SortDirectionButton->IsChecked->Value : false;
+
+    if (SortIcon != nullptr) SortIcon->Glyph = isDescending ? L"\uE8CC" : L"\uE8CB";
+
+    std::sort(result.begin(), result.end(), [sortIdx, isDescending](Song^ a, Song^ b) {
+        bool less = false;
         if (sortIdx == 0) { // Title
-            return _wcsicmp(a->Title->Data(), b->Title->Data()) < 0;
+            less = _wcsicmp(a->Title->Data(), b->Title->Data()) < 0;
         }
         else if (sortIdx == 1) { // Artist
-            return _wcsicmp(a->Artist->Data(), b->Artist->Data()) < 0;
+            less = _wcsicmp(a->Artist->Data(), b->Artist->Data()) < 0;
         }
-        else { // Duration
-            return a->DurationInSeconds > b->DurationInSeconds; // Longest first
+        else if (sortIdx == 2) { // Duration
+            less = a->DurationInSeconds < b->DurationInSeconds;
         }
+        return isDescending ? !less : less;
     });
 
-    auto output = ref new Platform::Collections::Vector<Song^>(std::move(result));
+    auto output = ref new Platform::Collections::Vector<Song^>();
+    for (auto song : result) {
+        output->Append(song);
+    }
     TracksListView->ItemsSource = output;
 }
 

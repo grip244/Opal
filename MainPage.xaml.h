@@ -44,6 +44,9 @@ namespace Opal
         void OnCastNowClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnDisconnectClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnDeviceSelected(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
+        void OnCloseSearchClick(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void ToggleXboxSearch();
+        void OnTitleSizeChanged(Platform::Object^ sender, Windows::UI::Xaml::SizeChangedEventArgs^ e);
 
 
     private:
@@ -61,8 +64,15 @@ namespace Opal
         void OnSleepTimerClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnSleepTimerCancelClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void UpdateSleepTimerLabel();
+        
+        // Glassmorphism
+        void InitializeComposition();
+        Windows::UI::Composition::Compositor^ _compositor;
+        Windows::UI::Composition::SpriteVisual^ _blurVisual;
+
         Windows::UI::Xaml::DispatcherTimer^ _sleepTimer;
         Windows::UI::Xaml::DispatcherTimer^ _sidebarDebounceTimer;
+        Windows::UI::Xaml::Media::Animation::Storyboard^ _marqueeStoryboard;
         int _sleepRemainingSeconds;
 
     };

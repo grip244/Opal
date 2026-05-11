@@ -8,4 +8,5 @@
     <BuildType Solution="Debug|x64" Project="Release" />
     <Deploy />
   </Project>
+  <Project Path="Opal.AudioDSP/Opal.AudioDSP.vcxproj" Id="A1B2C3D4-E5F6-4789-A1B2-C3D4E5F6A7B8" />
 </Solution>

@@ -21,6 +21,7 @@ namespace Opal
         property Platform::String^ Id;
         property Platform::String^ Title;
         property Platform::String^ Artist;
+        property Platform::String^ ArtistId;
         property Platform::String^ Album;
         property Platform::String^ TrackNumber;
         property Platform::String^ Year;

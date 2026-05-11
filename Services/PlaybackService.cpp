@@ -52,6 +52,46 @@ PlaybackService::PlaybackService() {
     _autoPlayRetryPending = false;
     _isShuffleEnabled = false;
     _repeatMode = 0;
+
+    _eqProps = ref new PropertySet();
+    auto settings = Opal::SettingsService::Instance;
+    bool eqEnabled = settings->GetEqEnabled();
+    float preAmp = settings->GetEqPreAmp();
+
+    _eqProps->Insert("IsEnabled", (Object^)eqEnabled);
+    _eqProps->Insert("PreAmp", (Object^)preAmp);
+    for (int i = 0; i < 10; i++) {
+        _eqProps->Insert("Band" + i, (Object^)settings->GetEqBand(i));
+    }
+    _isEqEnabled = eqEnabled;
+
+    if (eqEnabled) {
+        ToggleEqualizer(true);
+    }
+}
+
+void PlaybackService::UpdateEqualizer(int band, float gain) {
+    String^ key = "Band" + band;
+    _eqProps->Insert(key, (Object^)gain);
+}
+
+void PlaybackService::ToggleEqualizer(bool enabled) {
+    _isEqEnabled = enabled;
+    _eqProps->Insert("IsEnabled", (Object^)enabled);
+    
+    static bool effectAdded = false;
+    if (enabled && !effectAdded) {
+        try {
+            _mediaPlayer->AddAudioEffect("Opal.AudioDSP.EqualizerEffect", true, _eqProps);
+            effectAdded = true;
+        } catch (Exception^ ex) {
+            DebugLogger::Instance->LogException("AddAudioEffect", ex);
+        }
+    }
+}
+
+void PlaybackService::SetPreAmp(float gain) {
+    _eqProps->Insert("PreAmp", (Object^)gain);
 }
 
 void PlaybackService::PlaySong(Song^ song) {
@@ -149,6 +189,17 @@ void PlaybackService::PlayQueue(IVector<Song^>^ songs, unsigned int startIndex) 
         _playbackList->MoveTo(startIndex);
         _mediaPlayer->Play();
     }
+}
+
+void PlaybackService::Stop() {
+    _mediaPlayer->Pause();
+    _mediaPlayer->Source = nullptr;
+    _queue->Clear();
+    _playbackList->Items->Clear();
+    _mediaPlayer->Source = _playbackList;
+    _currentSong = nullptr;
+    _currentIndex = 0;
+    SongChanged(this, nullptr);
 }
 
 void PlaybackService::NextSong() {
@@ -295,7 +346,8 @@ void PlaybackService::StartAutoPlayback() {
                     
                     auto disp = App::MainDispatcher;
                     if (disp != nullptr) {
-                        disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([this, songsArray, oldSize]() {
+                        auto self = this;
+                        disp->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([self, songsArray, oldSize]() {
                             bool resumed = false;
                             for (unsigned int i = 0; i < songsArray->Size; i++) {
                                 auto songObj = songsArray->GetObjectAt(i);
@@ -303,7 +355,7 @@ void PlaybackService::StartAutoPlayback() {
                                 song->Id = songObj->GetNamedString("id", "");
                                 
                                 // Skip if already played recently in this session
-                                if (_playedIds.find(std::wstring(song->Id->Data())) != _playedIds.end()) continue;
+                                if (self->_playedIds.find(std::wstring(song->Id->Data())) != self->_playedIds.end()) continue;
                                 
                                 song->Title = songObj->GetNamedString("title", "Unknown Track");
                                 song->Artist = songObj->GetNamedString("artist", "Unknown Artist");
@@ -314,26 +366,26 @@ void PlaybackService::StartAutoPlayback() {
                                 
                                 try { song->CoverArt = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(song->CoverUrl)); } catch (...) {}
                                 
-                                _queue->Append(song);
-                                _playbackList->Items->Append(CreatePlaybackItem(song));
+                                self->_queue->Append(song);
+                                self->_playbackList->Items->Append(self->CreatePlaybackItem(song));
                                 
                                 // If the previous queue had already ended and cleared the player, start playing the first new song
-                                if (!resumed && _playbackList->CurrentItem == nullptr && oldSize > 0) {
-                                    _playbackList->MoveTo(oldSize);
-                                    _mediaPlayer->Play();
+                                if (!resumed && self->_playbackList->CurrentItem == nullptr && oldSize > 0) {
+                                    self->_playbackList->MoveTo(oldSize);
+                                    self->_mediaPlayer->Play();
                                     resumed = true;
                                 }
                             }
                             
-                            if (_queue->Size == oldSize && songsArray->Size > 0) { 
+                            if (self->_queue->Size == oldSize && songsArray->Size > 0) { 
                                 // If everything was a duplicate, clear history and try ONE more time
-                                if (!_autoPlayRetryPending) {
-                                    _autoPlayRetryPending = true;
-                                    _playedIds.clear();
-                                    StartAutoPlayback();
+                                if (!self->_autoPlayRetryPending) {
+                                    self->_autoPlayRetryPending = true;
+                                    self->_playedIds.clear();
+                                    self->StartAutoPlayback();
                                 }
                             } else {
-                                _autoPlayRetryPending = false;
+                                self->_autoPlayRetryPending = false;
                             }
                     }));
                     }

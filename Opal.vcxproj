@@ -251,6 +251,11 @@
     </AppxManifest>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="Opal.AudioDSP\Opal.AudioDSP.vcxproj">
+      <Project>{a1b2c3d4-e5f6-4789-a1b2-c3d4e5f6a7b8}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
     <Image Include="Assets\BadgeLogo.scale-100.png" />
     <Image Include="Assets\BadgeLogo.scale-125.png" />
     <Image Include="Assets\BadgeLogo.scale-150.png" />

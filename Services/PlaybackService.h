@@ -38,6 +38,11 @@ namespace Opal {
             void Shuffle();
             void StartAutoPlayback();
             void SetQueue(Windows::Foundation::Collections::IVector<Song^>^ songs);
+            void Stop();
+
+            void UpdateEqualizer(int band, float gain);
+            void ToggleEqualizer(bool enabled);
+            void SetPreAmp(float gain);
 
             // Shuffle & Repeat (3.2)
             property bool IsShuffleEnabled {
@@ -70,6 +75,8 @@ namespace Opal {
             bool _autoPlayRetryPending;
             bool _isShuffleEnabled;
             int _repeatMode; // 0=Off,1=All,2=One
+            Windows::Foundation::Collections::PropertySet^ _eqProps;
+            bool _isEqEnabled;
 
             void OnMediaEnded(Windows::Media::Playback::MediaPlayer^ sender, Platform::Object^ args);
             void OnCurrentItemChanged(Windows::Media::Playback::MediaPlaybackList^ sender, Windows::Media::Playback::CurrentMediaPlaybackItemChangedEventArgs^ args);

@@ -2,31 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.6] - 2026-05-04
+## [1.2.0] - 2026-05-08
 
 ### Added
-- **Phase 1: Core Aesthetics**
-    - **Dynamic Theme Engine**: Full support for Light/Dark/System theme switching with persistent user preference on startup.
-    - **Metadata Density**: Standardized information display across the library; added album counts to artist cards and song counts/durations to playlists.
-    - **Premium Login Depth**: Integrated subtle radial background accents to the login screen for a high-end feel.
-- **Phase 2: Premium Motion Design**
-    - **Connected Animations**: Implemented fluid "fly-in" transitions when navigating from library grids to detail views.
-    - **Advanced Spotlight UX**: Added auto-advancing (5s) spotlight carousels with boundary-aware navigation arrow visibility.
-    - **Visual Feedback**: Integrated accent-colored "Now Playing" indicators across all track lists and grids.
-- **Phase 3: Console (Xbox) Optimization**
-    - **Standardized Padding**: Resolved "zoomed-in" layout issues by enforcing 48px margins and safe-area offsets on all pages.
-    - **Responsive Scaling**: Optimized typography and element dimensions specifically for 10-foot TV viewing distances.
-    - **XYFocus Hardening**: Guaranteed 100% D-pad navigation compatibility for all new UI components and dialogs.
-- **Phase 4: Cherry on Top (Detail Polish)**
-    - **Artist Badges**: Album count metadata now appears as stylized accent badges overlaid on artist avatars.
-    - **Refined Iconography**: Replaced legacy lyrics/volume icons with professional-grade symbols (Microphone/Speaker).
+- **Major Xbox "Stitched" UI Overhaul**:
+    - **Cinematic Featured Carousel**: Replaced the static single-song banner with a high-performance, multi-item `FlipView` carousel.
+    - **Infinite Scrolling**: Implemented seamless "infinite" wrap-around logic for all spotlight carousels (Xbox and PC).
+    - **Automatic Rotation**: Integrated an intelligent timer that automatically cycles featured content every 5 seconds.
+    - **Metadata Tags**: Added stylized Genre and Year tags to featured items with theme-aware background rendering.
+    - **Connect to Device**: Integrated a dedicated Xbox "Connect to Device" (Casting) header for remote control and handover.
+- **Glassmorphism Design System**:
+    - **Frosted Player Bar**: Implemented a hardware-accelerated BackdropBlur effect for the global player pill, creating a modern frosted-glass aesthetic.
+    - **System Accent Integration**: UI elements like the "Now Playing" progress and featured tags now dynamically respect the system accent color.
+- **Improved Library Controls**:
+    - **Multi-Directional Sorting**: Added full support for Ascending/Descending sort orders across Artists, Albums, Tracks, and Genres.
+    - **Smart Playlists Integration**: Foundation for Navidrome-native Smart Playlists (.nsp) to support server-side dynamic collections.
+    - **Artists Page Shimmer**: Implemented a high-performance lazy-loading skeleton system for the Artists library.
 
 ### Fixed
-- **Stability & Performance**:
-    - Fixed a critical "Duplication assignment" XAML error in several library pages.
-    - Resolved C++ template syntax errors (`IBox`, `TryStart`) to ensure build stability on modern SDKs.
-    - Fixed a runtime crash where `NullToVisibilityConverter` was missing on certain pages.
-    - Resolved persistent Visibility enum qualification errors in the C++ backend.
+- **Xbox Player Bar Stability**:
+    - **Restored Timestamps**: Fixed a bug where song progress (Current/Total) was hidden in the Xbox state.
+    - **Song Title Visibility**: Resolved a layout issue where the song title was missing due to zero-width container measurement; restored marquee scrolling.
+    - **Volume Control**: Restored the volume slider in the vertical flyout which was previously collapsed.
+    - **Rating Scaling**: Optimized `RatingControl` scaling to prevent oversized stars on TV displays.
+- **Navigation & Code-Behind**:
+    - **Xbox Settings Button**: Fixed a critical bug where the sidebar settings button failed to navigate on Xbox.
+    - **Navigation State Persistence**: Improved handling of inner-frame navigation state when switching between PC and Xbox views.
+    - **Navigation Reliability**: Fixed "View Playlists" navigation to ensure clicking either the header text or the icon correctly opens the playlists page.
+    - **Sidebar Integrity**: Resolved a bug where the Playlists dropdown would occasionally disappear from the sidebar during background library updates.
+    - **C++/CX Compilation**: Resolved `Visibility::Visible` ambiguity errors and qualified namespaces for better build reliability.
+- **Performance**:
+    - Optimized `ThumbnailView` memory usage during rapid carousel scrolling.
+    - Improved `LibraryViewModel` spotlight binding to ensure consistent data across different UI states.
 
 ## [1.1.5] - 2026-05-03
 

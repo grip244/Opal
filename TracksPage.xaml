@@ -104,11 +104,15 @@
                     <ComboBox x:Name="SortByCombo" Width="140" Height="36" SelectionChanged="OnFilterOrSortChanged" 
                               Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" VerticalAlignment="Center"
                               UseSystemFocusVisuals="True"
-                              XYFocusLeft="{x:Bind FavoritesFilterBtn}">
+                              XYFocusLeft="{x:Bind FavoritesFilterBtn}"
+                              XYFocusRight="{x:Bind SortDirectionButton}">
                         <ComboBoxItem Content="A-Z (Title)" IsSelected="True" />
                         <ComboBoxItem Content="Artist" />
                         <ComboBoxItem Content="Duration" />
                     </ComboBox>
+                    <ToggleButton x:Name="SortDirectionButton" Click="OnFilterOrSortChanged" Width="36" Height="36" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" VerticalAlignment="Center" UseSystemFocusVisuals="True" XYFocusLeft="{x:Bind SortByCombo}">
+                        <FontIcon x:Name="SortIcon" Glyph="&#xE8CB;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                    </ToggleButton>
                 </StackPanel>
 
             </Grid>

@@ -62,14 +62,28 @@
                     <TextBlock x:Name="PageTitle" Text="Genres" FontSize="28" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
                     <TextBlock Text="Browse your library by genre" FontSize="14" Opacity="0.7" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}" />
                 </StackPanel>
-                <Grid x:Name="SearchContainer" HorizontalAlignment="Right" VerticalAlignment="Center" Width="220">
-                    <TextBox x:Name="FilterBox" PlaceholderText="Search genres..." 
-                             TextChanged="OnFilterOrSortChanged" 
-                             VerticalAlignment="Center" 
-                             Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" Padding="32,6,12,6"
-                             UseSystemFocusVisuals="True" />
-                    <FontIcon Glyph="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Left" Margin="12,0,0,0" VerticalAlignment="Center" Opacity="0.5" Foreground="{ThemeResource AppTextForegroundBrush}" />
-                </Grid>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="16">
+                    <Grid x:Name="SearchContainer" Width="200">
+                        <TextBox x:Name="FilterBox" PlaceholderText="Search genres..." 
+                                 TextChanged="OnFilterOrSortChanged" 
+                                 VerticalAlignment="Center" 
+                                 Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" Padding="32,6,12,6"
+                                 UseSystemFocusVisuals="True"
+                                 XYFocusRight="{x:Bind SortByCombo}" />
+                        <FontIcon Glyph="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Left" Margin="12,0,0,0" VerticalAlignment="Center" Opacity="0.5" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                    </Grid>
+                    <ComboBox x:Name="SortByCombo" Width="130" Height="36" SelectionChanged="OnFilterOrSortChanged" 
+                              Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" VerticalAlignment="Center"
+                              UseSystemFocusVisuals="True"
+                              XYFocusLeft="{x:Bind FilterBox}"
+                              XYFocusRight="{x:Bind SortDirectionButton}">
+                        <ComboBoxItem Content="A-Z" IsSelected="True" />
+                        <ComboBoxItem Content="Album Count" />
+                    </ComboBox>
+                    <ToggleButton x:Name="SortDirectionButton" Click="OnFilterOrSortChanged" Width="36" Height="36" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" VerticalAlignment="Center" UseSystemFocusVisuals="True" XYFocusLeft="{x:Bind SortByCombo}">
+                        <FontIcon x:Name="SortIcon" Glyph="&#xE8CB;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                    </ToggleButton>
+                </StackPanel>
             </Grid>
         </StackPanel>
 

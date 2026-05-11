@@ -80,10 +80,14 @@
                               Background="{ThemeResource AppControlBackgroundBrush}"
                               BorderThickness="0" CornerRadius="18" VerticalAlignment="Center"
                               UseSystemFocusVisuals="True"
-                              XYFocusLeft="{x:Bind FilterBox}">
+                              XYFocusLeft="{x:Bind FilterBox}"
+                              XYFocusRight="{x:Bind SortDirectionButton}">
                         <ComboBoxItem Content="A-Z" IsSelected="True" />
                         <ComboBoxItem Content="Album Count" />
                     </ComboBox>
+                    <ToggleButton x:Name="SortDirectionButton" Click="OnFilterOrSortChanged" Width="36" Height="36" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="0" CornerRadius="18" VerticalAlignment="Center" UseSystemFocusVisuals="True" XYFocusLeft="{x:Bind SortByCombo}">
+                        <FontIcon x:Name="SortIcon" Glyph="&#xE8CB;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                    </ToggleButton>
                 </StackPanel>
             </Grid>
 

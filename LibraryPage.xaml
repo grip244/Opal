@@ -28,9 +28,117 @@
                 <Setter Property="Margin" Value="0,0,10,0" />
             </Style>
             <Style x:Key="XboxAlbumItemStyle" TargetType="GridViewItem">
-                <Setter Property="Width" Value="110" />
-                <Setter Property="Margin" Value="0,0,8,0" />
+                <Setter Property="Width" Value="120" />
+                <Setter Property="Margin" Value="0,0,12,0" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="VerticalContentAlignment" Value="Stretch" />
             </Style>
+            
+            <Style x:Key="XboxCinematicItemStyle" TargetType="GridViewItem">
+                <Setter Property="Width" Value="140" />
+                <Setter Property="Margin" Value="0,0,16,0" />
+            </Style>
+
+            <!-- Xbox Specific: Cinematic Wide Template -->
+            <DataTemplate x:Key="XboxCinematicCardTemplate">
+                <Grid x:Name="RootItem" Background="Transparent" RenderTransformOrigin="0.5,0.5">
+                    <Grid.RenderTransform>
+                        <ScaleTransform x:Name="ItemScale" ScaleX="1" ScaleY="1" />
+                    </Grid.RenderTransform>
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroup x:Name="FocusStates">
+                            <VisualState x:Name="Normal" />
+                            <VisualState x:Name="PointerOver">
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="ItemScale" Storyboard.TargetProperty="ScaleX" To="1.1" Duration="0:0:0.15" />
+                                    <DoubleAnimation Storyboard.TargetName="ItemScale" Storyboard.TargetProperty="ScaleY" To="1.1" Duration="0:0:0.15" />
+                                    <DoubleAnimation Storyboard.TargetName="ArtBorder" Storyboard.TargetProperty="BorderThickness" To="2" Duration="0:0:0.1" />
+                                    <ColorAnimation Storyboard.TargetName="ArtBorder" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="{ThemeResource SystemAccentColor}" Duration="0:0:0.1" />
+                                </Storyboard>
+                            </VisualState>
+                            <VisualState x:Name="Focused">
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="ItemScale" Storyboard.TargetProperty="ScaleX" To="1.1" Duration="0:0:0.15" />
+                                    <DoubleAnimation Storyboard.TargetName="ItemScale" Storyboard.TargetProperty="ScaleY" To="1.1" Duration="0:0:0.15" />
+                                    <DoubleAnimation Storyboard.TargetName="ArtBorder" Storyboard.TargetProperty="BorderThickness" To="2" Duration="0:0:0.1" />
+                                    <ColorAnimation Storyboard.TargetName="ArtBorder" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="{ThemeResource SystemAccentColor}" Duration="0:0:0.1" />
+                                </Storyboard>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateManager.VisualStateGroups>
+                    
+                    <StackPanel Spacing="6">
+                        <Grid Height="68" Width="120">
+                            <!-- Stacked Effect -->
+                            <Border Margin="8,-4,-8,4" CornerRadius="4" Background="{ThemeResource AppControlBackgroundBrush}" Opacity="0.2" />
+                            <Border Margin="4,-2,-4,2" CornerRadius="4" Background="{ThemeResource AppControlBackgroundBrush}" Opacity="0.4" />
+                            
+                            <Border x:Name="ArtBorder" CornerRadius="6" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}">
+                                <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="400" />
+                            </Border>
+                        </Grid>
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="Bold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                            <TextBlock Text="{Binding Artist}" FontSize="11" Opacity="0.6" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </DataTemplate>
+
+            <!-- Xbox Specific: Stacked Album Template with Focus Animation -->
+            <DataTemplate x:Key="XboxAlbumCardTemplate">
+                <Grid x:Name="RootItem" Background="Transparent" RenderTransformOrigin="0.5,0.5">
+                    <Grid.RenderTransform>
+                        <ScaleTransform x:Name="ItemScale" ScaleX="1" ScaleY="1" />
+                    </Grid.RenderTransform>
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroup x:Name="FocusStates">
+                            <VisualState x:Name="Normal" />
+                            <VisualState x:Name="PointerOver">
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="ItemScale" Storyboard.TargetProperty="ScaleX" To="1.1" Duration="0:0:0.15" />
+                                    <DoubleAnimation Storyboard.TargetName="ItemScale" Storyboard.TargetProperty="ScaleY" To="1.1" Duration="0:0:0.15" />
+                                    <DoubleAnimation Storyboard.TargetName="ArtBorder" Storyboard.TargetProperty="BorderThickness" To="2" Duration="0:0:0.1" />
+                                    <ColorAnimation Storyboard.TargetName="ArtBorder" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="White" Duration="0:0:0.1" />
+                                </Storyboard>
+                            </VisualState>
+                            <VisualState x:Name="Focused">
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="ItemScale" Storyboard.TargetProperty="ScaleX" To="1.1" Duration="0:0:0.15" />
+                                    <DoubleAnimation Storyboard.TargetName="ItemScale" Storyboard.TargetProperty="ScaleY" To="1.1" Duration="0:0:0.15" />
+                                    <DoubleAnimation Storyboard.TargetName="ArtBorder" Storyboard.TargetProperty="BorderThickness" To="2" Duration="0:0:0.1" />
+                                    <ColorAnimation Storyboard.TargetName="ArtBorder" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="White" Duration="0:0:0.1" />
+                                </Storyboard>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateManager.VisualStateGroups>
+                    
+                    <StackPanel Spacing="6">
+                        <!-- Stacked Layers Effect -->
+                        <Grid Height="60" Width="60">
+                            <!-- Bottom Layer -->
+                            <Border Margin="4,-3,-4,3" CornerRadius="4" Background="{ThemeResource AppControlBackgroundBrush}" Opacity="0.2" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}"/>
+                            <!-- Middle Layer -->
+                            <Border Margin="2,-1,-2,1" CornerRadius="5" Background="{ThemeResource AppControlBackgroundBrush}" Opacity="0.4" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}"/>
+                            
+                            <!-- Main Art Border -->
+                            <Border x:Name="ArtBorder" CornerRadius="8" Background="{ThemeResource AppControlBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}">
+                                <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" DecodeWidth="200" />
+                            </Border>
+                        </Grid>
+
+                        <StackPanel Spacing="2">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <Border Background="{ThemeResource AppTertiaryTextForegroundBrush}" CornerRadius="3" Padding="3,1" VerticalAlignment="Center" Visibility="{Binding ExplicitStatus, Converter={StaticResource ExplicitStatusConverter}}">
+                                    <TextBlock Text="E" FontSize="8" FontWeight="Bold" Foreground="{ThemeResource AppBackgroundBrush}" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="{Binding Artist}" FontSize="10" Opacity="0.6" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource AppSecondaryTextForegroundBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </DataTemplate>
 
             <Style x:Key="HiddenFlipViewButtonsStyle" TargetType="FlipView">
                 <Setter Property="Template">
@@ -46,6 +154,7 @@
                 </Setter>
             </Style>
             <converters:ExplicitStatusConverter x:Key="ExplicitStatusConverter" />
+            <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
 
             <DataTemplate x:Key="AlbumCardTemplate">
                 <StackPanel Spacing="6">
@@ -69,30 +178,51 @@
             <VisualStateGroup x:Name="DeviceStates">
                 <VisualState x:Name="XboxState">
                     <VisualState.Setters>
-                        <Setter Target="BrowseGrid.Padding" Value="48,40,48,48" />
-                        <Setter Target="HomeStack.Spacing" Value="24" />
-                        <Setter Target="LibraryTitle.FontSize" Value="20" />
-                        <Setter Target="NewestTitle.FontSize" Value="20" />
-                        <Setter Target="RecentTitle.FontSize" Value="20" />
-                        <Setter Target="ExploreGridView.ItemContainerStyle" Value="{StaticResource XboxAlbumItemStyle}" />
-                        <Setter Target="NewlyAddedGridView.ItemContainerStyle" Value="{StaticResource XboxAlbumItemStyle}" />
-                        <Setter Target="RecentlyReleasedGridView.ItemContainerStyle" Value="{StaticResource XboxAlbumItemStyle}" />
-                        <Setter Target="SpotlightHero.Height" Value="180" />
-                        <Setter Target="SpotlightHero.Margin" Value="-48,0,-48,12" />
+                        <Setter Target="BrowseGrid.Padding" Value="48,24,48,48" />
+                        <Setter Target="HomeStack.Spacing" Value="20" />
+                        <Setter Target="LibraryTitle.FontSize" Value="18" />
+                        <Setter Target="NewestTitle.FontSize" Value="18" />
+                        <Setter Target="RecentTitle.FontSize" Value="18" />
+                        <Setter Target="RecentlyPlayedTitle.FontSize" Value="18" />
+                        <!-- Cinematic Uniform Carousels -->
+                        <Setter Target="ExploreGridView.ItemContainerStyle" Value="{StaticResource XboxCinematicItemStyle}" />
+                        <Setter Target="ExploreGridView.ItemTemplate" Value="{StaticResource XboxCinematicCardTemplate}" />
+
+                        <Setter Target="RecentlyPlayedGridView.ItemContainerStyle" Value="{StaticResource XboxCinematicItemStyle}" />
+                        <Setter Target="RecentlyPlayedGridView.ItemTemplate" Value="{StaticResource XboxCinematicCardTemplate}" />
+
+                        <Setter Target="NewlyAddedGridView.ItemContainerStyle" Value="{StaticResource XboxCinematicItemStyle}" />
+                        <Setter Target="NewlyAddedGridView.ItemTemplate" Value="{StaticResource XboxCinematicCardTemplate}" />
+                        
+                        <Setter Target="RecentlyReleasedGridView.ItemContainerStyle" Value="{StaticResource XboxCinematicItemStyle}" />
+                        <Setter Target="RecentlyReleasedGridView.ItemTemplate" Value="{StaticResource XboxCinematicCardTemplate}" />
+
+                        <Setter Target="SpotlightHero.Visibility" Value="Collapsed" />
+                        <Setter Target="XboxFeaturedCarousel.Visibility" Value="Visible" />
+                        <Setter Target="XboxTopNav.Visibility" Value="Visible" />
+                        
                         <Setter Target="LyricsListView.HorizontalAlignment" Value="Stretch" />
                         <Setter Target="LyricsOverlay.Padding" Value="20" />
-                        <Setter Target="QueuePanel.Margin" Value="0,24,40,24" />
+                        <Setter Target="QueuePanel.Margin" Value="0,24,40,140" />
                         <Setter Target="ArtistDetailName.FontSize" Value="30" />
                         <Setter Target="ArtistDetailImage.Width" Value="80" />
                         <Setter Target="ArtistDetailImage.Height" Value="80" />
                         <Setter Target="AlbumDetailImage.Width" Value="150" />
                         <Setter Target="AlbumDetailImage.Height" Value="150" />
-                        <Setter Target="AlbumDetailTitle.FontSize" Value="20" />
-                        <Setter Target="AlbumDetailArtist.FontSize" Value="12" />
-                        <Setter Target="NowPlayingImageBorder.Width" Value="240" />
-                        <Setter Target="NowPlayingImageBorder.Height" Value="240" />
-                        <Setter Target="LyricsListView.FontSize" Value="14" />
-                        <Setter Target="RecentlyPlayedTitle.FontSize" Value="20" />
+                        <Setter Target="NowPlayingImageBorder.Width" Value="NaN" />
+                        <Setter Target="NowPlayingImageBorder.Height" Value="NaN" />
+                        <Setter Target="NowPlayingImageBorder.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="NowPlayingImageBorder.VerticalAlignment" Value="Stretch" />
+                        <Setter Target="NowPlayingImageBorder.Margin" Value="0" />
+                        <Setter Target="NowPlayingImage.ThumbnailCornerRadius" Value="0" />
+                        <Setter Target="NowPlayingImage.DecodeWidth" Value="1500" />
+                        <Setter Target="AlbumArtView.VerticalAlignment" Value="Stretch" />
+                        <Setter Target="AlbumArtView.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="FullPlayerGrid.Background" Value="Transparent" />
+                        <Setter Target="XboxHeader.Visibility" Value="Visible" />
+                        <Setter Target="GenreGridItem.Width" Value="120" />
+                        <Setter Target="GenreGridItem.Height" Value="70" />
+                        <Setter Target="GenreGridText.FontSize" Value="12" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -119,7 +249,77 @@
                                         <EntranceThemeTransition FromVerticalOffset="20" />
                                     </TransitionCollection>
                                 </StackPanel.ChildrenTransitions>
-                                <!-- Spotlight Carousel -->
+                                <!-- Xbox Top Navigation & Casting -->
+                                <Grid x:Name="XboxHeader" Visibility="Collapsed" Margin="0,0,0,32">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ListView x:Name="XboxTopNav" SelectionMode="None" IsItemClickEnabled="True" 
+                                              HorizontalAlignment="Left" BorderThickness="0" Padding="0">
+                                        <ListView.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="24" />
+                                            </ItemsPanelTemplate>
+                                        </ListView.ItemsPanel>
+                                        <ListView.Items>
+                                            <HyperlinkButton Content="Artists" Click="OnSeeAllArtists" FontSize="18" FontWeight="SemiBold" Opacity="0.6" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                            <HyperlinkButton Content="Albums" Click="OnSeeAllExplore" FontSize="18" FontWeight="SemiBold" Opacity="0.6" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                            <HyperlinkButton Content="Genres" Click="OnSeeAllGenres" FontSize="18" FontWeight="SemiBold" Opacity="0.6" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                            <HyperlinkButton Content="Playlists" Click="OnSeeAllPlaylists" FontSize="18" FontWeight="SemiBold" Opacity="0.6" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                        </ListView.Items>
+                                    </ListView>
+
+                                    <Button x:Name="XboxCastButton" Grid.Column="1" Background="Transparent" BorderThickness="0" Padding="12" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEC15;" FontSize="16" />
+                                            <TextBlock Text="Connect to device" FontSize="14" Opacity="0.8" />
+                                        </StackPanel>
+                                        <Button.Flyout>
+                                            <Flyout Opened="OnCastFlyoutOpened">
+                                                 <!-- Reuse cast content? Or just basic for now -->
+                                                 <TextBlock Text="Searching for devices..." Padding="20" />
+                                            </Flyout>
+                                        </Button.Flyout>
+                                    </Button>
+                                </Grid>
+
+                                <!-- Xbox Featured Carousel (Cinematic) -->
+                                <FlipView x:Name="XboxFeaturedCarousel" Visibility="Collapsed" Height="220" Margin="24,0,24,16" 
+                                          ItemsSource="{x:Bind LibraryVM.SpotlightSongs, Mode=OneWay}" 
+                                          Style="{StaticResource HiddenFlipViewButtonsStyle}"
+                                          Background="Transparent">
+                                    <FlipView.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Tapped="OnSpotlightTapped" Tag="{Binding}" Background="{ThemeResource AppControlBackgroundBrush}" CornerRadius="20">
+                                                <controls:ThumbnailView SourceUrl="{Binding CoverUrl}" IsBlurEnabled="True" />
+                                                <Grid Background="#44000000" /> <!-- Darken -->
+                                                <StackPanel VerticalAlignment="Center" Margin="60,0,0,0" Spacing="16">
+                                                    <Border Background="{ThemeResource SystemAccentColor}" HorizontalAlignment="Left" Padding="8,4" CornerRadius="4">
+                                                        <TextBlock Text="FEATURED" FontSize="10" FontWeight="Bold" Foreground="White" />
+                                                    </Border>
+                                                    <TextBlock Text="{Binding Title}" FontSize="32" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis" />
+                                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                                        <TextBlock Text="{Binding Artist}" FontSize="16" Opacity="0.8" Foreground="White" VerticalAlignment="Center" />
+                                                        <Border Background="{ThemeResource AppControlBackgroundBrush}" Padding="8,3" CornerRadius="4" VerticalAlignment="Center" Visibility="{Binding Genre, Converter={StaticResource NullToVisibilityConverter}}">
+                                                            <TextBlock Text="{Binding Genre}" FontSize="10" FontWeight="Bold" Foreground="White" />
+                                                        </Border>
+                                                        <Border Background="{ThemeResource AppControlBackgroundBrush}" Padding="8,3" CornerRadius="4" VerticalAlignment="Center" Visibility="{Binding Year, Converter={StaticResource NullToVisibilityConverter}}">
+                                                            <TextBlock Text="{Binding Year}" FontSize="10" FontWeight="Bold" Foreground="White" />
+                                                        </Border>
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,12,0,0">
+                                                        <Button Content="Play Now" Click="OnSpotlightTapped" Tag="{Binding}" Background="{ThemeResource SystemAccentColor}" Foreground="White" CornerRadius="20" Height="40" Padding="24,0" />
+                                                        <Button Content="View Artist" Click="OnViewArtistClicked" Tag="{Binding ArtistId}" Background="Transparent" BorderBrush="White" BorderThickness="1" Foreground="White" CornerRadius="20" Height="40" Padding="24,0" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </FlipView.ItemTemplate>
+                                </FlipView>
+
+                                <!-- Spotlight Carousel (PC) -->
                                 <Grid x:Name="SpotlightHero" Margin="0,0,0,12" Height="200">
                                     <FlipView x:Name="SpotlightCarousel" ItemsSource="{x:Bind LibraryVM.SpotlightSongs, Mode=OneWay}" SelectionChanged="OnCarouselSelectionChanged" Background="Transparent" Style="{StaticResource HiddenFlipViewButtonsStyle}">
                                         <FlipView.ItemTemplate>
@@ -193,10 +393,10 @@
                                         </GridView.ItemsPanel>
                                         <GridView.ItemTemplate>
                                             <DataTemplate>
-                                                <Grid Width="160" Height="90" Margin="0,0,12,0">
+                                                <Grid x:Name="GenreGridItem" Width="160" Height="90" Margin="0,0,12,0">
                                                     <Border CornerRadius="12" Background="{Binding BackgroundColor}" BorderThickness="1" BorderBrush="#11FFFFFF">
                                                         <Grid Padding="16">
-                                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="15" Foreground="White" VerticalAlignment="Bottom" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock x:Name="GenreGridText" Text="{Binding Name}" FontWeight="Bold" FontSize="15" Foreground="White" VerticalAlignment="Bottom" TextTrimming="CharacterEllipsis" />
                                                             <SymbolIcon Symbol="Audio" HorizontalAlignment="Right" VerticalAlignment="Top" Opacity="0.2" Foreground="White" />
                                                         </Grid>
                                                     </Border>
@@ -210,7 +410,7 @@
                                 <!-- Explore from your library -->
                                 <StackPanel Spacing="12">
                                     <Grid>
-                                        <TextBlock x:Name="LibraryTitle" Text="Explore from your library" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                        <TextBlock x:Name="LibraryTitle" Text="Explore From Your Library" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
                                         <HyperlinkButton Content="See All →" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="OnSeeAllExplore" FontSize="13" Opacity="0.8" UseSystemFocusVisuals="True" />
                                     </Grid>
                                     <GridView x:Name="ExploreGridView" ItemClick="OnGenericAlbumClicked" IsItemClickEnabled="True" SelectionMode="None" 
@@ -251,7 +451,7 @@
                                 <!-- Newly Added Releases -->
                                 <StackPanel Spacing="12">
                                     <Grid>
-                                        <TextBlock x:Name="NewestTitle" Text="Newly added releases" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                        <TextBlock x:Name="NewestTitle" Text="Newly Added Releases" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
                                         <HyperlinkButton Content="See All →" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="OnSeeAllNewest" FontSize="13" Opacity="0.8" UseSystemFocusVisuals="True" />
                                     </Grid>
                                     <GridView x:Name="NewlyAddedGridView" ItemClick="OnGenericAlbumClicked" IsItemClickEnabled="True" SelectionMode="None" 
@@ -273,7 +473,7 @@
                                 <!-- Recently Released Albums -->
                                 <StackPanel Spacing="12">
                                     <Grid>
-                                        <TextBlock x:Name="RecentTitle" Text="Recently released" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
+                                        <TextBlock x:Name="RecentTitle" Text="Recently Released" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource AppTextForegroundBrush}" />
                                         <HyperlinkButton Content="See All →" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="OnSeeAllRecentReleases" FontSize="13" Opacity="0.8" UseSystemFocusVisuals="True" />
                                     </Grid>
                                     <GridView x:Name="RecentlyReleasedGridView" ItemClick="OnGenericAlbumClicked" IsItemClickEnabled="True" SelectionMode="None" 
@@ -444,16 +644,17 @@
                     </Grid.ColumnDefinitions>
 
                     <Grid Grid.Column="0">
-                        <Button x:Name="CollapseButton" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="40" Background="{ThemeResource AppControlBackgroundBrush}" Foreground="{ThemeResource AppTextForegroundBrush}" Width="48" Height="48" CornerRadius="24" BorderThickness="0" Click="OnCollapseClicked" UseSystemFocusVisuals="True" ToolTipService.ToolTip="Collapse Player">
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70D;" FontSize="18" />
-                        </Button>
                         <StackPanel x:Name="AlbumArtView" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="32">
-                            <Grid x:Name="NowPlayingImageBorder" Width="360" Height="360">
+                            <Grid x:Name="NowPlayingImageBorder" Width="500" Height="500">
                                 <Border CornerRadius="20" BorderThickness="1" BorderBrush="{ThemeResource AppControlBorderBrush}" Background="{ThemeResource AppControlBackgroundBrush}">
-                                    <controls:ThumbnailView x:Name="NowPlayingImage" DecodeWidth="600" />
+                                    <controls:ThumbnailView x:Name="NowPlayingImage" DecodeWidth="800" />
                                 </Border>
                             </Grid>
                         </StackPanel>
+
+                        <Button x:Name="CollapseButton" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="40" Background="{ThemeResource AppControlBackgroundBrush}" Foreground="{ThemeResource AppTextForegroundBrush}" Width="48" Height="48" CornerRadius="24" BorderThickness="0" Click="OnCollapseClicked" UseSystemFocusVisuals="True" ToolTipService.ToolTip="Collapse Player">
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70D;" FontSize="18" />
+                        </Button>
 
                         <Grid x:Name="LyricsOverlay" Visibility="Collapsed" Padding="40,20,20,20">
                             <Grid>

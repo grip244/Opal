@@ -5,6 +5,8 @@
 #include "ViewModels/PlaylistsViewModel.h"
 #include "GenresPage.xaml.h"
 #include "AlbumsPage.xaml.h"
+#include "ArtistsPage.xaml.h"
+#include "PlaylistsPage.xaml.h"
 #include <Windows.UI.Xaml.Media.h>
 #include "Services/LyricsService.h"
 #include "Services/CastingService.h"
@@ -74,6 +76,15 @@ LibraryPage::LibraryPage()
     auto page = this;
     PlaybackService::Instance->SongChanged += ref new SongChangedHandler([page](PlaybackService^ sender, Song^ song) {
         page->Dispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([page, song]() {
+            if (song == nullptr) {
+                page->NowPlayingImage->SourceUrl = nullptr;
+                page->UpdateUpcomingQueue();
+                
+                // Close full screen player on Stop
+                page->FullPlayerGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+                page->BrowseGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+                return;
+            }
             page->NowPlayingImage->SourceUrl = song->CoverUrl;
             page->LoadLyrics(song);
             page->UpdateUpcomingQueue();
@@ -100,11 +111,26 @@ LibraryPage::LibraryPage()
     TimeSpan cts; cts.Duration = 5000 * 10000LL; // 5 seconds
     carouselTimer->Interval = cts;
     carouselTimer->Tick += ref new Windows::Foundation::EventHandler<Object^>([page](Object^ sender, Object^ args) {
-        if (page->SpotlightCarousel->Visibility == Windows::UI::Xaml::Visibility::Visible) {
+        if (page->SpotlightCarousel->Visibility == Windows::UI::Xaml::Visibility::Visible || 
+            page->XboxFeaturedCarousel->Visibility == Windows::UI::Xaml::Visibility::Visible) {
             page->OnCarouselNext(nullptr, nullptr);
         }
     });
     carouselTimer->Start();
+
+    // Fix for x:Bind index 0 crash: Listen for spotlight changes to update HeroSong binding
+    LibraryVM->SpotlightSongs->VectorChanged += ref new Windows::Foundation::Collections::VectorChangedEventHandler<Song^>([page](Windows::Foundation::Collections::IObservableVector<Song^>^ sender, Windows::Foundation::Collections::IVectorChangedEventArgs^ args) {
+        page->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([page]() {
+            page->Bindings->Update();
+        }));
+    });
+}
+
+Song^ LibraryPage::HeroSong::get()
+{
+    auto songs = LibraryVM->SpotlightSongs;
+    if (songs != nullptr && songs->Size > 0) return songs->GetAt(0);
+    return nullptr;
 }
 
 void LibraryPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e)
@@ -583,6 +609,21 @@ void LibraryPage::OnSeeAllExplore(Object^ sender, RoutedEventArgs^ e)
     this->Frame->Navigate(TypeName(AlbumsPage::typeid));
 }
 
+void LibraryPage::OnSeeAllArtists(Object^ sender, RoutedEventArgs^ e)
+{
+    this->Frame->Navigate(TypeName(ArtistsPage::typeid));
+}
+
+void LibraryPage::OnSeeAllPlaylists(Object^ sender, RoutedEventArgs^ e)
+{
+    this->Frame->Navigate(TypeName(PlaylistsPage::typeid));
+}
+
+void LibraryPage::OnCastFlyoutOpened(Object^ sender, Object^ e)
+{
+    Opal::CastingService::Instance->StartDiscovery();
+}
+
 void LibraryPage::OnSeeAllRecentlyPlayed(Object^ sender, RoutedEventArgs^ e)
 {
     this->Frame->Navigate(TypeName(AlbumsPage::typeid));
@@ -599,6 +640,13 @@ void LibraryPage::OnSeeAllRecentReleases(Object^ sender, RoutedEventArgs^ e)
 }
 
 void LibraryPage::OnArtistClicked(Object^ sender, ItemClickEventArgs^ e) { auto am = dynamic_cast<ArtistModel^>(e->ClickedItem); if (am != nullptr) LoadArtistPage(am->Id); }
+void LibraryPage::OnViewArtistClicked(Object^ sender, RoutedEventArgs^ e) {
+    auto btn = dynamic_cast<Button^>(sender);
+    if (btn != nullptr) {
+        auto artistId = dynamic_cast<Platform::String^>(btn->Tag);
+        if (artistId != nullptr) LoadArtistPage(artistId);
+    }
+}
 void LibraryPage::OnAlbumClicked(Object^ sender, ItemClickEventArgs^ e) { auto am = dynamic_cast<AlbumID3^>(e->ClickedItem); if (am != nullptr) LoadAlbumPage(am->Id); }
 void LibraryPage::OnGenericAlbumClicked(Object^ sender, ItemClickEventArgs^ e)
 {
@@ -942,16 +990,22 @@ void LibraryPage::OnSpotlightTapped(Object^ sender, TappedRoutedEventArgs^ e)
 
 void LibraryPage::OnCarouselPrev(Object^ sender, RoutedEventArgs^ e)
 {
-    if (SpotlightCarousel->SelectedIndex > 0)
-        SpotlightCarousel->SelectedIndex--;
+    FlipView^ carousel = (SpotlightCarousel->Visibility == Windows::UI::Xaml::Visibility::Visible) ? SpotlightCarousel : XboxFeaturedCarousel;
+    auto current = carousel->SelectedIndex;
+    int size = (int)carousel->Items->Size;
+    if (size > 0) {
+        if (current > 0) carousel->SelectedIndex = current - 1;
+        else carousel->SelectedIndex = size - 1; // Loop to end
+    }
 }
 
 void LibraryPage::OnCarouselNext(Object^ sender, RoutedEventArgs^ e) {
-    auto current = SpotlightCarousel->SelectedIndex;
-    int size = (int)SpotlightCarousel->Items->Size;
+    FlipView^ carousel = (SpotlightCarousel->Visibility == Windows::UI::Xaml::Visibility::Visible) ? SpotlightCarousel : XboxFeaturedCarousel;
+    auto current = carousel->SelectedIndex;
+    int size = (int)carousel->Items->Size;
     if (size > 0) {
-        if (current < size - 1) SpotlightCarousel->SelectedIndex = current + 1;
-        else SpotlightCarousel->SelectedIndex = 0;
+        if (current < size - 1) carousel->SelectedIndex = current + 1;
+        else carousel->SelectedIndex = 0; // Loop to start
     }
 }
 

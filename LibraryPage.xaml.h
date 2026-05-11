@@ -34,6 +34,10 @@ namespace Opal
             Windows::Foundation::Collections::IObservableVector<Song^>^ get() { return _upcomingQueue; }
         }
 
+        property Song^ HeroSong {
+            Song^ get();
+        }
+
         void LoadHomePage();
         void ToggleFullPlayer();
         void ShowPlayer(bool showLyrics);
@@ -58,6 +62,7 @@ namespace Opal
         void OnHomeClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnArtistClicked(Platform::Object^ sender, Windows::UI::Xaml::Controls::ItemClickEventArgs^ e);
         void OnAlbumClicked(Platform::Object^ sender, Windows::UI::Xaml::Controls::ItemClickEventArgs^ e);
+        void OnViewArtistClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnGenericAlbumClicked(Platform::Object^ sender, Windows::UI::Xaml::Controls::ItemClickEventArgs^ e);
         void OnGenreClicked(Platform::Object^ sender, Windows::UI::Xaml::Controls::ItemClickEventArgs^ e);
         void OnBackClicked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
@@ -72,6 +77,9 @@ namespace Opal
         
         void OnSeeAllGenres(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnSeeAllExplore(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnSeeAllArtists(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnSeeAllPlaylists(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void OnCastFlyoutOpened(Platform::Object^ sender, Platform::Object^ e);
         void OnSeeAllRecentlyPlayed(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnSeeAllNewest(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         void OnSeeAllRecentReleases(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);

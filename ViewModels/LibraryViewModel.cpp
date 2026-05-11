@@ -135,6 +135,7 @@ void LibraryViewModel::UpdateSongCollection(Platform::Collections::Vector<Song^>
                     sm->Id = s->GetNamedString("id", "");
                     sm->Title = s->GetNamedString("title", "Unknown");
                     sm->Artist = s->GetNamedString("artist", "Unknown");
+                    sm->ArtistId = s->GetNamedString("artistId", "");
                     sm->Album = s->GetNamedString("album", "");
 
                     if (s->HasKey("explicitStatus")) {

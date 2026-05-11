@@ -19,15 +19,22 @@
 #include "Models/SharedModels.h"
 #include <ppltasks.h>
 #include "Services/GamepadService.h"
+#include <Windows.UI.Composition.h>
+#include <Windows.UI.Xaml.Hosting.h>
+#include <Windows.Foundation.Numerics.h>
+#include <Windows.UI.Xaml.Media.Animation.h>
 
 using namespace Opal;
 using namespace Platform;
 using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
 using namespace Windows::UI::Xaml::Navigation;
+using namespace Windows::UI::Xaml::Media::Animation;
 using namespace Windows::UI::Xaml::Interop;
 using namespace Windows::Foundation::Collections;
 using namespace Microsoft::UI::Xaml::Controls;
+using namespace Windows::UI::Composition;
+using namespace Windows::UI::Xaml::Hosting;
 using namespace Windows::Foundation;
 using namespace Windows::UI::Core;
 using namespace Windows::System::Profile;
@@ -43,13 +50,21 @@ Windows::UI::Xaml::Controls::Frame^ MainPage::GetNavigationFrame()
 MainPage::MainPage()
 {
     InitializeComponent();
+    InitializeComposition();
+    _marqueeStoryboard = nullptr;
     this->Loaded += ref new RoutedEventHandler(this, &MainPage::OnPageLoaded);
 
     auto self = this;
     PlaybackService::Instance->SongChanged += ref new SongChangedHandler([self](PlaybackService^ sender, Song^ song) {
         self->Dispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([self, song]() {
+            if (song == nullptr) {
+                self->GlobalPlayerBar->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+                return;
+            }
+
             self->NowPlayingTitle->Text = song->Title;
-            self->PlayerExplicitBadge->Visibility = song->ExplicitStatus == "explicit" ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+            bool isXbox = (Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamily == "Windows.Xbox");
+            self->PlayerExplicitBadge->Visibility = (!isXbox && song->ExplicitStatus == "explicit") ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
             self->NowPlayingArtist->Text = song->Artist;
             self->MiniThumbnail->SourceUrl = song->CoverUrl;
             self->GlobalPlayerBar->Visibility = Windows::UI::Xaml::Visibility::Visible;
@@ -88,9 +103,10 @@ MainPage::MainPage()
             // Wake Up Call: Ensure player bar is visible even if nothing has played locally
             self->GlobalPlayerBar->Visibility = Windows::UI::Xaml::Visibility::Visible;
             
+            bool isXbox = (Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamily == "Windows.Xbox");
             self->NowPlayingTitle->Text = track->Title;
             self->NowPlayingArtist->Text = track->Artist;
-            self->PlayerExplicitBadge->Visibility = track->ExplicitStatus == "explicit" ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+            self->PlayerExplicitBadge->Visibility = (!isXbox && track->ExplicitStatus == "explicit") ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
             
             if (track->CoverUrl != nullptr && !track->CoverUrl->IsEmpty()) {
                 DebugLogger::Instance->Log("CastingService", "Loading Remote Thumbnail: " + track->CoverUrl);
@@ -149,10 +165,13 @@ MainPage::MainPage()
             
             auto song = pb->CurrentSong;
             if (song != nullptr) {
+                bool isXbox = (Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamily == "Windows.Xbox");
                 self->NowPlayingTitle->Text = song->Title;
-                self->PlayerExplicitBadge->Visibility = song->ExplicitStatus == "explicit" ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+                self->PlayerExplicitBadge->Visibility = (!isXbox && song->ExplicitStatus == "explicit") ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
                 self->NowPlayingArtist->Text = song->Artist;
-                if (self->MiniThumbnail->SourceUrl != song->CoverUrl) self->MiniThumbnail->SourceUrl = song->CoverUrl;
+                if (self->MiniThumbnail->SourceUrl != song->CoverUrl) {
+                    self->MiniThumbnail->SourceUrl = song->CoverUrl;
+                }
             }
             
             if (session->PlaybackState == Windows::Media::Playback::MediaPlaybackState::Playing) self->PlayPauseIcon->Symbol = Symbol::Pause;
@@ -188,6 +207,7 @@ void MainPage::OnPageLoaded(Object^ sender, RoutedEventArgs^ e)
     if (AnalyticsInfo::VersionInfo->DeviceFamily == "Windows.Xbox")
     {
         VisualStateManager::GoToState(this, "XboxState", false);
+        MainNavigationView->AutoSuggestBox = nullptr;
     }
     
     // Initialize CastingService if authenticated (deferred from App::OnLaunched)
@@ -240,51 +260,74 @@ void MainPage::OnMenuItemInvoked(Microsoft::UI::Xaml::Controls::NavigationView^ 
     if (args->IsSettingsInvoked)
     {
         ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(SettingsPage::typeid));
+        return;
     }
-    else
+
+    // On some platforms/versions, InvokedItemContainer can be null for footer items
+    auto container = args->InvokedItemContainer;
+    Platform::String^ tag = nullptr;
+
+    if (container != nullptr && container->Tag != nullptr) {
+        tag = container->Tag->ToString();
+    }
+    else {
+        // Fallback to checking the invoked item content if it's a string
+        auto invokedString = dynamic_cast<Platform::String^>(args->InvokedItem);
+        if (invokedString != nullptr) tag = invokedString;
+    }
+
+    if (tag == nullptr) return;
+
+    if (tag == "Search")
     {
-        auto tagObj = args->InvokedItemContainer->Tag;
-        if (tagObj == nullptr) return;
-        auto tag = tagObj->ToString();
-        if (tag == "Library")
+        ToggleXboxSearch();
+    }
+    else if (tag == "Settings")
+    {
+        ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(SettingsPage::typeid));
+    }
+    else if (tag == "Library")
+    {
+        auto currentType = ContentFrame->CurrentSourcePageType;
+        auto targetType = Windows::UI::Xaml::Interop::TypeName(LibraryPage::typeid);
+        if (currentType.Name != targetType.Name)
         {
-            auto currentType = ContentFrame->CurrentSourcePageType;
-            auto targetType = Windows::UI::Xaml::Interop::TypeName(LibraryPage::typeid);
-            if (currentType.Name != targetType.Name)
-            {
-                ContentFrame->Navigate(targetType);
-            }
-            else
-            {
-                auto page = dynamic_cast<LibraryPage^>(ContentFrame->Content);
-                if (page != nullptr) page->LoadHomePage();
-            }
-        }
-        else if (tag == "Artists")
-        {
-            ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(ArtistsPage::typeid));
-        }
-        else if (tag == "Albums")
-        {
-            ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(AlbumsPage::typeid));
-        }
-        else if (tag == "Tracks")
-        {
-            ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(TracksPage::typeid));
-        }
-        else if (tag == "Genres")
-        {
-            ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(GenresPage::typeid));
-        }
-        else if (tag == "NewPlaylist")
-        {
-            OnNewPlaylistClick(nullptr, nullptr);
+            ContentFrame->Navigate(targetType);
         }
         else
         {
-            // Dynamic playlist ID
-            ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(PlaylistDetailsPage::typeid), tag);
+            auto page = dynamic_cast<LibraryPage^>(ContentFrame->Content);
+            if (page != nullptr) page->LoadHomePage();
         }
+    }
+    else if (tag == "Artists")
+    {
+        ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(ArtistsPage::typeid));
+    }
+    else if (tag == "Albums")
+    {
+        ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(AlbumsPage::typeid));
+    }
+    else if (tag == "Tracks")
+    {
+        ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(TracksPage::typeid));
+    }
+    else if (tag == "Genres")
+    {
+        ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(GenresPage::typeid));
+    }
+    else if (tag == "Playlists")
+    {
+        ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(PlaylistsPage::typeid));
+    }
+    else if (tag == "NewPlaylist")
+    {
+        OnNewPlaylistClick(nullptr, nullptr);
+    }
+    else
+    {
+        // Dynamic playlist ID
+        ContentFrame->Navigate(Windows::UI::Xaml::Interop::TypeName(PlaylistDetailsPage::typeid), tag);
     }
 }
 
@@ -309,6 +352,9 @@ void MainPage::OnPreviousClicked(Object^ sender, RoutedEventArgs^ e) {
 
 void MainPage::OnVolumeChanged(Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e) { 
     PlaybackService::Instance->Player->Volume = e->NewValue / 100.0; 
+    if (VolumeText != nullptr) {
+        VolumeText->Text = ((int)e->NewValue).ToString();
+    }
 }
 void MainPage::OnLyricsToggleClicked(Object^ sender, RoutedEventArgs^ e) { 
     auto targetType = Windows::UI::Xaml::Interop::TypeName(LibraryPage::typeid);
@@ -541,7 +587,8 @@ void MainPage::UpdateMenuVisibility()
         else if (isXbox)
         {
             MainNavigationView->PaneDisplayMode = Microsoft::UI::Xaml::Controls::NavigationViewPaneDisplayMode::LeftCompact;
-            MainNavigationView->IsPaneToggleButtonVisible = true;
+            MainNavigationView->IsPaneToggleButtonVisible = false;
+            MainNavigationView->IsSettingsVisible = true;
         }
         else
         {
@@ -851,8 +898,8 @@ void MainPage::RebuildSidebarPlaylistsInternal()
         }
 
         // Clear orphaned top-level playlist items that were added after PlaylistsNavItem in previous versions
-        while (MainNavigationView->MenuItems->Size > 7) {
-            MainNavigationView->MenuItems->RemoveAt(7);
+        while (MainNavigationView->MenuItems->Size > 8) {
+            MainNavigationView->MenuItems->RemoveAt(8);
         }
 
         auto vm = ViewModels::PlaylistsViewModel::Instance;
@@ -1056,3 +1103,96 @@ void MainPage::OnSleepTimerCancelClicked(Object^ sender, RoutedEventArgs^ e) {
     ToolTipService::SetToolTip(SleepTimerBtn, "Sleep Timer");
 }
 
+
+void MainPage::InitializeComposition()
+{
+    _compositor = ElementCompositionPreview::GetElementVisual(this)->Compositor;
+    
+    auto blurEffect = ref new Microsoft::Graphics::Canvas::Effects::GaussianBlurEffect();
+    blurEffect->Name = "Blur";
+    blurEffect->BlurAmount = 60.0f; 
+    blurEffect->BorderMode = Microsoft::Graphics::Canvas::Effects::EffectBorderMode::Hard;
+    blurEffect->Source = ref new CompositionEffectSourceParameter("source");
+
+    auto factory = _compositor->CreateEffectFactory(blurEffect);
+    auto effectBrush = factory->CreateBrush();
+    
+    // Use BackdropBrush to blur what is BEHIND the player bar
+    auto backdropBrush = _compositor->CreateBackdropBrush();
+    effectBrush->SetSourceParameter("source", backdropBrush);
+    
+    _blurVisual = _compositor->CreateSpriteVisual();
+    
+    Windows::Foundation::Numerics::float2 sizeAdjustment;
+    sizeAdjustment.x = 1.0f;
+    sizeAdjustment.y = 1.0f;
+    _blurVisual->RelativeSizeAdjustment = sizeAdjustment;
+    _blurVisual->Brush = effectBrush;
+
+    ElementCompositionPreview::SetElementChildVisual(PlayerBarBackgroundCanvas, _blurVisual);
+}
+ 
+void MainPage::OnCloseSearchClick(Object^ sender, RoutedEventArgs^ e) {
+    XboxSearchOverlay->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+}
+
+void MainPage::ToggleXboxSearch() {
+    if (XboxSearchOverlay->Visibility == Windows::UI::Xaml::Visibility::Visible) {
+        XboxSearchOverlay->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+    } else {
+        XboxSearchOverlay->Visibility = Windows::UI::Xaml::Visibility::Visible;
+        XboxSearchBox->Focus(Windows::UI::Xaml::FocusState::Programmatic);
+    }
+}
+
+void MainPage::OnTitleSizeChanged(Object^ sender, SizeChangedEventArgs^ e)
+{
+    // 1. Reset
+    if (_marqueeStoryboard != nullptr) {
+        _marqueeStoryboard->Stop();
+        _marqueeStoryboard = nullptr;
+    }
+    TitleScrollTransform->X = 0;
+
+    // 2. Update Clip
+    TitleClip->Rect = Windows::Foundation::Rect(0, 0, (float)TitleContainer->ActualWidth, (float)TitleContainer->ActualHeight);
+
+    // 3. Detect if cut off
+    double textWidth = NowPlayingTitle->ActualWidth;
+    double containerWidth = TitleContainer->ActualWidth;
+
+    if (textWidth > containerWidth && containerWidth > 0) {
+        // Start marquee
+        _marqueeStoryboard = ref new Storyboard();
+
+        auto animation = ref new Windows::UI::Xaml::Media::Animation::DoubleAnimationUsingKeyFrames();
+
+        // Speed: ~30 pixels per second (gentle scroll)
+        double scrollDistance = (textWidth - containerWidth + 40);
+        double durationSeconds = scrollDistance / 30.0;
+        
+        auto kf1 = ref new Windows::UI::Xaml::Media::Animation::DiscreteDoubleKeyFrame();
+        kf1->KeyTime = Windows::UI::Xaml::Media::Animation::KeyTimeHelper::FromTimeSpan(Windows::Foundation::TimeSpan{0});
+        kf1->Value = 0.0;
+        
+        auto kf2 = ref new Windows::UI::Xaml::Media::Animation::DiscreteDoubleKeyFrame();
+        kf2->KeyTime = Windows::UI::Xaml::Media::Animation::KeyTimeHelper::FromTimeSpan(Windows::Foundation::TimeSpan{25000000}); // 2.5s pause at start
+        kf2->Value = 0.0;
+        
+        auto kf3 = ref new Windows::UI::Xaml::Media::Animation::LinearDoubleKeyFrame();
+        kf3->KeyTime = Windows::UI::Xaml::Media::Animation::KeyTimeHelper::FromTimeSpan(Windows::Foundation::TimeSpan{25000000 + (long long)(durationSeconds * 10000000)});
+        kf3->Value = -scrollDistance;
+
+        animation->KeyFrames->Append(kf1);
+        animation->KeyFrames->Append(kf2);
+        animation->KeyFrames->Append(kf3);
+
+        _marqueeStoryboard->Children->Append(animation);
+        Storyboard::SetTarget(animation, TitleScrollTransform);
+        Storyboard::SetTargetProperty(animation, "X");
+
+        animation->RepeatBehavior = Windows::UI::Xaml::Media::Animation::RepeatBehaviorHelper::Forever;
+
+        _marqueeStoryboard->Begin();
+    }
+}

@@ -33,6 +33,16 @@ namespace Opal
             void set(Platform::String^ value);
         }
 
+        // EQ Settings
+        void SaveEqPreset(int index);
+        int GetEqPreset();
+        void SaveEqBand(int band, float gain);
+        float GetEqBand(int band);
+        void SaveEqEnabled(bool enabled);
+        bool GetEqEnabled();
+        void SaveEqPreAmp(float gain);
+        float GetEqPreAmp();
+
     private:
         SettingsService();
         static SettingsService^ _instance;

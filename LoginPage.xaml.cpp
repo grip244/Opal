@@ -14,11 +14,16 @@ using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
 using namespace Windows::UI::Xaml::Navigation;
 using namespace Windows::UI::Xaml::Interop;
+using namespace Windows::UI::Xaml::Input;
 using namespace Windows::System::Profile;
 
 LoginPage::LoginPage()
 {
     InitializeComponent();
+    
+    // Ensure we catch the Menu button even if focused elements try to consume it
+    this->AddHandler(UIElement::KeyDownEvent, ref new Windows::UI::Xaml::Input::KeyEventHandler(this, &LoginPage::OnPageKeyDown), true);
+    
     this->Loaded += ref new RoutedEventHandler(this, &LoginPage::OnPageLoaded);
 }
 
@@ -46,11 +51,27 @@ void LoginPage::OnPageLoaded(Object^ sender, RoutedEventArgs^ e)
     ServerTextBox->Focus(Windows::UI::Xaml::FocusState::Programmatic);
 }
 
+void LoginPage::HandleStartButton()
+{
+    auto focused = FocusManager::GetFocusedElement();
+    if (focused == ServerTextBox) UsernameTextBox->Focus(Windows::UI::Xaml::FocusState::Programmatic);
+    else if (focused == UsernameTextBox) PasswordBox->Focus(Windows::UI::Xaml::FocusState::Programmatic);
+    else OnConnectClicked(nullptr, nullptr); 
+}
+
+void LoginPage::OnPageKeyDown(Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e)
+{
+    // On Xbox, GamepadMenu (≡) should behave like Enter: cycle focus then submit
+    if (e->Key == Windows::System::VirtualKey::GamepadMenu || e->Key == (Windows::System::VirtualKey)187) {
+        HandleStartButton();
+        e->Handled = true;
+    }
+}
+
 void LoginPage::OnLoginFieldKeyDown(Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e)
 {
-    if (e->Key == Windows::System::VirtualKey::Enter || 
-        e->Key == Windows::System::VirtualKey::GamepadMenu || 
-        e->Key == (Windows::System::VirtualKey)187) {
+    // Enter key moves focus or submits if on password box
+    if (e->Key == Windows::System::VirtualKey::Enter) {
         if (sender == ServerTextBox) UsernameTextBox->Focus(Windows::UI::Xaml::FocusState::Programmatic);
         else if (sender == UsernameTextBox) PasswordBox->Focus(Windows::UI::Xaml::FocusState::Programmatic);
         else if (sender == PasswordBox) OnConnectClicked(nullptr, nullptr);

@@ -40,10 +40,15 @@ namespace Services {
         Platform::Agile<Windows::UI::Core::CoreWindow> _window;
         Platform::Agile<Windows::UI::Xaml::Controls::Frame> _frame;
         Platform::Agile<Windows::UI::Xaml::Controls::AutoSuggestBox> _searchBox;
+        Windows::Foundation::EventRegistrationToken _acceleratorKeyToken;
         Windows::Foundation::EventRegistrationToken _keyDownToken;
 
+        void OnAcceleratorKeyActivated(Windows::UI::Core::CoreDispatcher^ sender,
+                                       Windows::UI::Core::AcceleratorKeyEventArgs^ args);
         void OnKeyDown(Windows::UI::Core::CoreWindow^ sender,
                        Windows::UI::Core::KeyEventArgs^ args);
+
+        bool ProcessGamepadKey(Windows::System::VirtualKey key);
 
         bool IsTextInputFocused();
         void AdjustVolume(double delta);

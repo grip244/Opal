@@ -45,6 +45,98 @@
                 </StackPanel>
 
                 <StackPanel Spacing="16">
+                    <TextBlock Text="Equalizer" FontSize="20" FontWeight="SemiBold" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                    <Border Background="{ThemeResource AppControlBackgroundBrush}" BorderBrush="{ThemeResource AppControlBorderBrush}" BorderThickness="1" Padding="24" CornerRadius="12">
+                        <StackPanel Spacing="20">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ToggleSwitch x:Name="EqToggle" Header="DSP &amp; Equalizer" Toggled="OnEqToggled" UseSystemFocusVisuals="True"/>
+                                <ComboBox x:Name="EqPresetsCombo" Grid.Column="1" Header="Preset" Width="200" 
+                                          SelectionChanged="OnEqPresetSelected" VerticalAlignment="Bottom" UseSystemFocusVisuals="True">
+                                    <ComboBoxItem Content="Flat" />
+                                    <ComboBoxItem Content="Rock" />
+                                    <ComboBoxItem Content="Electronic" />
+                                    <ComboBoxItem Content="Acoustic" />
+                                    <ComboBoxItem Content="Vocal" />
+                                    <ComboBoxItem Content="R&amp;B" />
+                                    <ComboBoxItem Content="Hip Hop" />
+                                    <ComboBoxItem Content="Country" />
+                                    <ComboBoxItem Content="Custom" IsEnabled="True" />
+                                </ComboBox>
+                            </Grid>
+
+                            <StackPanel Spacing="8">
+                                <Grid>
+                                    <TextBlock Text="Pre-Amp" FontSize="14" FontWeight="SemiBold" Opacity="0.8"/>
+                                    <TextBlock x:Name="EqPreAmpValue" Text="0.0 dB" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Right" Opacity="0.8"/>
+                                </Grid>
+                                <Slider x:Name="EqPreAmpSlider" Minimum="-12" Maximum="12" StepFrequency="0.5" 
+                                        Value="0" ValueChanged="OnEqPreAmpChanged" UseSystemFocusVisuals="True"/>
+                            </StackPanel>
+
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled">
+                                <StackPanel Orientation="Horizontal" Spacing="16" Height="200">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock x:Name="EqValue0" Text="0.0" FontSize="9" HorizontalAlignment="Center" Opacity="0.6"/>
+                                        <Slider x:Name="EqSlider0" Orientation="Vertical" Minimum="-12" Maximum="12" StepFrequency="0.5" Height="150" ValueChanged="OnEqBandChanged" UseSystemFocusVisuals="True"/>
+                                        <TextBlock Text="32Hz" FontSize="10" HorizontalAlignment="Center" Opacity="0.6"/>
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock x:Name="EqValue1" Text="0.0" FontSize="9" HorizontalAlignment="Center" Opacity="0.6"/>
+                                        <Slider x:Name="EqSlider1" Orientation="Vertical" Minimum="-12" Maximum="12" StepFrequency="0.5" Height="150" ValueChanged="OnEqBandChanged" UseSystemFocusVisuals="True"/>
+                                        <TextBlock Text="64Hz" FontSize="10" HorizontalAlignment="Center" Opacity="0.6"/>
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock x:Name="EqValue2" Text="0.0" FontSize="9" HorizontalAlignment="Center" Opacity="0.6"/>
+                                        <Slider x:Name="EqSlider2" Orientation="Vertical" Minimum="-12" Maximum="12" StepFrequency="0.5" Height="150" ValueChanged="OnEqBandChanged" UseSystemFocusVisuals="True"/>
+                                        <TextBlock Text="125Hz" FontSize="10" HorizontalAlignment="Center" Opacity="0.6"/>
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock x:Name="EqValue3" Text="0.0" FontSize="9" HorizontalAlignment="Center" Opacity="0.6"/>
+                                        <Slider x:Name="EqSlider3" Orientation="Vertical" Minimum="-12" Maximum="12" StepFrequency="0.5" Height="150" ValueChanged="OnEqBandChanged" UseSystemFocusVisuals="True"/>
+                                        <TextBlock Text="250Hz" FontSize="10" HorizontalAlignment="Center" Opacity="0.6"/>
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock x:Name="EqValue4" Text="0.0" FontSize="9" HorizontalAlignment="Center" Opacity="0.6"/>
+                                        <Slider x:Name="EqSlider4" Orientation="Vertical" Minimum="-12" Maximum="12" StepFrequency="0.5" Height="150" ValueChanged="OnEqBandChanged" UseSystemFocusVisuals="True"/>
+                                        <TextBlock Text="500Hz" FontSize="10" HorizontalAlignment="Center" Opacity="0.6"/>
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock x:Name="EqValue5" Text="0.0" FontSize="9" HorizontalAlignment="Center" Opacity="0.6"/>
+                                        <Slider x:Name="EqSlider5" Orientation="Vertical" Minimum="-12" Maximum="12" StepFrequency="0.5" Height="150" ValueChanged="OnEqBandChanged" UseSystemFocusVisuals="True"/>
+                                        <TextBlock Text="1kHz" FontSize="10" HorizontalAlignment="Center" Opacity="0.6"/>
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock x:Name="EqValue6" Text="0.0" FontSize="9" HorizontalAlignment="Center" Opacity="0.6"/>
+                                        <Slider x:Name="EqSlider6" Orientation="Vertical" Minimum="-12" Maximum="12" StepFrequency="0.5" Height="150" ValueChanged="OnEqBandChanged" UseSystemFocusVisuals="True"/>
+                                        <TextBlock Text="2kHz" FontSize="10" HorizontalAlignment="Center" Opacity="0.6"/>
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock x:Name="EqValue7" Text="0.0" FontSize="9" HorizontalAlignment="Center" Opacity="0.6"/>
+                                        <Slider x:Name="EqSlider7" Orientation="Vertical" Minimum="-12" Maximum="12" StepFrequency="0.5" Height="150" ValueChanged="OnEqBandChanged" UseSystemFocusVisuals="True"/>
+                                        <TextBlock Text="4kHz" FontSize="10" HorizontalAlignment="Center" Opacity="0.6"/>
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock x:Name="EqValue8" Text="0.0" FontSize="9" HorizontalAlignment="Center" Opacity="0.6"/>
+                                        <Slider x:Name="EqSlider8" Orientation="Vertical" Minimum="-12" Maximum="12" StepFrequency="0.5" Height="150" ValueChanged="OnEqBandChanged" UseSystemFocusVisuals="True"/>
+                                        <TextBlock Text="8kHz" FontSize="10" HorizontalAlignment="Center" Opacity="0.6"/>
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock x:Name="EqValue9" Text="0.0" FontSize="9" HorizontalAlignment="Center" Opacity="0.6"/>
+                                        <Slider x:Name="EqSlider9" Orientation="Vertical" Minimum="-12" Maximum="12" StepFrequency="0.5" Height="150" ValueChanged="OnEqBandChanged" UseSystemFocusVisuals="True"/>
+                                        <TextBlock Text="16kHz" FontSize="10" HorizontalAlignment="Center" Opacity="0.6"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </ScrollViewer>
+                            <TextBlock Text="Audio processing is handled in a separate thread for low latency." FontSize="11" Opacity="0.4"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel Spacing="16">
                     <TextBlock Text="Account" FontSize="20" FontWeight="SemiBold" Foreground="{ThemeResource AppTextForegroundBrush}"/>
                     <Border Background="{ThemeResource AppControlBackgroundBrush}" BorderBrush="{ThemeResource AppControlBorderBrush}" BorderThickness="1" Padding="24" CornerRadius="12">
                         <Grid>
@@ -75,15 +167,16 @@
                     </Border>
                 </StackPanel>
 
-                <!-- 3.1: Controller Reference Card -->
+                <!-- 3.1: Controller & Keyboard Reference Card -->
                 <StackPanel Spacing="16">
-                    <TextBlock Text="Controller" FontSize="20" FontWeight="SemiBold" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                    <TextBlock Text="Shortcuts &amp; Controls" FontSize="20" FontWeight="SemiBold" Foreground="{ThemeResource AppTextForegroundBrush}"/>
                     <Border Background="{ThemeResource AppControlBackgroundBrush}" BorderBrush="{ThemeResource AppControlBorderBrush}" BorderThickness="1" Padding="24" CornerRadius="12">
                         <StackPanel Spacing="8">
-                            <TextBlock Text="Xbox Button Mappings" FontSize="14" FontWeight="SemiBold" Opacity="0.8" Margin="0,0,0,8" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                            <TextBlock Text="Input Mapping Reference" FontSize="14" FontWeight="SemiBold" Opacity="0.8" Margin="0,0,0,8" Foreground="{ThemeResource AppTextForegroundBrush}"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="120"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
@@ -95,26 +188,47 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-                                <!-- Row headers -->
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="LB" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
-                                <TextBlock Grid.Row="0" Grid.Column="1" Text="Previous Track" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="RB" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
-                                <TextBlock Grid.Row="1" Grid.Column="1" Text="Next Track" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
-                                <TextBlock Grid.Row="2" Grid.Column="0" Text="X" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
-                                <TextBlock Grid.Row="2" Grid.Column="1" Text="Play / Pause" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
-                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Y" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
-                                <TextBlock Grid.Row="3" Grid.Column="1" Text="Focus Search Box" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
-                                <TextBlock Grid.Row="4" Grid.Column="0" Text="View (⧉)" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
-                                <TextBlock Grid.Row="4" Grid.Column="1" Text="Toggle Now Playing" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
-                                <TextBlock Grid.Row="5" Grid.Column="0" Text="LT" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
-                                <TextBlock Grid.Row="5" Grid.Column="1" Text="Volume Down" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
-                                <TextBlock Grid.Row="6" Grid.Column="0" Text="RT" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
-                                <TextBlock Grid.Row="6" Grid.Column="1" Text="Volume Up" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
-                                <TextBlock Grid.Row="7" Grid.Column="0" Text="Menu (≡)" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
-                                <TextBlock Grid.Row="7" Grid.Column="1" Text="Advance Field / Submit" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                
+                                <!-- Table Headers -->
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Xbox" FontSize="12" FontWeight="Bold" Opacity="0.5" Margin="0,0,0,8" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="Keyboard" FontSize="12" FontWeight="Bold" Opacity="0.5" Margin="0,0,0,8" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="Action" FontSize="12" FontWeight="Bold" Opacity="0.5" Margin="0,0,0,8" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="LB" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="Prev Key" Opacity="0.6" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="Previous Track" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="RB" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="Next Key" Opacity="0.6" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="2" Grid.Column="2" Text="Next Track" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="X" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="Play/Pause Key" Opacity="0.6" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="3" Grid.Column="2" Text="Play / Pause" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Y" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="4" Grid.Column="1" Text="Y" Opacity="0.6" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="4" Grid.Column="2" Text="Focus Search Box" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                
+                                <TextBlock Grid.Row="5" Grid.Column="0" Text="View (⧉)" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="5" Grid.Column="1" Text="None" Opacity="0.6" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="5" Grid.Column="2" Text="Toggle Now Playing" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                
+                                <TextBlock Grid.Row="6" Grid.Column="0" Text="LT" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="6" Grid.Column="1" Text="Vol Down" Opacity="0.6" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="6" Grid.Column="2" Text="Volume Down" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                
+                                <TextBlock Grid.Row="7" Grid.Column="0" Text="RT" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="7" Grid.Column="1" Text="Vol Up" Opacity="0.6" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="7" Grid.Column="2" Text="Volume Up" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                
+                                <TextBlock Grid.Row="8" Grid.Column="0" Text="Menu (≡)" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,4"/>
+                                <TextBlock Grid.Row="8" Grid.Column="1" Text="Enter" Opacity="0.6" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                                <TextBlock Grid.Row="8" Grid.Column="2" Text="Advance / Submit" Opacity="0.8" Margin="0,4" Foreground="{ThemeResource AppTextForegroundBrush}"/>
                             </Grid>
-                            <TextBlock Text="Button remapping coming in v1.2.0." FontSize="11" Opacity="0.4" Margin="0,8,0,0" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                            <TextBlock Text="Custom button remapping coming in a future update." FontSize="11" Opacity="0.4" Margin="0,8,0,0" Foreground="{ThemeResource AppTextForegroundBrush}"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -131,7 +245,7 @@
                         </StackPanel>
                     </Border>
                 </StackPanel>
-                <TextBlock Text="Opal v1.1.6" Opacity="0.4" HorizontalAlignment="Center" Margin="0,40,0,20" Foreground="{ThemeResource AppTextForegroundBrush}"/>
+                <TextBlock Text="Opal v1.2.0" Opacity="0.4" HorizontalAlignment="Center" Margin="0,40,0,20" Foreground="{ThemeResource AppTextForegroundBrush}"/>
             </StackPanel>
         </ScrollViewer>
     </Grid>

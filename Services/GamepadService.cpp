@@ -3,6 +3,10 @@
 #include "Services/PlaybackService.h"
 #include "Services/DebugLogger.h"
 #include "LibraryPage.xaml.h"
+#include "LoginPage.xaml.h"
+#include "MainPage.xaml.h"
+#include "Services/CastingService.h"
+// No explicit include needed for WinUI 2 in C++/CX if referenced via winmd
 
 using namespace Opal;
 using namespace Opal::Services;
@@ -13,6 +17,7 @@ using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
 using namespace Windows::UI::Xaml::Input;
 using namespace Windows::Foundation;
+using namespace Microsoft::UI::Xaml::Controls;
 
 GamepadService^ GamepadService::_instance = nullptr;
 
@@ -34,15 +39,21 @@ void GamepadService::Initialize(CoreWindow^ window, Frame^ frame, AutoSuggestBox
     _frame     = frame;
     _searchBox = searchBox;
 
+    // 1. Register AcceleratorKeyActivated (intercepts keys before framework)
+    _acceleratorKeyToken = Window::Current->Dispatcher->AcceleratorKeyActivated +=
+        ref new TypedEventHandler<CoreDispatcher^, AcceleratorKeyEventArgs^>(this, &GamepadService::OnAcceleratorKeyActivated);
+
+    // 2. Register KeyDown (standard fallback/bubbling event)
     _keyDownToken = window->KeyDown +=
         ref new TypedEventHandler<CoreWindow^, KeyEventArgs^>(this, &GamepadService::OnKeyDown);
 
-    DebugLogger::Instance->Log("GamepadService", "Initialized — global gamepad key handler registered");
+    DebugLogger::Instance->Log("GamepadService", "Initialized — Dual input handlers (Accelerator + KeyDown) registered");
 }
 
 void GamepadService::Uninitialize()
 {
     if (_window.Get() != nullptr) {
+        Window::Current->Dispatcher->AcceleratorKeyActivated -= _acceleratorKeyToken;
         _window.Get()->KeyDown -= _keyDownToken;
         _window = nullptr;
     }
@@ -66,92 +77,154 @@ void GamepadService::AdjustVolume(double delta)
     pb->Player->Volume = newVol;
 }
 
+void GamepadService::OnAcceleratorKeyActivated(CoreDispatcher^ sender, AcceleratorKeyEventArgs^ args)
+{
+    if (args->EventType != CoreAcceleratorKeyEventType::KeyDown && 
+        args->EventType != CoreAcceleratorKeyEventType::SystemKeyDown) 
+        return;
+
+    if (ProcessGamepadKey(args->VirtualKey)) {
+        args->Handled = true;
+    }
+}
+
 void GamepadService::OnKeyDown(CoreWindow^ sender, KeyEventArgs^ args)
 {
-    auto key = args->VirtualKey;
+    if (ProcessGamepadKey(args->VirtualKey)) {
+        args->Handled = true;
+    }
+}
 
-    // ----------------------------------------------------------------
-    // Text-input context: suppress all playback/nav keys except Menu.
-    // ----------------------------------------------------------------
-    if (IsTextInputFocused()) {
-        if (key == VirtualKey::GamepadMenu) {
-            // Advance to next field or submit
-            auto focused = FocusManager::GetFocusedElement();
-            auto control = dynamic_cast<Windows::UI::Xaml::Controls::Control^>(focused);
-            if (control != nullptr) {
-                bool moved = FocusManager::TryMoveFocus(FocusNavigationDirection::Next);
-                if (!moved) {
-                    // Last field — try to submit (simulate Enter key approach via click)
-                    // LoginPage handles GamepadMenu in OnLoginFieldKeyDown directly.
+bool GamepadService::ProcessGamepadKey(VirtualKey key)
+{
+    // Handle GamepadMenu (≡) even if text input is focused (to support Virtual Keyboard)
+    if (key == VirtualKey::GamepadMenu || key == (VirtualKey)187) {
+        if (_frame.Get() != nullptr) {
+            auto loginType = Windows::UI::Xaml::Interop::TypeName(Opal::LoginPage::typeid);
+            if (_frame.Get()->CurrentSourcePageType.Name == loginType.Name) {
+                auto page = dynamic_cast<Opal::LoginPage^>(_frame.Get()->Content);
+                if (page != nullptr) {
+                    // We'll call a public method we'll add to LoginPage
+                    page->HandleStartButton();
+                    return true;
                 }
             }
-            args->Handled = true;
         }
-        // All other gamepad keys: let pass-through so typing works normally
-        return;
     }
 
     // ----------------------------------------------------------------
-    // Playback / navigation context
+    // Text-input context: pass-through to specific page handlers (like LoginPage)
     // ----------------------------------------------------------------
+    if (IsTextInputFocused()) {
+        // Transport keys (Gamepad-specific) should still work even if a text box is focused
+        // This allows Play/Pause/Skip/Volume while the search overlay is active.
+        bool isTransport = (key == VirtualKey::GamepadX || 
+                          key == VirtualKey::GamepadLeftShoulder || 
+                          key == VirtualKey::GamepadRightShoulder ||
+                          key == VirtualKey::GamepadLeftTrigger ||
+                          key == VirtualKey::GamepadRightTrigger ||
+                          key == (VirtualKey)176 || key == (VirtualKey)177 || // Media keys
+                          key == (VirtualKey)179 || key == (VirtualKey)178);
+
+        if (!isTransport) return false;
+    }
+
     auto pb = PlaybackService::Instance;
 
     switch (key) {
-    case VirtualKey::GamepadLeftShoulder:       // LB — Previous Track
+    case VirtualKey::GamepadLeftShoulder:       // LB
+    case (VirtualKey)177:                       // Media Previous Track
         pb->PreviousSong();
-        args->Handled = true;
-        break;
+        return true;
 
-    case VirtualKey::GamepadRightShoulder:      // RB — Next Track
+    case (VirtualKey)176:                       // Media Next Track
+    case VirtualKey::GamepadRightShoulder:      // RB
         pb->NextSong();
-        args->Handled = true;
-        break;
+        return true;
 
-    case VirtualKey::GamepadX:                  // X — Play / Pause
+    case VirtualKey::GamepadX:                  // X
+    case VirtualKey::X:                         // Keyboard X fallback
+    case VirtualKey::Space:                     // Spacebar fallback
+    case (VirtualKey)179:                       // Media Play/Pause
     {
+        // Don't trigger Play/Pause on Keyboard 'X' if typing
+        if (key == VirtualKey::X && IsTextInputFocused()) return false;
+        
         auto session = pb->Player->PlaybackSession;
-        if (session->PlaybackState == Windows::Media::Playback::MediaPlaybackState::Playing)
+        auto state = session->PlaybackState;
+        bool isActive = (state == Windows::Media::Playback::MediaPlaybackState::Playing || 
+                         state == Windows::Media::Playback::MediaPlaybackState::Buffering ||
+                         state == Windows::Media::Playback::MediaPlaybackState::Opening);
+
+        if (isActive) {
             pb->Player->Pause();
-        else
+            if (Opal::CastingService::Instance->IsCastingActive) Opal::CastingService::Instance->SendCommand("PAUSE");
+        } else {
             pb->Player->Play();
-        args->Handled = true;
-        break;
+            if (Opal::CastingService::Instance->IsCastingActive) Opal::CastingService::Instance->SendCommand("PLAY");
+        }
+        return true;
     }
 
-    case VirtualKey::GamepadY:                  // Y — Focus Search Box
-        if (_searchBox.Get() != nullptr) {
-            _searchBox.Get()->Focus(Windows::UI::Xaml::FocusState::Programmatic);
-        }
-        args->Handled = true;
-        break;
+    case (VirtualKey)178:                       // Media Stop
+        pb->Stop(); // Clears queue and hides player bar
+        return true; 
+        
+    case VirtualKey::GamepadY:                  // Y
+    case VirtualKey::Y:                         // Keyboard Y fallback
+        // Don't trigger Search on Keyboard 'Y' if typing
+        if (key == VirtualKey::Y && IsTextInputFocused()) return false;
 
-    case VirtualKey::GamepadView:               // View — Toggle Now Playing
+        if (Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamily == "Windows.Xbox") {
+            // Fix: Window::Current->Content is a Frame on Opal, not directly MainPage
+            auto frame = dynamic_cast<Frame^>(Window::Current->Content);
+            auto root = (frame != nullptr) ? dynamic_cast<MainPage^>(frame->Content) : nullptr;
+            if (root != nullptr) {
+                root->ToggleXboxSearch();
+            }
+        }
+        else if (_searchBox.Get() != nullptr) {
+            _searchBox.Get()->Focus(Windows::UI::Xaml::FocusState::Programmatic);
+            
+            // If the search box is in a NavigationView, we might need to open the pane
+            auto navView = dynamic_cast<Microsoft::UI::Xaml::Controls::NavigationView^>(_frame.Get()->Parent);
+            if (navView != nullptr) navView->IsPaneOpen = true;
+        }
+        return true;
+
+    case VirtualKey::GamepadView:               // View
         if (_frame.Get() != nullptr) {
             auto libType = Windows::UI::Xaml::Interop::TypeName(Opal::LibraryPage::typeid);
             if (_frame.Get()->CurrentSourcePageType.Name != libType.Name) {
                 _frame.Get()->Navigate(libType);
             }
+            
             auto page = dynamic_cast<Opal::LibraryPage^>(_frame.Get()->Content);
-            if (page != nullptr) page->ToggleFullPlayer();
+            if (page != nullptr) {
+                page->ToggleFullPlayer();
+                
+                // Fix: Ensure the sidebar (NavigationView Pane) is CLOSED when showing the full player
+                auto navView = dynamic_cast<Microsoft::UI::Xaml::Controls::NavigationView^>(_frame.Get()->Parent);
+                if (navView != nullptr) {
+                    navView->IsPaneOpen = false;
+                }
+            }
         }
-        args->Handled = true;
-        break;
+        return true;
 
-    case VirtualKey::GamepadLeftTrigger:        // LT — Volume Down
-        AdjustVolume(-0.05);
-        args->Handled = true;
-        break;
+    case VirtualKey::GamepadLeftTrigger:        // LT
+    case (VirtualKey)174:                       // Raw VolumeDown
+        AdjustVolume(-0.10); 
+        return true;
 
-    case VirtualKey::GamepadRightTrigger:       // RT — Volume Up
-        AdjustVolume(+0.05);
-        args->Handled = true;
-        break;
-
-    case VirtualKey::GamepadMenu:               // Menu — field advance / submit
-        // Handled by individual page key handlers (LoginPage, etc.)
-        break;
+    case VirtualKey::GamepadRightTrigger:       // RT
+    case (VirtualKey)175:                       // Raw VolumeUp
+        AdjustVolume(+0.10); 
+        return true;
 
     default:
         break;
     }
+
+    return false;
 }

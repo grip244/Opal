@@ -4,6 +4,8 @@
 #include "ViewModels/GenreViewModel.h"
 #include <cwctype>
 #include <string>
+#include <algorithm>
+#include <vector>
 
 using namespace Opal;
 using namespace Platform;
@@ -20,27 +22,49 @@ void GenresPage::OnPageLoaded(Object^ sender, RoutedEventArgs^ e) {
     ViewModels::GenreViewModel::Instance->LoadGenresAsync();
 }
 
-void GenresPage::OnFilterOrSortChanged(Object^ sender, TextChangedEventArgs^ e)
+void GenresPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
 {
+    if (GenreGrid == nullptr) return;
     auto allGenres = ViewModels::GenreViewModel::Instance->Genres;
-    String^ query = FilterBox->Text;
-    if (query == nullptr || query->IsEmpty()) {
-        GenreGrid->ItemsSource = allGenres;
-        return;
-    }
+    if (allGenres == nullptr || allGenres->Size == 0) return;
 
-    std::wstring wQuery(query->Data());
+    // 1. Filter
+    String^ query = FilterBox->Text;
+    std::wstring wQuery(query == nullptr ? L"" : query->Data());
     for (auto& c : wQuery) c = towlower(c);
 
-    auto result = ref new Platform::Collections::Vector<GenreModel^>();
+    std::vector<GenreModel^> result;
     for (auto g : allGenres) {
+        if (wQuery.empty()) { result.push_back(g); continue; }
         std::wstring name(g->Name->Data());
         for (auto& c : name) c = towlower(c);
         if (name.find(wQuery) != std::wstring::npos) {
-            result->Append(g);
+            result.push_back(g);
         }
     }
-    GenreGrid->ItemsSource = result;
+
+    // 2. Sort
+    int sortIdx = (SortByCombo != nullptr) ? SortByCombo->SelectedIndex : 0;
+    bool isDescending = (SortDirectionButton != nullptr && SortDirectionButton->IsChecked != nullptr) ? SortDirectionButton->IsChecked->Value : false;
+
+    if (SortIcon != nullptr) SortIcon->Glyph = isDescending ? L"\uE8CC" : L"\uE8CB";
+
+    std::sort(result.begin(), result.end(), [sortIdx, isDescending](GenreModel^ a, GenreModel^ b) {
+        bool less = false;
+        if (sortIdx == 0) { // A-Z
+            less = _wcsicmp(a->Name->Data(), b->Name->Data()) < 0;
+        }
+        else { // Album Count
+            less = a->AlbumCount < b->AlbumCount;
+        }
+        return isDescending ? !less : less;
+    });
+
+    auto finalVec = ref new Platform::Collections::Vector<GenreModel^>();
+    for (auto g : result) {
+        finalVec->Append(g);
+    }
+    GenreGrid->ItemsSource = finalVec;
 }
 
 void GenresPage::OnGenreClicked(Object^ sender, ItemClickEventArgs^ e) {
