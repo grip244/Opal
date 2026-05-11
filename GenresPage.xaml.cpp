@@ -31,13 +31,13 @@ void GenresPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
     // 1. Filter
     String^ query = FilterBox->Text;
     std::wstring wQuery(query == nullptr ? L"" : query->Data());
-    for (auto& c : wQuery) c = towlower(c);
+    std::transform(wQuery.begin(), wQuery.end(), wQuery.begin(), ::towlower);
 
     std::vector<GenreModel^> result;
     for (auto g : allGenres) {
         if (wQuery.empty()) { result.push_back(g); continue; }
         std::wstring name(g->Name->Data());
-        for (auto& c : name) c = towlower(c);
+        std::transform(name.begin(), name.end(), name.begin(), ::towlower);
         if (name.find(wQuery) != std::wstring::npos) {
             result.push_back(g);
         }
