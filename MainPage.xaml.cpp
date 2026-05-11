@@ -368,8 +368,6 @@ void MainPage::OnLyricsToggleClicked(Object^ sender, RoutedEventArgs^ e) {
     }
 }
 
-// Legacy casting handlers removed
-
 void MainPage::OnThumbnailClicked(Object^ sender, Windows::UI::Xaml::Input::TappedRoutedEventArgs^ e) {
     auto targetType = Windows::UI::Xaml::Interop::TypeName(LibraryPage::typeid);
     if (ContentFrame->CurrentSourcePageType.Name != targetType.Name) {
