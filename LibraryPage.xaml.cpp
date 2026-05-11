@@ -1137,10 +1137,6 @@ void LibraryPage::OnAddQueueMenuClicked(Object^ sender, RoutedEventArgs^ e) {
     }
 }
 
-// OnRemoveFromPlaylistClicked removed - migrated to PlaylistDetailsPage.xaml.cpp
-
-
-
 void LibraryPage::OnMoreButtonClicked(Object^ sender, RoutedEventArgs^ e)
 {
     auto btn = dynamic_cast<Button^>(sender);
