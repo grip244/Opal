@@ -688,8 +688,9 @@ IAsyncAction^ NavidromeService::ReorderPlaylistAsync(String^ playlistId, Windows
             // Pre-reserve buffer to reduce reallocations for large playlists
             // Each param is ~45 chars: "&songId=" (8) + escaped UUID (~36) + margin
             rel.reserve(rel.size() + songIds->Size * 50);
-            for (auto sid : songIds) {
-                rel += L"&songId=" + std::wstring(Windows::Foundation::Uri::EscapeComponent(sid)->Data());
+            for (String^ sid : songIds) {
+                rel.append(L"&songId=");
+                rel.append(Windows::Foundation::Uri::EscapeComponent(sid)->Data());
             }
 
             std::wstring fullUrl = std::wstring(normalizedServerUrl->Data());
