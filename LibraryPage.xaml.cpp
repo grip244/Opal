@@ -510,7 +510,7 @@ void LibraryPage::LoadLyrics(Song^ song)
                 self->LyricsVM->ActiveIndex = -1;
                 
                 if (result != nullptr && result->Lines->Size > 0) {
-                    for (auto l : result->Lines) self->LyricsVM->Lines->Append(l);
+                    for (LyricLine^ l : result->Lines) self->LyricsVM->Lines->Append(l);
                     self->LyricsVM->IsTimed = result->IsTimed;
                 } else {
                     self->LyricsVM->SetLyrics(""); // No lyrics found fallback
@@ -865,7 +865,8 @@ void LibraryPage::OnShuffleAlbumClicked(Object^ sender, RoutedEventArgs^ e)
     if (_albumSongs->Size > 0)
     {
         std::vector<Song^> songs;
-        for (auto s : _albumSongs) songs.push_back(s);
+        songs.reserve(_albumSongs->Size);
+        for (Song^ s : _albumSongs) songs.push_back(s);
         
         std::random_device rd;
         std::mt19937 g(rd());

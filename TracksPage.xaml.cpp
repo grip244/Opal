@@ -215,7 +215,7 @@ void TracksPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
     });
 
     auto output = ref new Platform::Collections::Vector<Song^>();
-    for (auto song : result) {
+    for (Song^ song : result) {
         output->Append(song);
     }
     TracksListView->ItemsSource = output;
@@ -245,7 +245,8 @@ void TracksPage::OnShuffleAllClicked(Object^ sender, RoutedEventArgs^ e)
     if (itemsSource != nullptr && itemsSource->Size > 0)
     {
         std::vector<Song^> songs;
-        for (auto s : itemsSource) songs.push_back(s);
+        songs.reserve(itemsSource->Size);
+        for (Song^ s : itemsSource) songs.push_back(s);
         
         std::random_device rd;
         std::mt19937 g(rd());

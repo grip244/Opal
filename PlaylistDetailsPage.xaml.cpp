@@ -78,7 +78,7 @@ void PlaylistDetailsPage::LoadPlaylistTracks()
 
                     int songCount = self->_songs->Size;
                     int totalSeconds = 0;
-                    for each (auto s in self->_songs) totalSeconds += s->DurationInSeconds;
+                    for (Song^ s : self->_songs) totalSeconds += s->DurationInSeconds;
                     
                     int mins = totalSeconds / 60;
                     int secs = totalSeconds % 60;
@@ -130,7 +130,8 @@ void PlaylistDetailsPage::OnShuffleClicked(Object^ sender, RoutedEventArgs^ e)
     if (_songs->Size > 0)
     {
         std::vector<Song^> songs;
-        for (auto s : _songs) songs.push_back(s);
+        songs.reserve(_songs->Size);
+        for (Song^ s : _songs) songs.push_back(s);
         
         std::random_device rd;
         std::mt19937 g(rd());
@@ -145,7 +146,7 @@ void PlaylistDetailsPage::OnQueueAllClicked(Object^ sender, RoutedEventArgs^ e)
 {
     if (_songs->Size > 0)
     {
-        for (auto s : _songs) PlaybackService::Instance->AddToQueue(s);
+        for (Song^ s : _songs) PlaybackService::Instance->AddToQueue(s);
     }
 }
 

@@ -3,6 +3,7 @@
 #include <mutex>
 #include <vector>
 #include <string>
+#include <sstream>
 #include <ppltasks.h>
 
 using namespace Opal;
@@ -122,13 +123,14 @@ void DebugLogger::OnConnectionReceived(StreamSocketListener^ sender, StreamSocke
         auto socket = args->Socket;
         auto writer = ref new DataWriter(socket->OutputStream);
 
-        std::wstring responseBody;
+        std::wstringstream ss;
         {
             std::lock_guard<std::mutex> lock(g_logMutex);
             for (const auto& l : g_logs) {
-                responseBody += l + L"\r\n";
+                ss << l << L"\r\n";
             }
         }
+        std::wstring responseBody = ss.str();
 
         std::wstring header = L"HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=utf-8\r\nConnection: close\r\n\r\n";
         std::wstring fullResponse = header + responseBody;
