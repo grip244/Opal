@@ -2,6 +2,10 @@
 #include "LibraryPage.xaml.h"
 #include "LoginPage.xaml.h"
 #include "Services/PlaybackService.h"
+#include "Services/SettingsService.h"
+#include "Services/NavidromeService.h"
+#include "ViewModels/LibraryViewModel.h"
+#include "ViewModels/LyricsViewModel.h"
 #include "ViewModels/PlaylistsViewModel.h"
 #include "GenresPage.xaml.h"
 #include "AlbumsPage.xaml.h"
@@ -806,6 +810,22 @@ void LibraryPage::SyncQueueToCastingTarget() {
         }
         CastingService::Instance->SendCommand("QUEUE|" + array->Stringify());
     }
+}
+
+Opal::ViewModels::LyricsViewModel^ LibraryPage::LyricsVM::get() {
+    return Opal::ViewModels::LyricsViewModel::Instance;
+}
+
+Opal::ViewModels::LibraryViewModel^ LibraryPage::LibraryVM::get() {
+    return Opal::ViewModels::LibraryViewModel::Instance;
+}
+
+Windows::Foundation::Collections::IVector<Song^>^ LibraryPage::PlaybackQueue::get() {
+    return PlaybackService::Instance->Queue;
+}
+
+Windows::Foundation::Collections::IObservableVector<Song^>^ LibraryPage::UpcomingQueue::get() {
+    return _upcomingQueue;
 }
 
 bool LibraryPage::IsFullPlayerActive::get() {

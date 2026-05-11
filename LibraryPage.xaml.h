@@ -4,34 +4,33 @@
 #include <string>
 #include "Generated Files/LibraryPage.g.h"
 #include "Models/SharedModels.h"
-#include "ViewModels/LibraryViewModel.h"
-#include "ViewModels/LyricsViewModel.h"
-#include "Services/SettingsService.h"
-#include "Services/NavidromeService.h"
-#include "Services/LyricsService.h"
-#include "Services/PlaybackService.h"
-
 namespace Opal
 {
+    namespace ViewModels
+    {
+        ref class LibraryViewModel;
+        ref class LyricsViewModel;
+    }
+
     public ref class LibraryPage sealed
     {
     public:
         LibraryPage();
         
         property Opal::ViewModels::LyricsViewModel^ LyricsVM {
-            Opal::ViewModels::LyricsViewModel^ get() { return Opal::ViewModels::LyricsViewModel::Instance; }
+            Opal::ViewModels::LyricsViewModel^ get();
         }
 
         property Opal::ViewModels::LibraryViewModel^ LibraryVM {
-            Opal::ViewModels::LibraryViewModel^ get() { return Opal::ViewModels::LibraryViewModel::Instance; }
+            Opal::ViewModels::LibraryViewModel^ get();
         }
         
         property Windows::Foundation::Collections::IVector<Song^>^ PlaybackQueue {
-            Windows::Foundation::Collections::IVector<Song^>^ get() { return PlaybackService::Instance->Queue; }
+            Windows::Foundation::Collections::IVector<Song^>^ get();
         }
 
         property Windows::Foundation::Collections::IObservableVector<Song^>^ UpcomingQueue {
-            Windows::Foundation::Collections::IObservableVector<Song^>^ get() { return _upcomingQueue; }
+            Windows::Foundation::Collections::IObservableVector<Song^>^ get();
         }
 
         void LoadHomePage();
