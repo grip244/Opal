@@ -114,7 +114,7 @@ void AlbumsPage::OnFilterOrSortChanged(Object^ sender, Object^ e)
     // 1. Text Filter
     String^ query = FilterBox->Text;
     std::wstring wQuery(query == nullptr ? L"" : query->Data());
-    for (auto& c : wQuery) c = towlower(c);
+    std::transform(wQuery.begin(), wQuery.end(), wQuery.begin(), ::towlower);
 
     // 2. Year Filter
     int minYear = 0, maxYear = 9999;

@@ -1,5 +1,7 @@
 #pragma once
 #include <Windows.UI.Xaml.Data.h>
+#include <algorithm>
+#include <cwctype>
 
 namespace Opal
 {
@@ -119,7 +121,7 @@ namespace Opal
             s += L" ";
             if (Album != nullptr) s += Album->Data();
             
-            for (auto& c : s) c = towlower(c);
+            std::transform(s.begin(), s.end(), s.begin(), ::towlower);
             SearchTerms = ref new Platform::String(s.c_str());
         }
     };
@@ -168,7 +170,7 @@ namespace Opal
         void PopulateSearchTerms() {
             std::wstring s = L"";
             if (Name != nullptr) s += Name->Data();
-            for (auto& c : s) c = towlower(c);
+            std::transform(s.begin(), s.end(), s.begin(), ::towlower);
             SearchTerms = ref new Platform::String(s.c_str());
         }
     };
@@ -225,7 +227,7 @@ namespace Opal
             if (Title != nullptr) s += Title->Data();
             s += L" ";
             if (Artist != nullptr) s += Artist->Data();
-            for (auto& c : s) c = towlower(c);
+            std::transform(s.begin(), s.end(), s.begin(), ::towlower);
             SearchTerms = ref new Platform::String(s.c_str());
         }
     };
@@ -377,7 +379,7 @@ namespace Opal
         void PopulateSearchTerms() {
             std::wstring s = L"";
             if (Name != nullptr) s += Name->Data();
-            for (auto& c : s) c = towlower(c);
+            std::transform(s.begin(), s.end(), s.begin(), ::towlower);
             SearchTerms = ref new Platform::String(s.c_str());
         }
     };
